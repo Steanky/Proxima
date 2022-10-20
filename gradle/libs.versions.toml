@@ -1,0 +1,12 @@
+metadata.format.version = "1.1"
+
+[versions]
+junit-jupiter = "5.9.0-M1"
+
+[libraries]
+jetbrains-annotations = { module = "org.jetbrains:annotations", version = "23.0.0" }
+
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit-jupiter" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit-jupiter" }
+
+mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version = "4.5.1" }

@@ -1,0 +1,17 @@
+# Never share .idea
+/.idea/
+
+# Directories that might contain runtime builds or other things we don't want to share
+/run/
+/out/
+
+# Directories used by Gradle
+/.gradle/
+/build/
+
+# Gradle directories in ./buildSrc
+/buildSrc/build
+/buildSrc/.gradle
+
+# Ignore local gradle settings file
+local.settings.gradle.kts
