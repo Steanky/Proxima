@@ -11,6 +11,8 @@ java {
 
 repositories {
     mavenCentral()
+    maven("https://dl.cloudsmith.io/public/steanky/toolkit/maven/")
+    maven("https://dl.cloudsmith.io/public/steanky/vector/maven/")
 }
 
 val catalogs = extensions.getByType<VersionCatalogsExtension>()

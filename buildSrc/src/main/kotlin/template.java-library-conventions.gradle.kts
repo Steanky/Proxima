@@ -21,7 +21,7 @@ publishing {
     repositories {
         maven {
             name = project.name
-            url = URI.create(System.getenv("REPOSITORY_URL"))
+            url = URI.create(System.getenv().getOrDefault("REPOSITORY_URL", ""))
 
             credentials {
                 username = System.getenv("REPOSITORY_USERNAME")
