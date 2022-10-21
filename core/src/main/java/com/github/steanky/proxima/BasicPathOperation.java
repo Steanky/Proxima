@@ -1,5 +1,6 @@
 package com.github.steanky.proxima;
 
+import com.github.steanky.toolkit.collection.Iterators;
 import com.github.steanky.vector.HashVec3I2ObjectMap;
 import com.github.steanky.vector.Vec3I;
 import com.github.steanky.vector.Vec3I2ObjectMap;
@@ -100,13 +101,18 @@ public class BasicPathOperation implements PathOperation {
         state = State.COMPLETE;
 
         Node first = best.reverse();
-        List<Vec3I> vectors = new ArrayList<>(16);
-        while (first != null) {
-            vectors.add(Vec3I.immutable(first.x, first.y, first.z));
+        int size = first.size();
+
+        Vec3I[] vectors = new Vec3I[size];
+        int i = 0;
+        do {
+            vectors[i++] = Vec3I.immutable(first.x, first.y, first.z);
             first = first.parent;
         }
+        while (first != null);
 
-        result = new PathResult(List.copyOf(vectors), graph.size(), success);
+        //Iterators.arrayView should be faster than List.of due to the latter performing a defensive arraycopy
+        result = new PathResult(Iterators.arrayView(vectors), graph.size(), success);
     }
 
     private void explore(Node current, int x, int y, int z) {

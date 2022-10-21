@@ -47,6 +47,18 @@ final class Node implements Comparable<Node> {
         return heapIndex > 0;
     }
 
+    int size() {
+        int size = 0;
+        Node next = this;
+        do {
+            next = next.parent;
+            size++;
+        }
+        while (next != null);
+
+        return size;
+    }
+
     @Override
     public int compareTo(@NotNull Node o) {
         return Float.compare(g + h, o.g + o.h);
