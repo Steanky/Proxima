@@ -4,11 +4,19 @@ import com.github.steanky.vector.Vec3I;
 import org.jetbrains.annotations.NotNull;
 
 public interface PathOperation {
+    void init(int startX, int startY, int startZ, int destinationX, int destinationY, int destinationZ);
+
     void step();
 
     @NotNull State state();
 
-    @NotNull Vec3I start();
+    @NotNull PathResult result();
+
+    int startX();
+
+    int startY();
+
+    int startZ();
 
     int currentX();
 
@@ -17,12 +25,8 @@ public interface PathOperation {
     int currentZ();
 
     enum State {
-        IN_PROGRESS,
-        SUCCEEDED,
-        FAILED;
-
-        public boolean complete() {
-            return this == SUCCEEDED || this == FAILED;
-        }
+        UNINITIALIZED,
+        INITIALIZED,
+        COMPLETE
     }
 }

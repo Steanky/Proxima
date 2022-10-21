@@ -1,6 +1,5 @@
 package com.github.steanky.proxima;
 
-import com.github.steanky.vector.Vec3I;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import com.github.steanky.vector.Vec3IPredicate;
 import org.jetbrains.annotations.NotNull;
@@ -12,24 +11,48 @@ public class BasicPathOperation implements PathOperation {
     private final Vec3IPredicate successPredicate;
     private final Explorer explorer;
     private final Heuristic heuristic;
-    private final Vec3I destination;
-
     private final Vec3I2ObjectMap<Node> graph;
 
     private Node current;
     private Node best;
+
     private State state;
     private PathResult result;
 
+    private int startX;
+    private int startY;
+    private int startZ;
+
+    private int destinationX;
+    private int destinationY;
+    private int destinationZ;
+
     public BasicPathOperation(@NotNull Vec3IPredicate successPredicate, @NotNull Explorer explorer,
-            @NotNull Heuristic heuristic, @NotNull Vec3I destination, @NotNull Vec3I2ObjectMap<Node> graph) {
+            @NotNull Heuristic heuristic, @NotNull Vec3I2ObjectMap<Node> graph) {
         this.openSet = new NodeQueue();
         this.successPredicate = Objects.requireNonNull(successPredicate);
         this.explorer = Objects.requireNonNull(explorer);
         this.heuristic = Objects.requireNonNull(heuristic);
-        this.destination = destination.immutable();
         this.graph = Objects.requireNonNull(graph);
-        this.state = State.IN_PROGRESS;
+        this.state = State.UNINITIALIZED;
+    }
+
+    @Override
+    public void init(int startX, int startY, int startZ, int destinationX, int destinationY, int destinationZ) {
+        current = new Node(startX, startY, startZ, 0, heuristic.distance(startX, startY, startZ, destinationX,
+                destinationY, destinationZ), null);
+        best = current;
+
+        state = State.INITIALIZED;
+        result = null;
+
+        this.startX = startX;
+        this.startY = startY;
+        this.startZ = startZ;
+
+        this.destinationX = destinationX;
+        this.destinationY = destinationY;
+        this.destinationZ = destinationZ;
     }
 
     @Override
@@ -53,13 +76,17 @@ public class BasicPathOperation implements PathOperation {
     }
 
     private void complete(boolean success, Node best) {
-        state = success ? State.SUCCEEDED : State.FAILED;
+        if (state == State.COMPLETE) {
+            throw new IllegalStateException("Cannot complete already-completed path");
+        }
+
+        state = State.COMPLETE;
         result = new PathResult(best.reverse(), graph.size(), success);
     }
 
     private void explore(Node current, int x, int y, int z) {
         Node neighbor = graph.computeIfAbsent(x, y, z, (x1, y1, z1) -> new Node(x1, y1, z1, Float.POSITIVE_INFINITY,
-                heuristic.heuristic(x1, y1, z1, destination.x(), destination.y(), destination.z()), null));
+                heuristic.heuristic(x1, y1, z1, destinationX, destinationY, destinationZ), null));
 
         float g = current.g + heuristic.distance(current.x, current.y, current.z, neighbor.x, neighbor.y, neighbor.z);
 
@@ -76,8 +103,27 @@ public class BasicPathOperation implements PathOperation {
     }
 
     @Override
-    public @NotNull Vec3I start() {
-        return null;
+    public @NotNull PathResult result() {
+        if (state != State.COMPLETE) {
+            throw new IllegalStateException("Cannot get PathResult before path completion");
+        }
+
+        return result;
+    }
+
+    @Override
+    public int startX() {
+        return startX;
+    }
+
+    @Override
+    public int startY() {
+        return startY;
+    }
+
+    @Override
+    public int startZ() {
+        return startZ;
     }
 
     @Override
