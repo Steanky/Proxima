@@ -120,9 +120,12 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         if (!solid.isEmpty()) {
                             foundSolid = true;
 
-                            if (y - lastSolid >= height) {
-                                //found a gap we can fit in
-                                handler.handle(node, nX, lastSolid, nZ);
+                            if (y - lastSolid >= height) { //found a gap we can fit in
+                                //this node is bidirectional, unless the jump distance is greater than the fall
+                                //tolerance
+                                Movement movement = lastSolid - node.y > fallTolerance ? Movement.UNIDIRECTIONAL :
+                                        Movement.BIDIRECTIONAL;
+                                handler.handle(node, movement, nX, lastSolid, nZ);
                                 return;
                             }
 
@@ -130,13 +133,17 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                             break;
                         }
                         else if ((y + 1) - lastSolid >= height) {
-                            handler.handle(node, nX, lastSolid, nZ);
+                            Movement movement = lastSolid - node.y > fallTolerance ? Movement.UNIDIRECTIONAL :
+                                    Movement.BIDIRECTIONAL;
+                            handler.handle(node, movement, nX, lastSolid, nZ);
                             return;
                         }
                     }
 
                     if (!foundSolid) {
-                        handler.handle(node, nX, lastSolid, nZ);
+                        Movement movement = lastSolid - node.y > fallTolerance ? Movement.UNIDIRECTIONAL :
+                                Movement.BIDIRECTIONAL;
+                        handler.handle(node, movement, nX, lastSolid, nZ);
                         return;
                     }
                 }
@@ -160,7 +167,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                 }
             }
 
-            handler.handle(node, node.x, node.y + 1, node.z);
+            handler.handle(node, Movement.UNIDIRECTIONAL, node.x, node.y + 1, node.z);
             return;
         }
 
@@ -172,7 +179,11 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
                 Solid solid = space.solidAt(x, y, z);
                 if (!solid.isEmpty()) { //we hit a solid on the way down
-                    handler.handle(node, nX, y + 1, nZ);
+                    int newY = y + 1;
+                    int fallDistance = node.y - newY;
+
+                    Movement movement = jumpHeight < fallDistance ? Movement.UNIDIRECTIONAL : Movement.BIDIRECTIONAL;
+                    handler.handle(node, movement, nX, y + 1, nZ);
                     return;
                 }
             }

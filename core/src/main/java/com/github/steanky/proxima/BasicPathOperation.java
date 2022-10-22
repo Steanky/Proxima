@@ -2,24 +2,27 @@ package com.github.steanky.proxima;
 
 import com.github.steanky.vector.HashVec3I2ObjectMap;
 import com.github.steanky.vector.Vec3I;
+import com.github.steanky.vector.Vec3I2ObjectMap;
 import com.github.steanky.vector.Vec3IPredicate;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
 public class BasicPathOperation implements PathOperation {
     private final NodeQueue openSet;
-    private final HashVec3I2ObjectMap<Node> graph;
+    private final Object syncTarget;
 
-    private final Vec3IPredicate successPredicate;
-    private final Explorer explorer;
-    private final Heuristic heuristic;
+    private HashVec3I2ObjectMap<Node> graph;
+
+    private Vec3IPredicate successPredicate;
+    private Explorer explorer;
+    private Heuristic heuristic;
 
     private State state;
 
     private Node current;
     private Node best;
-    private PathResult result;
 
     private int startX;
     private int startY;
@@ -29,46 +32,46 @@ public class BasicPathOperation implements PathOperation {
     private int destinationY;
     private int destinationZ;
 
-    public BasicPathOperation(@NotNull Vec3IPredicate successPredicate, @NotNull Explorer explorer,
-            @NotNull Heuristic heuristic, @NotNull Vec3I spaceOrigin, @NotNull Vec3I spaceWidths) {
+    public BasicPathOperation() {
         this.openSet = new NodeQueue();
-        this.graph = new HashVec3I2ObjectMap<>(spaceOrigin.x(), spaceOrigin.y(), spaceOrigin.z(), spaceWidths.x(),
-                spaceWidths.y(), spaceWidths.z(), 32);
-        this.successPredicate = Objects.requireNonNull(successPredicate);
-        this.explorer = Objects.requireNonNull(explorer);
-        this.heuristic = Objects.requireNonNull(heuristic);
+        this.syncTarget = new Object();
         this.state = State.UNINITIALIZED;
     }
 
     @Override
-    public void init(int startX, int startY, int startZ, int destinationX, int destinationY, int destinationZ) {
-        //re-use the graph and map
-        openSet.clear();
-        openSet.trim(32);
+    public void init(int startX, int startY, int startZ, int destinationX, int destinationY, int destinationZ,
+            @NotNull Vec3IPredicate successPredicate, @NotNull Explorer explorer, @NotNull Heuristic heuristic,
+            @NotNull Vec3I spaceOrigin, @NotNull Vec3I spaceWidths) {
+        synchronized (syncTarget) {
+            clearDataStructures();
 
-        graph.clear();
-        graph.trim(32);
+            this.graph = new HashVec3I2ObjectMap<>(spaceOrigin.x(), spaceOrigin.y(), spaceOrigin.z(), spaceWidths.x(),
+                    spaceWidths.y(), spaceWidths.z(), 32);
 
-        //indicate that we can start stepping
-        state = State.INITIALIZED;
+            this.successPredicate = Objects.requireNonNull(successPredicate);
+            this.explorer = Objects.requireNonNull(explorer);
+            this.heuristic = Objects.requireNonNull(heuristic);
 
-        //set the current node, g == 0
-        current = new Node(startX, startY, startZ, 0, heuristic.distance(startX, startY, startZ, destinationX,
-                destinationY, destinationZ), null);
-        best = current;
-        result = null;
+            //indicate that we can start stepping
+            state = State.INITIALIZED;
 
-        this.startX = startX;
-        this.startY = startY;
-        this.startZ = startZ;
+            //set the current node, g == 0
+            current = new Node(startX, startY, startZ, 0, heuristic.distance(startX, startY, startZ, destinationX,
+                    destinationY, destinationZ), Movement.UNKNOWN, null);
+            best = current;
 
-        this.destinationX = destinationX;
-        this.destinationY = destinationY;
-        this.destinationZ = destinationZ;
+            this.startX = startX;
+            this.startY = startY;
+            this.startZ = startZ;
+
+            this.destinationX = destinationX;
+            this.destinationY = destinationY;
+            this.destinationZ = destinationZ;
+        }
     }
 
     @Override
-    public void step() {
+    public @Nullable PathResult step() {
         if (!openSet.isEmpty()) {
             current = openSet.dequeue();
 
@@ -76,8 +79,7 @@ public class BasicPathOperation implements PathOperation {
             //predicate returns true = we found our destination and have a path
             if (successPredicate.test(current.x, current.y, current.z)) {
                 //complete (may throw an exception if already completed)
-                complete(current, true);
-                return;
+                return complete(current, true);
             }
 
             //reference the explore method: this is not strictly necessary, but it is cleaner, and prevents from
@@ -88,20 +90,35 @@ public class BasicPathOperation implements PathOperation {
             }
         }
         else {
-            complete(best, false);
+            return complete(best, false);
+        }
+
+        return null;
+    }
+
+    private void clearDataStructures() {
+        openSet.clear();
+        openSet.trim(32);
+
+        current = null;
+        best = null;
+    }
+
+    private PathResult complete(Node best, boolean success) {
+        synchronized (syncTarget) {
+            if (state == State.COMPLETE) {
+                throw new IllegalStateException("Cannot complete already-completed path");
+            }
+
+            state = State.COMPLETE;
+            PathResult result = new PathResult(best.reverseToVectorList(), graph.size(), success);
+
+            clearDataStructures();
+            return result;
         }
     }
 
-    private void complete(Node best, boolean success) {
-        if (state == State.COMPLETE) {
-            throw new IllegalStateException("Cannot complete already-completed path");
-        }
-
-        state = State.COMPLETE;
-        result = new PathResult(best.reverseToVectorList(), graph.size(), success);
-    }
-
-    private void explore(Node current, int x, int y, int z) {
+    private void explore(Node current, Movement movementToNeighbor, int x, int y, int z) {
         Node neighbor = graph.computeIfAbsent(x, y, z, this::buildNode);
 
         float g = current.g + heuristic.distance(current.x, current.y, current.z, neighbor.x, neighbor.y, neighbor.z);
@@ -114,21 +131,12 @@ public class BasicPathOperation implements PathOperation {
 
     private Node buildNode(int x, int y, int z) {
         return new Node(x, y, z, Float.POSITIVE_INFINITY, heuristic.heuristic(x, y, z, destinationX, destinationY,
-                destinationZ), null);
+                destinationZ), Movement.UNKNOWN, null);
     }
 
     @Override
     public @NotNull State state() {
         return state;
-    }
-
-    @Override
-    public @NotNull PathResult result() {
-        if (state != State.COMPLETE) {
-            throw new IllegalStateException("Cannot get PathResult before path completion");
-        }
-
-        return result;
     }
 
     @Override
@@ -159,5 +167,15 @@ public class BasicPathOperation implements PathOperation {
     @Override
     public int currentZ() {
         return current.z;
+    }
+
+    @Override
+    public @NotNull Vec3I2ObjectMap<Node> graph() {
+        return graph;
+    }
+
+    @Override
+    public @NotNull Object syncTarget() {
+        return syncTarget;
     }
 }

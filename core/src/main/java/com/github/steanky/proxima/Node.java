@@ -16,11 +16,12 @@ final class Node implements Comparable<Node> {
     float g;
     float h;
 
+    final Movement movement;
     Node parent;
 
     int heapIndex;
 
-    public Node(int x, int y, int z, float g, float h, @Nullable Node parent) {
+    public Node(int x, int y, int z, float g, float h, @NotNull Movement movement, @Nullable Node parent) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -28,6 +29,7 @@ final class Node implements Comparable<Node> {
         this.g = g;
         this.h = h;
 
+        this.movement = movement;
         this.parent = parent;
         this.heapIndex = -1;
     }

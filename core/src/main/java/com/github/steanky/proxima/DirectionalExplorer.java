@@ -15,7 +15,7 @@ public class DirectionalExplorer implements Explorer {
     }
 
     @Override
-    public void exploreEach(@NotNull Node node, @NotNull NodeHandler handler) {
+    public void exploreEach(@NotNull Node node, @NotNull Movement movement, @NotNull NodeHandler handler) {
         for (Direction direction : directions) {
             nodeSnapper.snap(direction, node, handler);
         }
