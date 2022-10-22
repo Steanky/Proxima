@@ -36,7 +36,7 @@ final class Node implements Comparable<Node> {
         this.heapIndex = -1;
     }
 
-    @NotNull @Unmodifiable ObjectLinkedOpenHashSet<Vec3I> reverseToVectorSet() {
+    @NotNull @Unmodifiable Set<Vec3I> reverseToVectorSet() {
         Node prev = null;
         Node current = this;
 
@@ -51,14 +51,14 @@ final class Node implements Comparable<Node> {
             size++;
         }
 
-        ObjectLinkedOpenHashSet<Vec3I> set = new ObjectLinkedOpenHashSet<>(size, 1.0F);
+        ObjectSet<Vec3I> set = new ObjectLinkedOpenHashSet<>(size, 1.0F);
         do {
             set.add(Vec3I.immutable(prev.x, prev.y, prev.z));
             prev = prev.parent;
         }
         while (prev != null);
 
-        return set;
+        return ObjectSets.unmodifiable(set);
     }
 
     @NotNull Vec3I[] asVectorArray() {

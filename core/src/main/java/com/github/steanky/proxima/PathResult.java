@@ -13,7 +13,7 @@ import java.util.Set;
 /**
  * The result of a pathfinding operation, representing a completed (successful or failed) path.
  */
-public record PathResult(@NotNull ObjectLinkedOpenHashSet<Vec3I> vectors, int exploredCount, boolean isSuccessful) {
+public record PathResult(@NotNull @Unmodifiable Set<Vec3I> vectors, int exploredCount, boolean isSuccessful) {
     /**
      * Creates a new BasicResult.
      *

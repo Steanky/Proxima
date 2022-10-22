@@ -6,9 +6,7 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -120,74 +118,74 @@ public class BasicPathHandler implements PathHandler {
         private boolean tryMergeWithAdjust() {
             Path dependentPath = dependent.get();
             if (dependentPath != null) {
-                PathOperation dependentOperation = dependentPath.pathOperation;
+                dependent.set(null);
 
-                if (dependentOperation != null) {
-                    try {
-                        //wait for the path to be found, but not for the operation to create a PathResult yet
-                        dependentPath.intermediateCompletion.get();
-
-                        synchronized (dependentOperation.syncTarget()) {
-                            synchronized (pathOperation.syncTarget()) {
-                                int x = mergePoint.x();
-                                int y = mergePoint.y();
-                                int z = mergePoint.z();
-
-                                Node dependentNode = dependentOperation.graph().get(x, y, z);
-                                Vec3I[] vectors = dependentNode.asVectorArray();
-
-                                //allow the path to continue
-                                dependentPath.delayResult = false;
-                                PathResult result = dependentPath.future.get();
-                                ObjectLinkedOpenHashSet<Vec3I> resultPath = result.vectors();
-
-                                ObjectLinkedOpenHashSet<Vec3I> ourPath = new ObjectLinkedOpenHashSet<>(resultPath.size());
-                                boolean foundMergePoint = false;
-                                for (Vec3I vec : vectors) {
-                                    ourPath.add(vec);
-
-                                    Vec3I mergePoint = resultPath.get(vec);
-                                    if (mergePoint != null) {
-                                        foundMergePoint = true;
-                                        ourPath.add(mergePoint);
-
-                                        boolean append = false;
-                                        for (Vec3I resultVector : resultPath) {
-                                            if (append) {
-                                                ourPath.add(resultVector);
-                                            }
-                                            else if (resultVector == mergePoint) {
-                                                append = true;
-                                            }
-                                        }
-
-                                        break;
-                                    }
-                                }
-
-                                if (!foundMergePoint) {
-                                    future.completeExceptionally(
-                                            new IllegalStateException("No nodes in common with the merged path"));
-                                    return true;
-                                }
-
-                                future.complete(new PathResult(ourPath, pathOperation.graph().size(),
-                                        result.isSuccessful()));
-                                return true;
-                            }
-                        }
-                    } catch (InterruptedException | ExecutionException e) {
-                        future.completeExceptionally(e);
+                try {
+                    PathOperation dependentOperation = dependentPath.pathOperation;
+                    if (dependentOperation == null) {
+                        future.completeExceptionally(new IllegalStateException("Expected non-null PathOperation"));
                         return true;
                     }
-                    finally {
-                        dependentPath.delayResult = false;
-                        dependentPath.delayTermination = true;
-                        dependent.set(null);
-                    }
-                }
 
-                dependent.set(null);
+                    //wait for the path to be found, but not for the operation to create a PathResult yet
+                    dependentPath.intermediateCompletion.get();
+
+                    synchronized (dependentOperation.syncTarget()) {
+                        synchronized (pathOperation.syncTarget()) {
+                            int x = mergePoint.x();
+                            int y = mergePoint.y();
+                            int z = mergePoint.z();
+
+                            Node dependentNode = dependentOperation.graph().get(x, y, z);
+                            Vec3I[] vectors = dependentNode.asVectorArray();
+
+                            //allow the path to continue
+                            dependentPath.delayResult = false;
+                            PathResult result = dependentPath.future.get();
+                            Set<Vec3I> resultPath = result.vectors();
+                            Set<Vec3I> ourPath = new ObjectLinkedOpenHashSet<>(resultPath.size());
+
+                            boolean foundMergePoint = false;
+                            for (Vec3I vec : vectors) {
+                                ourPath.add(vec);
+
+                                if (resultPath.contains(vec)) {
+                                    foundMergePoint = true;
+
+                                    boolean append = false;
+                                    for (Vec3I resultVector : resultPath) {
+                                        if (append) {
+                                            ourPath.add(resultVector);
+                                        }
+                                        else if (resultVector.equals(mergePoint)) {
+                                            append = true;
+                                        }
+                                    }
+
+                                    break;
+                                }
+                            }
+
+                            if (!foundMergePoint) {
+                                future.completeExceptionally(
+                                        new IllegalStateException("No nodes in common with the merged path"));
+                                return true;
+                            }
+
+                            future.complete(new PathResult(ourPath, pathOperation.graph().size(),
+                                    result.isSuccessful()));
+                            return true;
+                        }
+                    }
+                } catch (InterruptedException | ExecutionException e) {
+                    future.completeExceptionally(e);
+                    return true;
+                }
+                finally {
+                    //make sure to reset these flags to avoid freezing the thread
+                    dependentPath.delayResult = false;
+                    dependentPath.delayTermination = false;
+                }
             }
 
             return false;
