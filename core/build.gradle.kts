@@ -5,4 +5,5 @@ plugins {
 dependencies {
     api(libs.vector)
     api(libs.toolkit.collection)
+    api(libs.toolkit.function)
 }
