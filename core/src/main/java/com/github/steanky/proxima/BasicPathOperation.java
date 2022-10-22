@@ -13,7 +13,7 @@ public class BasicPathOperation implements PathOperation {
     private final NodeQueue openSet;
     private final Object syncTarget;
 
-    private HashVec3I2ObjectMap<Node> graph;
+    private Vec3I2ObjectMap<Node> graph;
 
     private Vec3IPredicate successPredicate;
     private Explorer explorer;
@@ -40,17 +40,15 @@ public class BasicPathOperation implements PathOperation {
 
     @Override
     public void init(int startX, int startY, int startZ, int destinationX, int destinationY, int destinationZ,
-            @NotNull Vec3IPredicate successPredicate, @NotNull Explorer explorer, @NotNull Heuristic heuristic,
-            @NotNull Vec3I spaceOrigin, @NotNull Vec3I spaceWidths) {
+            @NotNull PathSettings settings) {
         synchronized (syncTarget) {
             clearDataStructures();
 
-            this.graph = new HashVec3I2ObjectMap<>(spaceOrigin.x(), spaceOrigin.y(), spaceOrigin.z(), spaceWidths.x(),
-                    spaceWidths.y(), spaceWidths.z(), 32);
+            this.graph = settings.graph();
 
-            this.successPredicate = Objects.requireNonNull(successPredicate);
-            this.explorer = Objects.requireNonNull(explorer);
-            this.heuristic = Objects.requireNonNull(heuristic);
+            this.successPredicate = settings.successPredicate();
+            this.explorer = settings.explorer();
+            this.heuristic = settings.heuristic();
 
             //indicate that we can start stepping
             state = State.INITIALIZED;

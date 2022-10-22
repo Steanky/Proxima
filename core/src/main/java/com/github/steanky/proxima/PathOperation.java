@@ -8,8 +8,7 @@ import org.jetbrains.annotations.Nullable;
 
 public interface PathOperation {
     void init(int startX, int startY, int startZ, int destinationX, int destinationY, int destinationZ,
-            @NotNull Vec3IPredicate successPredicate, @NotNull Explorer explorer,
-            @NotNull Heuristic heuristic, @NotNull Vec3I spaceOrigin, @NotNull Vec3I spaceWidths);
+            @NotNull PathSettings settings);
 
     @Nullable PathResult step();
 
@@ -34,6 +33,10 @@ public interface PathOperation {
     enum State {
         UNINITIALIZED,
         INITIALIZED,
-        COMPLETE
+        COMPLETE;
+
+        public boolean running() {
+            return this == INITIALIZED;
+        }
     }
 }
