@@ -1,6 +1,7 @@
 package com.github.steanky.proxima;
 
 import it.unimi.dsi.fastutil.objects.ObjectHeaps;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Comparator;
 
@@ -10,7 +11,7 @@ import java.util.Comparator;
  * @see ObjectHeaps
  * @see NodeQueue
  */
-public final class NodeHeaps {
+final class NodeHeaps {
     /**
      * Method based on {@link ObjectHeaps#downHeap(Object[], int, int, Comparator)}, but specialized for {@link Node}
      * objects. This will ensure that the heap index of all moved nodes is updated to match its position in the actual
@@ -20,7 +21,7 @@ public final class NodeHeaps {
      * @param size the size of the heap
      * @param i    the index of the node to potentially move down
      */
-    public static void downHeap(Node[] heap, int size, int i) {
+    static void downHeap(@NotNull Node @NotNull [] heap, int size, int i) {
         Node first = heap[i];
         int child;
         while ((child = (i << 1) + 1) < size) {
@@ -51,7 +52,7 @@ public final class NodeHeaps {
      * @param i    the index of the node to potentially move up
      * @return the final index of the node which was moved
      */
-    public static int upHeap(Node[] heap, int i) {
+    static int upHeap(@NotNull Node @NotNull [] heap, int i) {
         Node e = heap[i];
         while (i != 0) {
             int parentIndex = (i - 1) >>> 1;

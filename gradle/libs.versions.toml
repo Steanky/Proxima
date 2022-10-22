@@ -12,4 +12,4 @@ junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", vers
 mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version = "4.5.1" }
 
 toolkit-collection = { module = "com.github.steanky:toolkit-collection", version = "0.1.3" }
-vector = { module = "com.github.steanky:vector-core", version = "0.1.1" }
+vector = { module = "com.github.steanky:vector-core", version = "0.2.0" }

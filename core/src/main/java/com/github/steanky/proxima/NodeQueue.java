@@ -134,4 +134,14 @@ public class NodeQueue implements PriorityQueue<Node> {
     public void trim() {
         heap = ObjectArrays.trim(heap, size);
     }
+
+    /**
+     * Trims the internal array to either the current size, or n, whichever is larger. Can only reduce the capacity of
+     * the array.
+     *
+     * @param n the size to trim to if larger than this queue's size
+     */
+    public void trim(int n) {
+        heap = ObjectArrays.trim(heap, Math.max(size, n));
+    }
 }

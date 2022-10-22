@@ -1,9 +1,12 @@
 package com.github.steanky.proxima;
 
+import com.github.steanky.toolkit.collection.Iterators;
+import com.github.steanky.vector.Vec3I;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
-import java.util.Objects;
+import java.util.List;
 
 final class Node implements Comparable<Node> {
     final int x;
@@ -29,34 +32,35 @@ final class Node implements Comparable<Node> {
         this.heapIndex = -1;
     }
 
-    @NotNull Node reverse() {
+    @NotNull @Unmodifiable List<Vec3I> reverseToVectorList() {
         Node prev = null;
         Node current = this;
+
+        int size = 0;
         while (current != null) {
+            //invert the linked list represented by this node, calculate size while we do this
             Node next = current.parent;
             current.parent = prev;
 
             prev = current;
             current = next;
+            size++;
         }
 
-        return Objects.requireNonNull(prev);
+        Vec3I[] vectors = new Vec3I[size];
+        int i = 0;
+        do {
+            vectors[i++] = Vec3I.immutable(prev.x, prev.y, prev.z);
+            prev = prev.parent;
+        }
+        while (prev != null);
+
+        //faster than List.of, does not perform a defensive copy
+        return Iterators.arrayView(vectors);
     }
 
     boolean onHeap() {
-        return heapIndex > 0;
-    }
-
-    int size() {
-        int size = 0;
-        Node next = this;
-        do {
-            next = next.parent;
-            size++;
-        }
-        while (next != null);
-
-        return size;
+        return heapIndex > -1;
     }
 
     @Override

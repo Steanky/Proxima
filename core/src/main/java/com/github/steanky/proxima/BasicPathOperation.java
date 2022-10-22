@@ -1,19 +1,16 @@
 package com.github.steanky.proxima;
 
-import com.github.steanky.toolkit.collection.Iterators;
 import com.github.steanky.vector.HashVec3I2ObjectMap;
 import com.github.steanky.vector.Vec3I;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import com.github.steanky.vector.Vec3IPredicate;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 public class BasicPathOperation implements PathOperation {
     private final NodeQueue openSet;
-    private final Vec3I2ObjectMap<Node> graph;
+    private final HashVec3I2ObjectMap<Node> graph;
 
     private final Vec3IPredicate successPredicate;
     private final Explorer explorer;
@@ -48,7 +45,10 @@ public class BasicPathOperation implements PathOperation {
     public void init(int startX, int startY, int startZ, int destinationX, int destinationY, int destinationZ) {
         //re-use the graph and map
         openSet.clear();
+        openSet.trim(32);
+
         graph.clear();
+        graph.trim(32);
 
         //indicate that we can start stepping
         state = State.INITIALIZED;
@@ -77,7 +77,7 @@ public class BasicPathOperation implements PathOperation {
             //predicate returns true = we found our destination and have a path
             if (successPredicate.test(current.x, current.y, current.z)) {
                 //complete (may throw an exception if already completed)
-                complete(true, current);
+                complete(current, true);
                 return;
             }
 
@@ -89,30 +89,17 @@ public class BasicPathOperation implements PathOperation {
             }
         }
         else {
-            complete(false, best);
+            complete(best, false);
         }
     }
 
-    private void complete(boolean success, Node best) {
+    private void complete(Node best, boolean success) {
         if (state == State.COMPLETE) {
             throw new IllegalStateException("Cannot complete already-completed path");
         }
 
         state = State.COMPLETE;
-
-        Node first = best.reverse();
-        int size = first.size();
-
-        Vec3I[] vectors = new Vec3I[size];
-        int i = 0;
-        do {
-            vectors[i++] = Vec3I.immutable(first.x, first.y, first.z);
-            first = first.parent;
-        }
-        while (first != null);
-
-        //Iterators.arrayView should be faster than List.of due to the latter performing a defensive arraycopy
-        result = new PathResult(Iterators.arrayView(vectors), graph.size(), success);
+        result = new PathResult(best.reverseToVectorList(), graph.size(), success);
     }
 
     private void explore(Node current, int x, int y, int z) {
