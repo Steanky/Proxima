@@ -1,7 +1,5 @@
-package com.github.steanky.proxima.handler;
+package com.github.steanky.proxima;
 
-import com.github.steanky.proxima.PathResult;
-import com.github.steanky.proxima.PathSettings;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.Future;

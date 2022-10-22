@@ -1,13 +1,8 @@
 package com.github.steanky.proxima;
 
-import com.github.steanky.vector.HashVec3I2ObjectMap;
-import com.github.steanky.vector.Vec3I;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import com.github.steanky.vector.Vec3IPredicate;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
 
 public class BasicPathOperation implements PathOperation {
     private final NodeQueue openSet;
@@ -20,6 +15,7 @@ public class BasicPathOperation implements PathOperation {
     private Heuristic heuristic;
 
     private State state;
+    private boolean success;
 
     private Node current;
     private Node best;
@@ -52,6 +48,7 @@ public class BasicPathOperation implements PathOperation {
 
             //indicate that we can start stepping
             state = State.INITIALIZED;
+            success = false;
 
             //set the current node, g == 0
             current = new Node(startX, startY, startZ, 0, heuristic.distance(startX, startY, startZ, destinationX,
@@ -69,7 +66,7 @@ public class BasicPathOperation implements PathOperation {
     }
 
     @Override
-    public @Nullable PathResult step() {
+    public boolean step() {
         if (!openSet.isEmpty()) {
             current = openSet.dequeue();
 
@@ -77,7 +74,8 @@ public class BasicPathOperation implements PathOperation {
             //predicate returns true = we found our destination and have a path
             if (successPredicate.test(current.x, current.y, current.z)) {
                 //complete (may throw an exception if already completed)
-                return complete(current, true);
+                complete(true);
+                return true;
             }
 
             //reference the explore method: this is not strictly necessary, but it is cleaner, and prevents from
@@ -88,10 +86,11 @@ public class BasicPathOperation implements PathOperation {
             }
         }
         else {
-            return complete(best, false);
+            complete(false);
+            return true;
         }
 
-        return null;
+        return false;
     }
 
     private void clearDataStructures() {
@@ -102,17 +101,14 @@ public class BasicPathOperation implements PathOperation {
         best = null;
     }
 
-    private PathResult complete(Node best, boolean success) {
+    private void complete(boolean success) {
         synchronized (syncTarget) {
             if (state == State.COMPLETE) {
                 throw new IllegalStateException("Cannot complete already-completed path");
             }
 
             state = State.COMPLETE;
-            PathResult result = new PathResult(best.reverseToVectorList(), graph.size(), success);
-
-            clearDataStructures();
-            return result;
+            this.success = success;
         }
     }
 
@@ -170,6 +166,18 @@ public class BasicPathOperation implements PathOperation {
     @Override
     public @NotNull Vec3I2ObjectMap<Node> graph() {
         return graph;
+    }
+
+    @Override
+    public @NotNull PathResult makeResult() {
+        if (state.running()) {
+            throw new IllegalStateException("Can't compile a result while still running");
+        }
+
+        PathResult result = new PathResult(best.reverseToVectorSet(), graph.size(), success);
+        clearDataStructures();
+
+        return result;
     }
 
     @Override

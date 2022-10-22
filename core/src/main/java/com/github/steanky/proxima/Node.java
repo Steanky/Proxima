@@ -1,12 +1,14 @@
 package com.github.steanky.proxima;
 
-import com.github.steanky.toolkit.collection.Iterators;
 import com.github.steanky.vector.Vec3I;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectSet;
+import it.unimi.dsi.fastutil.objects.ObjectSets;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
-import java.util.List;
+import java.util.Set;
 
 final class Node implements Comparable<Node> {
     final int x;
@@ -34,7 +36,7 @@ final class Node implements Comparable<Node> {
         this.heapIndex = -1;
     }
 
-    @NotNull @Unmodifiable List<Vec3I> reverseToVectorList() {
+    @NotNull @Unmodifiable ObjectLinkedOpenHashSet<Vec3I> reverseToVectorSet() {
         Node prev = null;
         Node current = this;
 
@@ -49,16 +51,32 @@ final class Node implements Comparable<Node> {
             size++;
         }
 
-        Vec3I[] vectors = new Vec3I[size];
-        int i = 0;
+        ObjectLinkedOpenHashSet<Vec3I> set = new ObjectLinkedOpenHashSet<>(size, 1.0F);
         do {
-            vectors[i++] = Vec3I.immutable(prev.x, prev.y, prev.z);
+            set.add(Vec3I.immutable(prev.x, prev.y, prev.z));
             prev = prev.parent;
         }
         while (prev != null);
 
-        //faster than List.of, does not perform a defensive copy
-        return Iterators.arrayView(vectors);
+        return set;
+    }
+
+    @NotNull Vec3I[] asVectorArray() {
+        Node current = this;
+        int size = 0;
+        while (current != null) {
+            current = current.parent;
+            size++;
+        }
+
+        current = this;
+        Vec3I[] array = new Vec3I[size];
+        for (int i = 0; i < size && current != null; i++) {
+            array[i] = Vec3I.immutable(current.x, current.y, current.z);
+            current = current.parent;
+        }
+
+        return array;
     }
 
     boolean onHeap() {
