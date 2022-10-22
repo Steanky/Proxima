@@ -109,11 +109,11 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
                 //then, check blocks below
                 int lastSolid = highestY;
-                for (int i = highestY; i <= highestPossibleJump; i += height) {
+                for (int i = highestY - node.y; i <= highestPossibleJump; i += height) {
                     boolean foundSolid = false;
                     for (Vec3I delta : hDeltas) {
                         int x = nX + (direction.x() == 0 ? delta.x() : 0);
-                        int y = node.y + i;
+                        int y = node.y + i + delta.y();
                         int z = nZ + (direction.z() == 0 ? delta.x() : 0);
 
                         Solid solid = space.solidAt(x, y, z);
@@ -145,7 +145,22 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
             }
         }
         else if(direction.y() == 1) {
-            //TODO
+            if (jumpHeight == 0) {
+                return;
+            }
+
+            for (Vec3I delta : vDeltas) {
+                int x = node.x + delta.x();
+                int y = node.y + height;
+                int z = node.z + delta.z();
+
+                Solid solid = space.solidAt(x, y, z);
+                if (!solid.isEmpty()) {
+                    return;
+                }
+            }
+
+            handler.handle(node, node.x, node.y + 1, node.z);
             return;
         }
 
