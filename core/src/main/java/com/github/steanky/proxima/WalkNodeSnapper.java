@@ -113,7 +113,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                     boolean foundSolid = false;
                     for (Vec3I delta : hDeltas) {
                         int x = nX + (direction.x() == 0 ? delta.x() : 0);
-                        int y = node.y + i + delta.y();
+                        int y = node.y + i + delta.y() + 1;
                         int z = nZ + (direction.z() == 0 ? delta.x() : 0);
 
                         Solid solid = space.solidAt(x, y, z);
