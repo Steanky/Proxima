@@ -7,7 +7,6 @@ public interface Solid {
     Solid EMPTY = new Solid() {
         private static final Bounds3D EMPTY = Bounds3D.immutable(0, 0, 0, 0, 0, 0);
 
-
         @Override
         public @NotNull Bounds3D bounds() {
             return EMPTY;
@@ -26,6 +25,7 @@ public interface Solid {
 
     Solid FULL = new Solid() {
         private static final Bounds3D FULL = Bounds3D.immutable(0, 0, 0, 1, 1, 1);
+
         @Override
         public @NotNull Bounds3D bounds() {
             return FULL;

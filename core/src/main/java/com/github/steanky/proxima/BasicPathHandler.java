@@ -11,8 +11,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class BasicPathHandler implements PathHandler {
-    private static final int SLEEP_DURATION_MS = 10;
-
     private static final class PathThread extends Thread {
         private final PathOperation operation;
 
@@ -42,7 +40,7 @@ public class BasicPathHandler implements PathHandler {
         private boolean merged;
 
         private volatile boolean await;
-        private volatile Vec3I mergePoint;
+        private volatile Vec3I contactPoint;
         private volatile PathOperation pathOperation;
 
         private Path(int x, int y, int z, int destX, int destY, int destZ, @NotNull PathSettings settings) {
@@ -65,7 +63,7 @@ public class BasicPathHandler implements PathHandler {
 
         @Override
         public void run() {
-            if (tryExactMerge()) {
+            if (tryMerge()) {
                 //even though we haven't initialized a path yet, it's possible we can merge right away
                 //this can happen if we have the same settings, position, and destination as another path
                 return;
@@ -80,7 +78,7 @@ public class BasicPathHandler implements PathHandler {
             boolean finished;
             do {
                 finished = pathOperation.step();
-                if (!(finished || await) && tryMergeWithAdjust()) {
+                if (!(finished || await) && tryMerge()) {
                     return;
                 }
             }
@@ -103,22 +101,7 @@ public class BasicPathHandler implements PathHandler {
             return destX == other.destX && destY == other.destY && destZ == other.destZ;
         }
 
-        private boolean tryExactMerge() {
-            Path result = dependent.get();
-            if (result != null) {
-                try {
-                    this.future.complete(result.future.get());
-                } catch (InterruptedException | ExecutionException e) {
-                    this.future.completeExceptionally(e);
-                }
-
-                return true;
-            }
-
-            return false;
-        }
-
-        private boolean tryMergeWithAdjust() {
+        private boolean tryMerge() {
             Path dependentPath = dependent.get();
             if (dependentPath != null) {
                 dependent.set(null);
@@ -126,23 +109,43 @@ public class BasicPathHandler implements PathHandler {
                 PathOperation dependentOperation = dependentPath.pathOperation;
                 if (dependentOperation == null) {
                     future.completeExceptionally(new IllegalStateException("Expected non-null PathOperation"));
-                    dependentPath.resultPhaser.arrive();
-                    dependentPath.completionPhaser.arrive();
+
+                    //terminate the phasers (we don't know if arrive will succeed)
+                    dependentPath.resultPhaser.forceTermination();
+                    dependentPath.completionPhaser.forceTermination();
                     return true;
                 }
 
                 try {
                     //wait for the path to be found, but not for the operation to create a PathResult yet
                     dependentPath.intermediateCompletion.get();
+
                     synchronized (dependentOperation.syncTarget()) {
                         synchronized (pathOperation.syncTarget()) {
-                            int x = mergePoint.x();
-                            int y = mergePoint.y();
-                            int z = mergePoint.z();
+                            if (!dependentPath.await) {
+                                //signals a "perfect merge" where paths are identical
+                                //dependent's phasers have NOT been registered!
+                                //catch ExecutionException here to avoid calling arrive() on them
+                                try {
+                                    future.complete(dependentPath.future.get());
+                                }
+                                catch (InterruptedException | ExecutionException e) {
+                                    future.completeExceptionally(e);
+                                }
+
+                                return true;
+                            }
+
+                            int x = contactPoint.x();
+                            int y = contactPoint.y();
+                            int z = contactPoint.z();
 
                             Node dependentNode = dependentOperation.graph().get(x, y, z);
+
+                            //array of node positions pointing back to the origin
                             Vec3I[] vectors = dependentNode.asVectorArray();
 
+                            //let the operation finish
                             dependentPath.resultPhaser.arrive();
 
                             PathResult result = dependentPath.future.get();
@@ -161,7 +164,7 @@ public class BasicPathHandler implements PathHandler {
                                         if (append) {
                                             ourPath.add(resultVector);
                                         }
-                                        else if (resultVector.equals(mergePoint)) {
+                                        else if (resultVector.equals(contactPoint)) {
                                             append = true;
                                         }
                                     }
@@ -219,21 +222,25 @@ public class BasicPathHandler implements PathHandler {
     }
 
     private final Executor executor;
-    private final BlockingQueue<Path> operationList;
+    private final ArrayBlockingQueue<Path> operationList;
 
     public BasicPathHandler(int threads) {
-        this.executor = Executors.newFixedThreadPool(threads - 1, runnable ->
+        this.executor = Executors.newFixedThreadPool(threads, runnable ->
                 new PathThread(new BasicPathOperation(), runnable));
 
         //set a capacity such that it's impossible to exceed Phaser's maximum number of registered parties
-        this.operationList = new LinkedBlockingQueue<>(65535);
+        this.operationList = new ArrayBlockingQueue<>(65535);
 
         Thread mergerThread = new Thread(this::merger, "Proxima Path Merger Thread");
         mergerThread.setDaemon(true);
         mergerThread.start();
     }
 
-    @SuppressWarnings({"LoopConditionNotUpdatedInsideLoop", "BusyWait"})
+    private enum MergeResult {
+        NEITHER, FIRST, SECOND
+    }
+
+    @SuppressWarnings({"LoopConditionNotUpdatedInsideLoop"})
     private void merger() {
         while (true) {
             //wait until at least 2 paths are in the queue
@@ -256,83 +263,98 @@ public class BasicPathHandler implements PathHandler {
                     continue;
                 }
 
-                if (canMerge(operation, previous)) {
+                MergeResult result = attemptMerge(operation, previous);
+                if (result == MergeResult.FIRST) {
                     iterator.remove();
                 }
-            }
-
-            try {
-                //give some time for the paths to progress
-                Thread.sleep(SLEEP_DURATION_MS);
-            } catch (InterruptedException ignored) {
-
+                else if (result == MergeResult.SECOND) {
+                    operationList.poll();
+                    break;
+                }
             }
         }
     }
 
-    private boolean canMerge(Path dependent, Path dependee) {
-        if (!dependent.settings.equals(dependee.settings)) { //can't merge if settings are different
-            return false;
+    private MergeResult attemptMerge(Path firstPath, Path secondPath) {
+        if (!firstPath.settings.equals(secondPath.settings)) { //can't merge if settings are different
+            return MergeResult.NEITHER;
         }
 
-        if (dependent.equals(dependee)) {
-            //exact same position, destination, and settings, so we can easily merge
-            //there's no need to alter anything in regard to the path
-            //if a lot of paths from the same spot are queued, this can happen frequently
-            return true;
-        }
-
-        if (dependent.sameDestination(dependee)) { //don't consider merge unless the destinations match
-            PathOperation first = dependent.pathOperation;
-            PathOperation second = dependee.pathOperation;
+        if (firstPath.sameDestination(secondPath)) { //don't consider merge unless the destinations match
+            PathOperation first = firstPath.pathOperation;
+            PathOperation second = secondPath.pathOperation;
 
             if (first != null && second != null) {
                 synchronized (first.syncTarget()) {
                     synchronized (second.syncTarget()) {
                         if (!first.state().running() || !second.state().running()) {
-                            return false;
+                            return MergeResult.NEITHER;
                         }
 
-                        int x = first.currentX();
-                        int y = first.currentY();
-                        int z = first.currentZ();
-
-                        Node node = second.graph().get(x, y, z);
-                        if (node == null) {
-                            //no merge if we didn't run into any of the nodes covered by the other graph
-                            return false;
+                        if (firstPath.equals(secondPath)) {
+                            //exact same position, destination, and settings, so we can easily merge
+                            //this will cause a "perfect merge" where no modifications to the path are needed
+                            firstPath.merged = true;
+                            firstPath.dependent.set(secondPath);
+                            return MergeResult.FIRST;
                         }
 
-                        Node last = node;
-                        while(node != null) {
-                            //unidirectional means we can't pass going the opposite direction
-                            if (node.movement == Movement.UNIDIRECTIONAL) {
-                                return false;
-                            }
-
-                            node = node.parent;
-                            if (node != null) {
-                                last = node;
-                            }
+                        boolean firstMerged = tryPrepareMerge(firstPath, first, secondPath, second);
+                        if (firstMerged) {
+                            return MergeResult.FIRST;
                         }
 
-                        //TODO: other ways to filter out undesirable merges to make sure paths don't look weird
-
-                        if (last.x == second.startX() && last.y == second.startY() && last.z == second.startZ()) {
-                            //avoid race condition by setting this inside the state lock
-                            dependee.await = true;
-
-                            dependee.resultPhaser.register();
-                            dependee.completionPhaser.register();
-
-                            dependent.merged = true;
-                            dependent.dependent.set(dependee);
-                            dependent.mergePoint = Vec3I.immutable(x, y, z);
-                            return true;
+                        boolean secondMerged = tryPrepareMerge(secondPath, second, firstPath, first);
+                        if (secondMerged) {
+                            return MergeResult.SECOND;
                         }
+
+                        return MergeResult.NEITHER;
                     }
                 }
             }
+        }
+
+        return MergeResult.NEITHER;
+    }
+
+    private boolean tryPrepareMerge(Path firstPath, PathOperation first, Path secondPath, PathOperation second) {
+        int x = first.currentX();
+        int y = first.currentY();
+        int z = first.currentZ();
+
+        Node node = second.graph().get(x, y, z);
+        if (node == null) {
+            //no merge if we didn't run into any of the nodes covered by the other graph
+            return false;
+        }
+
+        Node last = node;
+        while(node != null) {
+            //unidirectional means we can't pass going the opposite direction
+            if (node.movement == Movement.UNIDIRECTIONAL) {
+                return false;
+            }
+
+            node = node.parent;
+            if (node != null) {
+                last = node;
+            }
+        }
+
+        //TODO: other ways to filter out undesirable merges to make sure paths don't look weird
+
+        if (last.x == second.startX() && last.y == second.startY() && last.z == second.startZ()) {
+            //avoid race condition by setting this inside the state lock
+            secondPath.await = true;
+
+            secondPath.resultPhaser.register();
+            secondPath.completionPhaser.register();
+
+            firstPath.merged = true;
+            firstPath.dependent.set(secondPath);
+            firstPath.contactPoint = Vec3I.immutable(x, y, z);
+            return true;
         }
 
         return false;
