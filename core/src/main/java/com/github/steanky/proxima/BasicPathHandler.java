@@ -2,6 +2,8 @@ package com.github.steanky.proxima;
 
 import com.github.steanky.vector.Vec3I;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectSet;
+import it.unimi.dsi.fastutil.objects.ObjectSets;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -78,7 +80,7 @@ public class BasicPathHandler implements PathHandler {
             boolean finished;
             do {
                 finished = pathOperation.step();
-                if (!finished && tryMergeWithAdjust()) {
+                if (!(finished || await) && tryMergeWithAdjust()) {
                     return;
                 }
             }
@@ -124,8 +126,8 @@ public class BasicPathHandler implements PathHandler {
                 PathOperation dependentOperation = dependentPath.pathOperation;
                 if (dependentOperation == null) {
                     future.completeExceptionally(new IllegalStateException("Expected non-null PathOperation"));
-                    dependentPath.resultPhaser.arriveAndDeregister();
-                    dependentPath.completionPhaser.arriveAndDeregister();
+                    dependentPath.resultPhaser.arrive();
+                    dependentPath.completionPhaser.arrive();
                     return true;
                 }
 
@@ -141,11 +143,11 @@ public class BasicPathHandler implements PathHandler {
                             Node dependentNode = dependentOperation.graph().get(x, y, z);
                             Vec3I[] vectors = dependentNode.asVectorArray();
 
-                            dependentPath.resultPhaser.arriveAndDeregister();
+                            dependentPath.resultPhaser.arrive();
 
                             PathResult result = dependentPath.future.get();
                             Set<Vec3I> resultPath = result.vectors();
-                            Set<Vec3I> ourPath = new ObjectLinkedOpenHashSet<>(resultPath.size());
+                            ObjectSet<Vec3I> ourPath = new ObjectLinkedOpenHashSet<>(resultPath.size());
 
                             boolean foundMergePoint = false;
                             for (Vec3I vec : vectors) {
@@ -171,20 +173,20 @@ public class BasicPathHandler implements PathHandler {
                             if (!foundMergePoint) {
                                 future.completeExceptionally(
                                         new IllegalStateException("No nodes in common with the merged path"));
-                                dependentPath.completionPhaser.arriveAndDeregister();
+                                dependentPath.completionPhaser.arrive();
                                 return true;
                             }
 
-                            future.complete(new PathResult(ourPath, pathOperation.graph().size(),
-                                    result.isSuccessful()));
-                            dependentPath.completionPhaser.arriveAndDeregister();
+                            future.complete(new PathResult(ObjectSets.unmodifiable(ourPath), pathOperation
+                                    .graph().size(), result.isSuccessful()));
+                            dependentPath.completionPhaser.arrive();
                             return true;
                         }
                     }
                 } catch (InterruptedException | ExecutionException e) {
                     future.completeExceptionally(e);
-                    dependentPath.resultPhaser.arriveAndDeregister();
-                    dependentPath.completionPhaser.arriveAndDeregister();
+                    dependentPath.resultPhaser.arrive();
+                    dependentPath.completionPhaser.arrive();
                     return true;
                 }
             }
