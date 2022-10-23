@@ -2,8 +2,6 @@ package com.github.steanky.proxima;
 
 import com.github.steanky.vector.Vec3I;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -11,7 +9,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class BasicPathHandler implements PathHandler {
-    private static final int SLEEP_DURATION_MS = 100;
+    private static final int SLEEP_DURATION_MS = 10;
     private static final class PathThread extends Thread {
         private final PathOperation operation;
 
@@ -35,11 +33,16 @@ public class BasicPathHandler implements PathHandler {
         private final CompletableFuture<Void> intermediateCompletion;
         private final CompletableFuture<PathResult> future;
 
+        private volatile int resultPhase;
+        private volatile int completionPhase;
+
+        private final Phaser resultPhaser;
+        private final Phaser completionPhaser;
+
         private boolean merged;
 
+        private volatile boolean await;
         private volatile Vec3I mergePoint;
-        private volatile boolean delayResult;
-        private volatile boolean delayTermination;
         private volatile PathOperation pathOperation;
 
         private Path(int x, int y, int z, int destX, int destY, int destZ, @NotNull PathSettings settings) {
@@ -56,6 +59,9 @@ public class BasicPathHandler implements PathHandler {
             this.dependent = new AtomicReference<>();
             this.intermediateCompletion = new CompletableFuture<>();
             this.future = new CompletableFuture<>();
+
+            this.resultPhaser = new Phaser();
+            this.completionPhaser = new Phaser();
         }
 
         @Override
@@ -82,17 +88,21 @@ public class BasicPathHandler implements PathHandler {
             while (!finished);
 
             intermediateCompletion.complete(null);
-            while (delayResult) {
-                //wait if we have a thread that needs to merge with us
-                Thread.onSpinWait();
+
+            if (await) {
+                awaitPhaseCompletion(resultPhaser, resultPhase);
             }
 
-            this.future.complete(pathOperation.makeResult());
+            future.complete(pathOperation.makeResult());
 
-            while (delayTermination) {
-                //wait to terminate until the merging thread finishes its operation
-                //otherwise, the same thread could start running a different path in meanwhile
-                Thread.onSpinWait();
+            if (await) {
+                awaitPhaseCompletion(completionPhaser, completionPhase);
+            }
+        }
+
+        private static void awaitPhaseCompletion(Phaser phaser, int registered) {
+            while (registered < 0) {
+                registered = phaser.arriveAndAwaitAdvance();
             }
         }
 
@@ -120,16 +130,17 @@ public class BasicPathHandler implements PathHandler {
             if (dependentPath != null) {
                 dependent.set(null);
 
-                try {
-                    PathOperation dependentOperation = dependentPath.pathOperation;
-                    if (dependentOperation == null) {
-                        future.completeExceptionally(new IllegalStateException("Expected non-null PathOperation"));
-                        return true;
-                    }
+                PathOperation dependentOperation = dependentPath.pathOperation;
+                if (dependentOperation == null) {
+                    future.completeExceptionally(new IllegalStateException("Expected non-null PathOperation"));
+                    dependentPath.resultPhaser.arriveAndDeregister();
+                    dependentPath.completionPhaser.arriveAndDeregister();
+                    return true;
+                }
 
+                try {
                     //wait for the path to be found, but not for the operation to create a PathResult yet
                     dependentPath.intermediateCompletion.get();
-
                     synchronized (dependentOperation.syncTarget()) {
                         synchronized (pathOperation.syncTarget()) {
                             int x = mergePoint.x();
@@ -139,8 +150,8 @@ public class BasicPathHandler implements PathHandler {
                             Node dependentNode = dependentOperation.graph().get(x, y, z);
                             Vec3I[] vectors = dependentNode.asVectorArray();
 
-                            //allow the path to continue
-                            dependentPath.delayResult = false;
+                            dependentPath.resultPhaser.arriveAndDeregister();
+
                             PathResult result = dependentPath.future.get();
                             Set<Vec3I> resultPath = result.vectors();
                             Set<Vec3I> ourPath = new ObjectLinkedOpenHashSet<>(resultPath.size());
@@ -169,22 +180,21 @@ public class BasicPathHandler implements PathHandler {
                             if (!foundMergePoint) {
                                 future.completeExceptionally(
                                         new IllegalStateException("No nodes in common with the merged path"));
+                                dependentPath.completionPhaser.arriveAndDeregister();
                                 return true;
                             }
 
                             future.complete(new PathResult(ourPath, pathOperation.graph().size(),
                                     result.isSuccessful()));
+                            dependentPath.completionPhaser.arriveAndDeregister();
                             return true;
                         }
                     }
                 } catch (InterruptedException | ExecutionException e) {
                     future.completeExceptionally(e);
+                    dependentPath.resultPhaser.arriveAndDeregister();
+                    dependentPath.completionPhaser.arriveAndDeregister();
                     return true;
-                }
-                finally {
-                    //make sure to reset these flags to avoid freezing the thread
-                    dependentPath.delayResult = false;
-                    dependentPath.delayTermination = false;
                 }
             }
 
@@ -222,7 +232,7 @@ public class BasicPathHandler implements PathHandler {
         this.executor = Executors.newFixedThreadPool(threads - 1, runnable ->
                 new PathThread(new BasicPathOperation(), runnable));
 
-        this.operationList = new LinkedBlockingQueue<>();
+        this.operationList = new LinkedBlockingQueue<>(65536);
 
         Thread mergerThread = new Thread(this::merger, "Proxima Path Merger Thread");
         mergerThread.setDaemon(true);
@@ -285,8 +295,7 @@ public class BasicPathHandler implements PathHandler {
             if (first != null && second != null) {
                 synchronized (first.syncTarget()) {
                     synchronized (second.syncTarget()) {
-                        if (!first.state().running()) {
-                            //must be in a running state for merge to be useful
+                        if (!first.state().running() || !second.state().running()) {
                             return false;
                         }
 
@@ -317,8 +326,10 @@ public class BasicPathHandler implements PathHandler {
 
                         if (last.x == second.startX() && last.y == second.startY() && last.z == second.startZ()) {
                             //avoid race condition by setting this inside the state lock
-                            dependee.delayResult = true;
-                            dependee.delayTermination = true;
+                            dependee.await = true;
+
+                            dependee.resultPhase = dependee.resultPhaser.register();
+                            dependee.completionPhase = dependee.completionPhaser.register();
 
                             dependent.merged = true;
                             dependent.dependent.set(dependee);
@@ -338,9 +349,15 @@ public class BasicPathHandler implements PathHandler {
             @NotNull PathSettings settings) {
         Path operation = new Path(x, y, z, destX, destY, destZ, settings);
 
-        operationList.add(operation);
-        executor.execute(operation);
+        try {
+            operationList.put(operation);
+        } catch (InterruptedException e) {
+            CompletableFuture<PathResult> future = new CompletableFuture<>();
+            future.completeExceptionally(e);
+            return future;
+        }
 
+        executor.execute(operation);
         return operation.future;
     }
 }
