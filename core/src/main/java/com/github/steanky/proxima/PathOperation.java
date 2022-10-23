@@ -2,7 +2,6 @@ package com.github.steanky.proxima;
 
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public interface PathOperation {
     void init(int startX, int startY, int startZ, int destinationX, int destinationY, int destinationZ,

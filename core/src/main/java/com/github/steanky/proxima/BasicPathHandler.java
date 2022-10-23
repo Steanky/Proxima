@@ -1,6 +1,7 @@
 package com.github.steanky.proxima;
 
 import com.github.steanky.vector.Vec3I;
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 import it.unimi.dsi.fastutil.objects.ObjectSets;
@@ -9,6 +10,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Supplier;
 
 public class BasicPathHandler implements PathHandler {
     private static final class PathThread extends Thread {
@@ -122,74 +127,75 @@ public class BasicPathHandler implements PathHandler {
 
                     synchronized (dependentOperation.syncTarget()) {
                         synchronized (pathOperation.syncTarget()) {
-                            if (!dependentPath.await) {
-                                //signals a "perfect merge" where paths are identical
-                                //dependent's phasers have NOT been registered!
-                                //catch ExecutionException here to avoid calling arrive() on them
-                                try {
-                                    future.complete(dependentPath.future.get());
-                                }
-                                catch (InterruptedException | ExecutionException e) {
-                                    future.completeExceptionally(e);
-                                }
+                            if (dependentPath.await) {
+                                int x = contactPoint.x();
+                                int y = contactPoint.y();
+                                int z = contactPoint.z();
 
-                                return true;
-                            }
+                                Node dependentNode = dependentOperation.graph().get(x, y, z);
 
-                            int x = contactPoint.x();
-                            int y = contactPoint.y();
-                            int z = contactPoint.z();
+                                //array of node positions pointing back to the origin
+                                Vec3I[] vectors = dependentNode.asVectorArray();
 
-                            Node dependentNode = dependentOperation.graph().get(x, y, z);
+                                //let the operation finish
+                                dependentPath.resultPhaser.arrive();
 
-                            //array of node positions pointing back to the origin
-                            Vec3I[] vectors = dependentNode.asVectorArray();
+                                PathResult result = dependentPath.future.get();
+                                Set<Vec3I> resultPath = result.vectors();
+                                ObjectSet<Vec3I> ourPath = new ObjectLinkedOpenHashSet<>(resultPath.size());
 
-                            //let the operation finish
-                            dependentPath.resultPhaser.arrive();
+                                boolean foundMergePoint = false;
+                                for (Vec3I vec : vectors) {
+                                    ourPath.add(vec);
 
-                            PathResult result = dependentPath.future.get();
-                            Set<Vec3I> resultPath = result.vectors();
-                            ObjectSet<Vec3I> ourPath = new ObjectLinkedOpenHashSet<>(resultPath.size());
+                                    if (resultPath.contains(vec)) {
+                                        foundMergePoint = true;
 
-                            boolean foundMergePoint = false;
-                            for (Vec3I vec : vectors) {
-                                ourPath.add(vec);
-
-                                if (resultPath.contains(vec)) {
-                                    foundMergePoint = true;
-
-                                    boolean append = false;
-                                    for (Vec3I resultVector : resultPath) {
-                                        if (append) {
-                                            ourPath.add(resultVector);
+                                        boolean append = false;
+                                        for (Vec3I resultVector : resultPath) {
+                                            if (append) {
+                                                ourPath.add(resultVector);
+                                            }
+                                            else if (resultVector.equals(contactPoint)) {
+                                                append = true;
+                                            }
                                         }
-                                        else if (resultVector.equals(contactPoint)) {
-                                            append = true;
-                                        }
+
+                                        break;
                                     }
-
-                                    break;
                                 }
-                            }
 
-                            if (!foundMergePoint) {
-                                future.completeExceptionally(
-                                        new IllegalStateException("No nodes in common with the merged path"));
+                                if (!foundMergePoint) {
+                                    future.completeExceptionally(
+                                            new IllegalStateException("No nodes in common with the merged path"));
+                                    dependentPath.completionPhaser.arrive();
+                                    return true;
+                                }
+
+                                future.complete(new PathResult(ObjectSets.unmodifiable(ourPath), pathOperation
+                                        .graph().size(), result.isSuccessful()));
                                 dependentPath.completionPhaser.arrive();
                                 return true;
                             }
-
-                            future.complete(new PathResult(ObjectSets.unmodifiable(ourPath), pathOperation
-                                    .graph().size(), result.isSuccessful()));
-                            dependentPath.completionPhaser.arrive();
-                            return true;
                         }
                     }
+
+                    //signals a "perfect merge" where paths are identical
+                    //dependent's phasers have NOT been registered!
+                    //catch ExecutionException here to avoid calling arrive() on them
+                    //only happens if dependentPath.await is false
+                    try {
+                        future.complete(dependentPath.future.get());
+                    }
+                    catch (InterruptedException | ExecutionException e) {
+                        future.completeExceptionally(e);
+                    }
+
+                    return true;
                 } catch (InterruptedException | ExecutionException e) {
                     future.completeExceptionally(e);
-                    dependentPath.resultPhaser.arrive();
-                    dependentPath.completionPhaser.arrive();
+                    dependentPath.resultPhaser.forceTermination();
+                    dependentPath.completionPhaser.forceTermination();
                     return true;
                 }
             }
@@ -222,14 +228,19 @@ public class BasicPathHandler implements PathHandler {
     }
 
     private final Executor executor;
-    private final ArrayBlockingQueue<Path> operationList;
+    private final ReadWriteLock operationRwl;
+    private final Map<Object, BlockingQueue<Path>> operationMap;
 
-    public BasicPathHandler(int threads) {
+    public BasicPathHandler(int threads, @NotNull Supplier<? extends PathOperation> operationSupplier) {
+        if (threads < 1) {
+            throw new IllegalArgumentException("Thread count cannot be less than 1");
+        }
+        Objects.requireNonNull(operationSupplier);
+
         this.executor = Executors.newFixedThreadPool(threads, runnable ->
-                new PathThread(new BasicPathOperation(), runnable));
-
-        //set a capacity such that it's impossible to exceed Phaser's maximum number of registered parties
-        this.operationList = new ArrayBlockingQueue<>(65535);
+                new PathThread(operationSupplier.get(), runnable));
+        this.operationRwl = new ReentrantReadWriteLock();
+        this.operationMap = new Object2ObjectLinkedOpenHashMap<>();
 
         Thread mergerThread = new Thread(this::merger, "Proxima Path Merger Thread");
         mergerThread.setDaemon(true);
@@ -244,33 +255,42 @@ public class BasicPathHandler implements PathHandler {
     private void merger() {
         while (true) {
             //wait until at least 2 paths are in the queue
-            while (operationList.size() <= 1) {
+            while (operationMap.size() <= 1) {
                 Thread.onSpinWait();
             }
 
-            Iterator<Path> iterator = operationList.iterator();
+            Lock readLock = operationRwl.readLock();
+            try {
+                readLock.lock();
+                for (BlockingQueue<Path> path : operationMap.values()) {
+                    Iterator<Path> iterator = path.iterator();
 
-            Path previous = null;
-            while (iterator.hasNext()) {
-                Path operation = iterator.next();
-                if (operation.merged || operation.future.isDone()) {
-                    iterator.remove();
-                    continue;
-                }
+                    Path previous = null;
+                    while (iterator.hasNext()) {
+                        Path operation = iterator.next();
+                        if (operation.merged || operation.future.isDone()) {
+                            iterator.remove();
+                            continue;
+                        }
 
-                if (previous == null) {
-                    previous = operation;
-                    continue;
-                }
+                        if (previous == null) {
+                            previous = operation;
+                            continue;
+                        }
 
-                MergeResult result = attemptMerge(operation, previous);
-                if (result == MergeResult.FIRST) {
-                    iterator.remove();
+                        MergeResult result = attemptMerge(operation, previous);
+                        if (result == MergeResult.FIRST) {
+                            iterator.remove();
+                        }
+                        else if (result == MergeResult.SECOND) {
+                            path.poll();
+                            break;
+                        }
+                    }
                 }
-                else if (result == MergeResult.SECOND) {
-                    operationList.poll();
-                    break;
-                }
+            }
+            finally {
+                readLock.unlock();
             }
         }
     }
@@ -365,12 +385,32 @@ public class BasicPathHandler implements PathHandler {
             @NotNull PathSettings settings) {
         Path operation = new Path(x, y, z, destX, destY, destZ, settings);
 
+        Lock readLock = operationRwl.readLock();
+        Object key = settings.key();
+        BlockingQueue<Path> queue;
         try {
-            operationList.put(operation);
+            try {
+                readLock.lock();
+                queue = operationMap.get(key);
+                if (queue == null) {
+                    queue = new ArrayBlockingQueue<>(65535);
+                    Lock writeLock = operationRwl.writeLock();
+                    try {
+                        writeLock.lock();
+                        operationMap.put(key, queue);
+                    }
+                    finally {
+                        writeLock.unlock();
+                    }
+                }
+            }
+            finally {
+                readLock.unlock();
+            }
+
+            queue.put(operation);
         } catch (InterruptedException e) {
-            CompletableFuture<PathResult> future = new CompletableFuture<>();
-            future.completeExceptionally(e);
-            return future;
+            return CompletableFuture.failedFuture(e);
         }
 
         executor.execute(operation);
