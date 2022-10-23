@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class BasicPathHandler implements PathHandler {
     private static final int SLEEP_DURATION_MS = 10;
+
     private static final class PathThread extends Thread {
         private final PathOperation operation;
 
@@ -33,9 +34,6 @@ public class BasicPathHandler implements PathHandler {
         private final CompletableFuture<Void> intermediateCompletion;
         private final CompletableFuture<PathResult> future;
 
-        private volatile int resultPhase;
-        private volatile int completionPhase;
-
         private final Phaser resultPhaser;
         private final Phaser completionPhaser;
 
@@ -55,7 +53,6 @@ public class BasicPathHandler implements PathHandler {
             this.destZ = destZ;
 
             this.settings = settings;
-
             this.dependent = new AtomicReference<>();
             this.intermediateCompletion = new CompletableFuture<>();
             this.future = new CompletableFuture<>();
@@ -90,19 +87,13 @@ public class BasicPathHandler implements PathHandler {
             intermediateCompletion.complete(null);
 
             if (await) {
-                awaitPhaseCompletion(resultPhaser, resultPhase);
+                resultPhaser.awaitAdvance(0);
             }
 
             future.complete(pathOperation.makeResult());
 
             if (await) {
-                awaitPhaseCompletion(completionPhaser, completionPhase);
-            }
-        }
-
-        private static void awaitPhaseCompletion(Phaser phaser, int registered) {
-            while (registered < 0) {
-                registered = phaser.arriveAndAwaitAdvance();
+                completionPhaser.awaitAdvance(0);
             }
         }
 
@@ -232,7 +223,8 @@ public class BasicPathHandler implements PathHandler {
         this.executor = Executors.newFixedThreadPool(threads - 1, runnable ->
                 new PathThread(new BasicPathOperation(), runnable));
 
-        this.operationList = new LinkedBlockingQueue<>(65536);
+        //set a capacity such that it's impossible to exceed Phaser's maximum number of registered parties
+        this.operationList = new LinkedBlockingQueue<>(65535);
 
         Thread mergerThread = new Thread(this::merger, "Proxima Path Merger Thread");
         mergerThread.setDaemon(true);
@@ -328,8 +320,8 @@ public class BasicPathHandler implements PathHandler {
                             //avoid race condition by setting this inside the state lock
                             dependee.await = true;
 
-                            dependee.resultPhase = dependee.resultPhaser.register();
-                            dependee.completionPhase = dependee.completionPhaser.register();
+                            dependee.resultPhaser.register();
+                            dependee.completionPhaser.register();
 
                             dependent.merged = true;
                             dependent.dependent.set(dependee);
