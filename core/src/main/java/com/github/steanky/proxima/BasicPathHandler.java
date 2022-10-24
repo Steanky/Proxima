@@ -240,7 +240,7 @@ public class BasicPathHandler implements PathHandler {
         this.executor = Executors.newFixedThreadPool(threads, runnable ->
                 new PathThread(operationSupplier.get(), runnable));
         this.operationRwl = new ReentrantReadWriteLock();
-        this.operationMap = new Object2ObjectLinkedOpenHashMap<>();
+        this.operationMap = new WeakHashMap<>();
 
         Thread mergerThread = new Thread(this::merger, "Proxima Path Merger Thread");
         mergerThread.setDaemon(true);
@@ -339,9 +339,11 @@ public class BasicPathHandler implements PathHandler {
     }
 
     private boolean tryPrepareMerge(Path firstPath, PathOperation first, Path secondPath, PathOperation second) {
-        int x = first.currentX();
-        int y = first.currentY();
-        int z = first.currentZ();
+        Node current = first.current();
+
+        int x = current.x;
+        int y = current.y;
+        int z = current.z;
 
         Node node = second.graph().get(x, y, z);
         if (node == null) {
@@ -385,29 +387,30 @@ public class BasicPathHandler implements PathHandler {
             @NotNull PathSettings settings) {
         Path operation = new Path(x, y, z, destX, destY, destZ, settings);
 
-        Lock readLock = operationRwl.readLock();
         Object key = settings.key();
+
         BlockingQueue<Path> queue;
+        Lock readLock = operationRwl.readLock();
         try {
-            try {
-                readLock.lock();
-                queue = operationMap.get(key);
-                if (queue == null) {
-                    queue = new ArrayBlockingQueue<>(65535);
-                    Lock writeLock = operationRwl.writeLock();
-                    try {
-                        writeLock.lock();
-                        operationMap.put(key, queue);
-                    }
-                    finally {
-                        writeLock.unlock();
-                    }
+            readLock.lock();
+            queue = operationMap.get(key);
+            if (queue == null) {
+                queue = new ArrayBlockingQueue<>(65535);
+                Lock writeLock = operationRwl.writeLock();
+                try {
+                    writeLock.lock();
+                    operationMap.put(key, queue);
+                }
+                finally {
+                    writeLock.unlock();
                 }
             }
-            finally {
-                readLock.unlock();
-            }
+        }
+        finally {
+            readLock.unlock();
+        }
 
+        try {
             queue.put(operation);
         } catch (InterruptedException e) {
             return CompletableFuture.failedFuture(e);

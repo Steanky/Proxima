@@ -149,18 +149,8 @@ public class BasicPathOperation implements PathOperation {
     }
 
     @Override
-    public int currentX() {
-        return current.x;
-    }
-
-    @Override
-    public int currentY() {
-        return current.y;
-    }
-
-    @Override
-    public int currentZ() {
-        return current.z;
+    public @NotNull Node current() {
+        return current;
     }
 
     @Override

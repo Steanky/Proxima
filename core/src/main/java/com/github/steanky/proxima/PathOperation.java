@@ -17,11 +17,7 @@ public interface PathOperation {
 
     int startZ();
 
-    int currentX();
-
-    int currentY();
-
-    int currentZ();
+    @NotNull Node current();
 
     @NotNull Vec3I2ObjectMap<Node> graph();
 
