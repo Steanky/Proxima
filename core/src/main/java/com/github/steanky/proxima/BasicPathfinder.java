@@ -23,7 +23,7 @@ public class BasicPathfinder implements Pathfinder {
 
         PathHandler handler = handlerMap.get(Objects.requireNonNull(regionKey));
         if (handler == null) {
-            throw new IllegalArgumentException("Region '" + regionKey + "' not registered");
+            notRegistered(regionKey);
         }
 
         return handler.pathfind(x, y, z, destX, destY, destZ, settings);
@@ -36,6 +36,15 @@ public class BasicPathfinder implements Pathfinder {
 
     @Override
     public void deregisterRegion(@NotNull Object regionKey) {
-        handlerMap.remove(Objects.requireNonNull(regionKey));
+        PathHandler handler = handlerMap.remove(Objects.requireNonNull(regionKey));
+        if (handler == null) {
+            notRegistered(regionKey);
+        }
+
+        handler.shutdown();
+    }
+
+    private static void notRegistered(Object regionKey) {
+        throw new IllegalArgumentException("Region '" + regionKey + "' not registered");
     }
 }

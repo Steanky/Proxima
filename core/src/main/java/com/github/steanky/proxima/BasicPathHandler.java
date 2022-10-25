@@ -380,7 +380,8 @@ public class BasicPathHandler implements PathHandler {
 
     @Override
     public void shutdown() {
-        executor.shutdownNow();
+        executor.shutdown();
+
         try {
             if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
                 throw new IllegalStateException("Executor did not terminate within the time window");
