@@ -50,18 +50,18 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
     @Override
     public void snap(@NotNull Direction direction, @NotNull Node node, @NotNull NodeHandler handler) {
-        int nX = node.x + direction.x();
-        int nZ = node.z + direction.z();
+        int nX = node.x + direction.x;
+        int nZ = node.z + direction.z;
 
-        if (direction.y() == 0) {
+        if (direction.y == 0) {
             boolean tryJump = false;
             int highestY = -1; //only set if tryJump is true
 
             //first check: blocks we can run into horizontally
             for (Vec3I delta : hDeltas) {
-                int x = nX + (direction.x() == 0 ? delta.x() : 0);
+                int x = nX + (direction.x == 0 ? delta.x() : 0);
                 int y = node.y + delta.y();
-                int z = nZ + (direction.z() == 0 ? delta.x() : 0);
+                int z = nZ + (direction.z == 0 ? delta.x() : 0);
 
                 Solid solid = space.solidAt(x, y, z);
                 if (!solid.isEmpty()) {
@@ -112,9 +112,9 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                 for (int i = highestY - node.y; i <= highestPossibleJump; i += height) {
                     boolean foundSolid = false;
                     for (Vec3I delta : hDeltas) {
-                        int x = nX + (direction.x() == 0 ? delta.x() : 0);
+                        int x = nX + (direction.x == 0 ? delta.x() : 0);
                         int y = node.y + i + delta.y() + 1;
-                        int z = nZ + (direction.z() == 0 ? delta.x() : 0);
+                        int z = nZ + (direction.z == 0 ? delta.x() : 0);
 
                         Solid solid = space.solidAt(x, y, z);
                         if (!solid.isEmpty()) {
@@ -148,7 +148,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                 return;
             }
         }
-        else if(direction.y() == 1) {
+        else if(direction.y == 1) {
             if (jumpHeight == 0) {
                 return;
             }
@@ -192,6 +192,6 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         int dX = parent.x - currentNode.x;
         int dZ = parent.z - currentNode.z;
 
-        return Math.signum(dX) == direction.x() && Math.signum(dZ) == direction.z();
+        return Math.signum(dX) == direction.x && Math.signum(dZ) == direction.z;
     }
 }

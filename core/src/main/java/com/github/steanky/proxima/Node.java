@@ -16,7 +16,7 @@ final class Node implements Comparable<Node> {
     final int z;
 
     float g;
-    float h;
+    final float h;
 
     final Movement movement;
     Node parent;
@@ -51,7 +51,7 @@ final class Node implements Comparable<Node> {
             size++;
         }
 
-        ObjectSet<Vec3I> set = new ObjectLinkedOpenHashSet<>(size, 1.0F);
+        ObjectSet<Vec3I> set = new ObjectLinkedOpenHashSet<>(size);
         do {
             set.add(Vec3I.immutable(prev.x, prev.y, prev.z));
             prev = prev.parent;

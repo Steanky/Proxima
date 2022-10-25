@@ -1,11 +1,11 @@
 package com.github.steanky.proxima;
 
 import com.github.steanky.vector.Vec3I2ObjectMap;
-import com.github.steanky.vector.Vec3IPredicate;
+import com.github.steanky.vector.Vec3IBiPredicate;
 import org.jetbrains.annotations.NotNull;
 
 public interface PathSettings {
-    @NotNull Vec3IPredicate successPredicate();
+    @NotNull Vec3IBiPredicate successPredicate();
 
     @NotNull Explorer explorer();
 

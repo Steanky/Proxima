@@ -1,6 +1,7 @@
 package com.github.steanky.proxima;
 
 import com.github.steanky.vector.HashVec3I2ObjectMap;
+import com.github.steanky.vector.Vec3I;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,5 +28,9 @@ public class HashSpace implements Space {
         }
 
         solidMap.put(x, y, z, solid);
+    }
+
+    public void put(@NotNull Vec3I vec, @NotNull Solid solid) {
+        put(vec.x(), vec.y(), vec.z(), solid);
     }
 }

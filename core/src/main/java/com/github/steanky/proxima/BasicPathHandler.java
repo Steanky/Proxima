@@ -228,11 +228,9 @@ public class BasicPathHandler implements PathHandler {
     }
 
     private final ExecutorService executor;
-    private final BlockingQueue<Path> pathQueue;
-    private final ScheduledFuture<?> mergerFuture;
+    private final ThreadLocal<List<Path>> pathQueueLocal;
 
-    public BasicPathHandler(int threads, @NotNull Supplier<? extends PathOperation> operationSupplier,
-            @NotNull ScheduledExecutorService mergeThreadService) {
+    public BasicPathHandler(int threads, @NotNull Supplier<? extends PathOperation> operationSupplier) {
         if (threads < 1) {
             throw new IllegalArgumentException("Thread count cannot be less than 1");
         }
@@ -240,16 +238,14 @@ public class BasicPathHandler implements PathHandler {
         Objects.requireNonNull(operationSupplier);
         this.executor = Executors.newFixedThreadPool(threads, runnable ->
                 new PathThread(operationSupplier.get(), runnable));
-        this.pathQueue = new ArrayBlockingQueue<>(65535);
-        this.mergerFuture = mergeThreadService.scheduleAtFixedRate(this::merger, 0, 10,
-                TimeUnit.MILLISECONDS);
+        this.pathQueueLocal = ThreadLocal.withInitial(LinkedList::new);
     }
 
     private enum MergeResult {
         NEITHER, FIRST, SECOND
     }
 
-    private void merger() {
+    private void doMerges(List<Path> pathQueue) {
         if (pathQueue.size() <= 1) {
             return;
         }
@@ -274,7 +270,7 @@ public class BasicPathHandler implements PathHandler {
                 iterator.remove();
             }
             else if (result == MergeResult.SECOND) {
-                pathQueue.poll();
+                pathQueue.remove(0);
                 break;
             }
         }
@@ -372,10 +368,10 @@ public class BasicPathHandler implements PathHandler {
             @NotNull PathSettings settings) {
         Path operation = new Path(x, y, z, destX, destY, destZ, settings);
 
-        try {
-            pathQueue.put(operation);
-        } catch (InterruptedException e) {
-            return CompletableFuture.failedFuture(e);
+        List<Path> pathList = pathQueueLocal.get();
+        pathList.add(operation);
+        if (pathList.size() > 1) {
+            doMerges(pathList);
         }
 
         executor.execute(operation);
@@ -391,9 +387,6 @@ public class BasicPathHandler implements PathHandler {
             }
         } catch (InterruptedException e) {
             throw new IllegalStateException("Interrupted while waiting for PathHandler shutdown");
-        }
-        finally {
-            mergerFuture.cancel(true);
         }
     }
 }

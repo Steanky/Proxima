@@ -1,7 +1,7 @@
 package com.github.steanky.proxima;
 
 import com.github.steanky.vector.Vec3I2ObjectMap;
-import com.github.steanky.vector.Vec3IPredicate;
+import com.github.steanky.vector.Vec3IBiPredicate;
 import org.jetbrains.annotations.NotNull;
 
 public class BasicPathOperation implements PathOperation {
@@ -10,7 +10,7 @@ public class BasicPathOperation implements PathOperation {
 
     private Vec3I2ObjectMap<Node> graph;
 
-    private Vec3IPredicate successPredicate;
+    private Vec3IBiPredicate successPredicate;
     private Explorer explorer;
     private Heuristic heuristic;
 
@@ -53,6 +53,7 @@ public class BasicPathOperation implements PathOperation {
             //set the current node, g == 0
             current = new Node(startX, startY, startZ, 0, heuristic.distance(startX, startY, startZ, destinationX,
                     destinationY, destinationZ), Movement.UNKNOWN, null);
+            openSet.enqueue(current);
             best = current;
 
             this.startX = startX;
@@ -72,7 +73,7 @@ public class BasicPathOperation implements PathOperation {
 
             //Vec3IPredicate to avoid needing to create a Vec3I object
             //predicate returns true = we found our destination and have a path
-            if (successPredicate.test(current.x, current.y, current.z)) {
+            if (successPredicate.test(current.x, current.y, current.z, destinationX, destinationY, destinationZ)) {
                 //complete (may throw an exception if already completed)
                 complete(true);
                 return true;
