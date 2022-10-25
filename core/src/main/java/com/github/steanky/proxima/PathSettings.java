@@ -12,6 +12,4 @@ public interface PathSettings {
     @NotNull Heuristic heuristic();
 
     @NotNull Vec3I2ObjectMap<Node> graph();
-
-    @NotNull Object key();
 }

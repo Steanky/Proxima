@@ -15,9 +15,14 @@ public class DirectionalExplorer implements Explorer {
     }
 
     @Override
-    public void exploreEach(@NotNull Node node, @NotNull NodeHandler handler) {
+    public void exploreEach(@NotNull Node currentNode, @NotNull NodeHandler handler) {
         for (Direction direction : directions) {
-            nodeSnapper.snap(direction, node, handler);
+            Node parent = currentNode.parent;
+            if (parent != null && nodeSnapper.canSkip(currentNode, parent, direction)) {
+                continue;
+            }
+
+            nodeSnapper.snap(direction, currentNode, handler);
         }
     }
 }

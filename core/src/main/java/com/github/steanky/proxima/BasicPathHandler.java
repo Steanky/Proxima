@@ -1,7 +1,6 @@
 package com.github.steanky.proxima;
 
 import com.github.steanky.vector.Vec3I;
-import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 import it.unimi.dsi.fastutil.objects.ObjectSets;
@@ -10,9 +9,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
 public class BasicPathHandler implements PathHandler {
@@ -116,8 +112,7 @@ public class BasicPathHandler implements PathHandler {
                     future.completeExceptionally(new IllegalStateException("Expected non-null PathOperation"));
 
                     //terminate the phasers (we don't know if arrive will succeed)
-                    dependentPath.resultPhaser.forceTermination();
-                    dependentPath.completionPhaser.forceTermination();
+                    dependentPath.terminatePhasers();
                     return true;
                 }
 
@@ -181,21 +176,21 @@ public class BasicPathHandler implements PathHandler {
                     }
 
                     //signals a "perfect merge" where paths are identical
-                    //dependent's phasers have NOT been registered!
+                    //dependent's phasers have NOT been registered, but terminate them anyway
                     //catch ExecutionException here to avoid calling arrive() on them
                     //only happens if dependentPath.await is false
                     try {
                         future.complete(dependentPath.future.get());
                     }
                     catch (InterruptedException | ExecutionException e) {
+                        dependentPath.terminatePhasers();
                         future.completeExceptionally(e);
                     }
 
                     return true;
                 } catch (InterruptedException | ExecutionException e) {
+                    dependentPath.terminatePhasers();
                     future.completeExceptionally(e);
-                    dependentPath.resultPhaser.forceTermination();
-                    dependentPath.completionPhaser.forceTermination();
                     return true;
                 }
             }
@@ -225,72 +220,62 @@ public class BasicPathHandler implements PathHandler {
 
             return false;
         }
+
+        private void terminatePhasers() {
+            resultPhaser.forceTermination();
+            completionPhaser.forceTermination();
+        }
     }
 
-    private final Executor executor;
-    private final ReadWriteLock operationRwl;
-    private final Map<Object, BlockingQueue<Path>> operationMap;
+    private final ExecutorService executor;
+    private final BlockingQueue<Path> pathQueue;
+    private final ScheduledFuture<?> mergerFuture;
 
-    public BasicPathHandler(int threads, @NotNull Supplier<? extends PathOperation> operationSupplier) {
+    public BasicPathHandler(int threads, @NotNull Supplier<? extends PathOperation> operationSupplier,
+            @NotNull ScheduledExecutorService mergeThreadService) {
         if (threads < 1) {
             throw new IllegalArgumentException("Thread count cannot be less than 1");
         }
-        Objects.requireNonNull(operationSupplier);
 
+        Objects.requireNonNull(operationSupplier);
         this.executor = Executors.newFixedThreadPool(threads, runnable ->
                 new PathThread(operationSupplier.get(), runnable));
-        this.operationRwl = new ReentrantReadWriteLock();
-        this.operationMap = new WeakHashMap<>();
-
-        Thread mergerThread = new Thread(this::merger, "Proxima Path Merger Thread");
-        mergerThread.setDaemon(true);
-        mergerThread.start();
+        this.pathQueue = new ArrayBlockingQueue<>(65535);
+        this.mergerFuture = mergeThreadService.scheduleAtFixedRate(this::merger, 0, 10,
+                TimeUnit.MILLISECONDS);
     }
 
     private enum MergeResult {
         NEITHER, FIRST, SECOND
     }
 
-    @SuppressWarnings({"LoopConditionNotUpdatedInsideLoop"})
     private void merger() {
-        while (true) {
-            //wait until at least 2 paths are in the queue
-            while (operationMap.size() <= 1) {
-                Thread.onSpinWait();
+        if (pathQueue.size() <= 1) {
+            return;
+        }
+
+        Iterator<Path> iterator = pathQueue.iterator();
+
+        Path previous = null;
+        while (iterator.hasNext()) {
+            Path operation = iterator.next();
+            if (operation.merged || operation.future.isDone()) {
+                iterator.remove();
+                continue;
             }
 
-            Lock readLock = operationRwl.readLock();
-            try {
-                readLock.lock();
-                for (BlockingQueue<Path> path : operationMap.values()) {
-                    Iterator<Path> iterator = path.iterator();
-
-                    Path previous = null;
-                    while (iterator.hasNext()) {
-                        Path operation = iterator.next();
-                        if (operation.merged || operation.future.isDone()) {
-                            iterator.remove();
-                            continue;
-                        }
-
-                        if (previous == null) {
-                            previous = operation;
-                            continue;
-                        }
-
-                        MergeResult result = attemptMerge(operation, previous);
-                        if (result == MergeResult.FIRST) {
-                            iterator.remove();
-                        }
-                        else if (result == MergeResult.SECOND) {
-                            path.poll();
-                            break;
-                        }
-                    }
-                }
+            if (previous == null) {
+                previous = operation;
+                continue;
             }
-            finally {
-                readLock.unlock();
+
+            MergeResult result = attemptMerge(operation, previous);
+            if (result == MergeResult.FIRST) {
+                iterator.remove();
+            }
+            else if (result == MergeResult.SECOND) {
+                pathQueue.poll();
+                break;
             }
         }
     }
@@ -387,36 +372,28 @@ public class BasicPathHandler implements PathHandler {
             @NotNull PathSettings settings) {
         Path operation = new Path(x, y, z, destX, destY, destZ, settings);
 
-        Object key = settings.key();
-
-        BlockingQueue<Path> queue;
-        Lock readLock = operationRwl.readLock();
         try {
-            readLock.lock();
-            queue = operationMap.get(key);
-            if (queue == null) {
-                queue = new ArrayBlockingQueue<>(65535);
-                Lock writeLock = operationRwl.writeLock();
-                try {
-                    writeLock.lock();
-                    operationMap.put(key, queue);
-                }
-                finally {
-                    writeLock.unlock();
-                }
-            }
-        }
-        finally {
-            readLock.unlock();
-        }
-
-        try {
-            queue.put(operation);
+            pathQueue.put(operation);
         } catch (InterruptedException e) {
             return CompletableFuture.failedFuture(e);
         }
 
         executor.execute(operation);
         return operation.future;
+    }
+
+    @Override
+    public void shutdown() {
+        executor.shutdownNow();
+        try {
+            if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Executor did not terminate within the time window");
+            }
+        } catch (InterruptedException e) {
+            throw new IllegalStateException("Interrupted while waiting for PathHandler shutdown");
+        }
+        finally {
+            mergerFuture.cancel(true);
+        }
     }
 }
