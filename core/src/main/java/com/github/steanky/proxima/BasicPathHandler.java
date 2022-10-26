@@ -228,7 +228,7 @@ public class BasicPathHandler implements PathHandler {
     }
 
     private final ExecutorService executor;
-    private final ThreadLocal<List<Path>> pathQueueLocal;
+    private final ThreadLocal<List<Path>> pathListLocal;
 
     public BasicPathHandler(int threads, @NotNull Supplier<? extends PathOperation> operationSupplier) {
         if (threads < 1) {
@@ -238,7 +238,7 @@ public class BasicPathHandler implements PathHandler {
         Objects.requireNonNull(operationSupplier);
         this.executor = Executors.newFixedThreadPool(threads, runnable ->
                 new PathThread(operationSupplier.get(), runnable));
-        this.pathQueueLocal = ThreadLocal.withInitial(LinkedList::new);
+        this.pathListLocal = ThreadLocal.withInitial(LinkedList::new);
     }
 
     private enum MergeResult {
@@ -368,7 +368,7 @@ public class BasicPathHandler implements PathHandler {
             @NotNull PathSettings settings) {
         Path operation = new Path(x, y, z, destX, destY, destZ, settings);
 
-        List<Path> pathList = pathQueueLocal.get();
+        List<Path> pathList = pathListLocal.get();
         pathList.add(operation);
         if (pathList.size() > 1) {
             doMerges(pathList);
