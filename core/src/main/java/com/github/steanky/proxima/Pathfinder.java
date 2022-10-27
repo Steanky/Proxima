@@ -6,9 +6,7 @@ import java.util.concurrent.Future;
 
 public interface Pathfinder {
     @NotNull Future<PathResult> pathfind(int x, int y, int z, int destX, int destY, int destZ,
-            @NotNull PathSettings settings, @NotNull Object regionKey);
+            @NotNull PathSettings settings);
 
-    void registerRegion(@NotNull Object regionKey);
-
-    void deregisterRegion(@NotNull Object regionKey);
+    void shutdown();
 }

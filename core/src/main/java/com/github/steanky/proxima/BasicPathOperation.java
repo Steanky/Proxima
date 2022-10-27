@@ -1,5 +1,6 @@
 package com.github.steanky.proxima;
 
+import com.github.steanky.vector.HashVec3I2ObjectMap;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import com.github.steanky.vector.Vec3IBiPredicate;
 import org.jetbrains.annotations.NotNull;
@@ -38,8 +39,6 @@ public class BasicPathOperation implements PathOperation {
     public void init(int startX, int startY, int startZ, int destinationX, int destinationY, int destinationZ,
             @NotNull PathSettings settings) {
         synchronized (syncTarget) {
-            clearDataStructures();
-
             this.graph = settings.graph();
 
             this.successPredicate = settings.successPredicate();
@@ -97,6 +96,8 @@ public class BasicPathOperation implements PathOperation {
     private void clearDataStructures() {
         openSet.clear();
         openSet.trim(32);
+
+        graph.clear();
 
         current = null;
         best = null;
@@ -165,14 +166,20 @@ public class BasicPathOperation implements PathOperation {
             throw new IllegalStateException("Can't compile a result while still running");
         }
 
-        PathResult result = new PathResult(best.reverseToVectorSet(), graph.size(), success);
-        clearDataStructures();
-
-        return result;
+        return new PathResult(best.reverseToVectorSet(), graph.size(), success);
     }
 
     @Override
     public @NotNull Object syncTarget() {
         return syncTarget;
+    }
+
+    @Override
+    public void cleanup() {
+        if (state != State.COMPLETE) {
+            throw new IllegalStateException("Can't cleanup when incomplete");
+        }
+
+        clearDataStructures();
     }
 }

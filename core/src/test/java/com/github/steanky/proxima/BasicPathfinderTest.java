@@ -4,15 +4,10 @@ import com.github.steanky.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
-class BasicPathHandlerTest {
+class BasicPathfinderTest {
     private static PathSettings settings(int width, int height, int fallTolerance, int jumpHeight,
             @NotNull Space space) {
         return new PathSettings() {
@@ -67,7 +62,8 @@ class BasicPathHandlerTest {
         }
 
         PathSettings settings = settings(1, 1, 4, 1, space);
-        PathHandler handler = new BasicPathHandler(Runtime.getRuntime().availableProcessors(), BasicPathOperation::new);
+        Pathfinder handler = new BasicPathfinder(Executors.newFixedThreadPool(
+                Runtime.getRuntime().availableProcessors()), BasicPathOperation::new);
 
         for (int i = 0; i < 1000000; i++) {
             handler.pathfind(0, 0, 0, 10, 10, 10, settings);

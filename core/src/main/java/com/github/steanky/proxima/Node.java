@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
+import java.util.Collection;
 import java.util.Set;
 
 final class Node implements Comparable<Node> {
@@ -36,6 +37,42 @@ final class Node implements Comparable<Node> {
         this.heapIndex = -1;
     }
 
+    @NotNull Vec3I vector() {
+        return Vec3I.immutable(x, y, z);
+    }
+
+    int reversedAddAll(@NotNull Vec3I[] vectors) {
+        Node prev = null;
+        Node current = this;
+
+        while (current != null) {
+            Node next = current.parent;
+            current.parent = prev;
+
+            prev = current;
+            current = next;
+        }
+
+        int i = 0;
+        for (; i < vectors.length && prev != null; i++, prev = prev.parent) {
+            vectors[i] = prev.vector();
+        }
+
+        return i;
+    }
+
+    int size() {
+        Node current = this;
+        int size = 0;
+        do {
+            size++;
+            current = current.parent;
+        }
+        while (current != null);
+
+        return size;
+    }
+
     @NotNull @Unmodifiable Set<Vec3I> reverseToVectorSet() {
         Node prev = null;
         Node current = this;
@@ -53,7 +90,7 @@ final class Node implements Comparable<Node> {
 
         ObjectSet<Vec3I> set = new ObjectLinkedOpenHashSet<>(size);
         do {
-            set.add(Vec3I.immutable(prev.x, prev.y, prev.z));
+            set.add(prev.vector());
             prev = prev.parent;
         }
         while (prev != null);
@@ -63,16 +100,11 @@ final class Node implements Comparable<Node> {
 
     @NotNull Vec3I[] asVectorArray() {
         Node current = this;
-        int size = 0;
-        while (current != null) {
-            current = current.parent;
-            size++;
-        }
+        int size = size();
 
-        current = this;
         Vec3I[] array = new Vec3I[size];
         for (int i = 0; i < size && current != null; i++) {
-            array[i] = Vec3I.immutable(current.x, current.y, current.z);
+            array[i] = current.vector();
             current = current.parent;
         }
 

@@ -25,6 +25,8 @@ public interface PathOperation {
 
     @NotNull Object syncTarget();
 
+    void cleanup();
+
     enum State {
         UNINITIALIZED,
         INITIALIZED,
