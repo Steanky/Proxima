@@ -5,13 +5,14 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.*;
+import java.util.stream.IntStream;
 
 class BasicPathfinderTest {
     private static PathSettings settings(int width, int height, int fallTolerance, int jumpHeight,
             @NotNull Space space) {
         return new PathSettings() {
             //using a ThreadLocal HashVec3I2ObjectMap is a very significant performance save
-            private static final ThreadLocal<Vec3I2ObjectMap<Node>> threadLocal = ThreadLocal.withInitial(() ->
+            private static final ThreadLocal<Vec3I2ObjectMap<Node>> THREAD_LOCAL_GRAPH = ThreadLocal.withInitial(() ->
                     new HashVec3I2ObjectMap<>(-100, -100, -100, 100, 100, 100));
 
             private static final Heuristic HEURISTIC = new Heuristic() {
@@ -26,6 +27,9 @@ class BasicPathfinderTest {
                 }
             };
 
+            private static final Vec3IBiPredicate SUCCESS_PREDICATE = (x1, y1, z1, x2, y2, z2) -> x1 == x2 && y1 == y2
+                    && z1 == z2;
+
             private final Explorer explorer = new DirectionalExplorer(new Direction[] {
                     Direction.NORTH,
                     Direction.EAST,
@@ -35,7 +39,7 @@ class BasicPathfinderTest {
 
             @Override
             public @NotNull Vec3IBiPredicate successPredicate() {
-                return (x1, y1, z1, x2, y2, z2) -> x1 == x2 && y1 == y2 && z1 == z2;
+                return SUCCESS_PREDICATE;
             }
 
             @Override
@@ -50,7 +54,7 @@ class BasicPathfinderTest {
 
             @Override
             public @NotNull Vec3I2ObjectMap<Node> graph() {
-                return threadLocal.get();
+                return THREAD_LOCAL_GRAPH.get();
             }
         };
     }
@@ -64,15 +68,14 @@ class BasicPathfinderTest {
 
         PathSettings settings = settings(1, 1, 4, 1, space);
         int threads = Runtime.getRuntime().availableProcessors();
-        Pathfinder handler = new BasicPathfinder(new ThreadPoolExecutor(threads, threads,
-                0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(65535),
+        Pathfinder handler = new BasicPathfinder(new ThreadPoolExecutor(threads, threads, 0L,
+                TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(65535),
                 new ThreadPoolExecutor.CallerRunsPolicy()), BasicPathOperation::new,
                 Executors.newSingleThreadScheduledExecutor(), 8192);
 
-        int total = 10000000;
-        for (int i = 0; i < total; i++) {
+        IntStream.range(0, 10000000).parallel().forEach(ignored -> {
             handler.pathfind(0, 0, 0, 10, 10, 10, settings);
-        }
+        });
     }
 
 }

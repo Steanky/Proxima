@@ -33,7 +33,7 @@ public class BasicPathfinder implements Pathfinder {
         private boolean merged;
 
         private volatile boolean await;
-        private volatile Vec3I contactPoint;
+        private volatile Node dependentContactNode;
         private volatile PathOperation pathOperation;
 
         private Path(int x, int y, int z, int destX, int destY, int destZ, PathSettings settings,
@@ -120,11 +120,7 @@ public class BasicPathfinder implements Pathfinder {
 
                 PathOperation dependentOperation = dependentPath.pathOperation;
                 if (dependentOperation == null) {
-                    Throwable e = new IllegalStateException("Expected non-null PathOperation");
-                    future.completeExceptionally(e);
-
-                    //terminate the phasers (we don't know if arrive will succeed)
-                    dependentPath.terminate(e);
+                    future.completeExceptionally(new IllegalStateException("Expected non-null PathOperation"));
                     return true;
                 }
 
@@ -135,23 +131,14 @@ public class BasicPathfinder implements Pathfinder {
                     synchronized (dependentOperation.syncTarget()) {
                         synchronized (pathOperation.syncTarget()) {
                             if (dependentPath.await) {
-                                int x = contactPoint.x();
-                                int y = contactPoint.y();
-                                int z = contactPoint.z();
-
                                 Vec3I2ObjectMap<Node> dependentOperationGraph = dependentOperation.graph();
-                                Node dependentContactNode = dependentOperationGraph.get(x, y, z);
-
                                 Vec3I[] vectors = dependentContactNode.asVectorArray();
 
                                 if (dependentPath.resultPhaser.arrive() < 0) {
-                                    dependentPath.terminate(
-                                            new IllegalStateException("Result phaser terminated"));
                                     return false;
                                 }
 
                                 PathResult dependentResult = dependentPath.future.get();
-
                                 Set<Vec3I> dependentSolution = dependentResult.vectors();
 
                                 Vec3I mergePoint = null;
@@ -175,8 +162,6 @@ public class BasicPathfinder implements Pathfinder {
                                         mergePoint.z());
 
                                 if (dependentPath.completionPhaser.arrive() < 0) {
-                                    dependentPath.terminate(
-                                            new IllegalStateException("Completion phaser terminated"));
                                     return false;
                                 }
 
@@ -215,7 +200,6 @@ public class BasicPathfinder implements Pathfinder {
                     future.complete(dependentPath.future.get());
                     return true;
                 } catch (InterruptedException | ExecutionException e) {
-                    dependentPath.terminate(e);
                     future.completeExceptionally(e);
                     return true;
                 }
@@ -384,7 +368,7 @@ public class BasicPathfinder implements Pathfinder {
 
             firstPath.merged = true;
             firstPath.dependent.set(secondPath);
-            firstPath.contactPoint = Vec3I.immutable(x, y, z);
+            firstPath.dependentContactNode = last;
             return true;
         }
 
