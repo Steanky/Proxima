@@ -73,6 +73,7 @@ public class BasicPathOperation implements PathOperation {
             //predicate returns true = we found our destination and have a path
             if (successPredicate.test(current.x, current.y, current.z, destinationX, destinationY, destinationZ)) {
                 //complete (may throw an exception if already completed)
+                best = current;
                 complete(true);
                 return true;
             }

@@ -4,8 +4,13 @@ import com.github.steanky.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.stream.IntStream;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class BasicPathfinderTest {
     private static PathSettings settings(int width, int height, int fallTolerance, int jumpHeight,
@@ -59,6 +64,14 @@ class BasicPathfinderTest {
         };
     }
 
+    private static Pathfinder pathfinder() {
+        int threads = Runtime.getRuntime().availableProcessors();
+        return new BasicPathfinder(new ThreadPoolExecutor(threads, threads, 0L,
+                TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(65535),
+                new ThreadPoolExecutor.CallerRunsPolicy()), BasicPathOperation::new,
+                Executors.newSingleThreadScheduledExecutor(), 8192);
+    }
+
     @Test
     void overloadSmallFailedPath() {
         HashSpace space = new HashSpace(-100, -100, -100, 100, 100, 100);
@@ -67,15 +80,31 @@ class BasicPathfinderTest {
         }
 
         PathSettings settings = settings(1, 1, 4, 1, space);
-        int threads = Runtime.getRuntime().availableProcessors();
-        Pathfinder handler = new BasicPathfinder(new ThreadPoolExecutor(threads, threads, 0L,
-                TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(65535),
-                new ThreadPoolExecutor.CallerRunsPolicy()), BasicPathOperation::new,
-                Executors.newSingleThreadScheduledExecutor(), 8192);
-
-        IntStream.range(0, 10000000).parallel().forEach(ignored -> {
-            handler.pathfind(0, 0, 0, 10, 10, 10, settings);
-        });
+        Pathfinder pathfinder = pathfinder();
+        IntStream.range(0, 1000000).parallel().forEach(ignored -> pathfinder.pathfind(0, 0, 0, 10,
+                10, 10, settings));
     }
 
+    @Test
+    void simplePath()
+    throws ExecutionException, InterruptedException {
+        HashSpace space = new HashSpace(-50, -50, -50, 100, 100, 100);
+
+        for (int x = -50; x < 100; x++) {
+            for (int z = -50; z < 100; z++) {
+                space.put(x, 0, z, Solid.FULL);
+            }
+        }
+
+        PathSettings settings = settings(1, 1, 1, 1, space);
+        Pathfinder pathfinder = pathfinder();
+
+        PathResult result = pathfinder.pathfind(5, 1, 0, 0, 1, 0, settings).get();
+
+        Set<Vec3I> expected = new LinkedHashSet<>(List.of(Vec3I.immutable(5, 1, 0),
+                Vec3I.immutable(4, 1, 0), Vec3I.immutable(3, 1, 0), Vec3I.immutable(2, 1, 0),
+                Vec3I.immutable(1, 1, 0), Vec3I.immutable(0, 1, 0)));
+
+        assertEquals(expected, result.vectors());
+    }
 }
