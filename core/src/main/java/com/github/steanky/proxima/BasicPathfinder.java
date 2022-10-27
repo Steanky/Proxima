@@ -2,13 +2,11 @@ package com.github.steanky.proxima;
 
 import com.github.steanky.vector.Vec3I;
 import com.github.steanky.vector.Vec3I2ObjectMap;
-import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
-import it.unimi.dsi.fastutil.objects.ObjectSets;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -38,8 +36,8 @@ public class BasicPathfinder implements Pathfinder {
         private volatile Vec3I contactPoint;
         private volatile PathOperation pathOperation;
 
-        private Path(int x, int y, int z, int destX, int destY, int destZ,
-                @NotNull PathSettings settings, @NotNull ThreadLocal<PathOperation> operationLocal) {
+        private Path(int x, int y, int z, int destX, int destY, int destZ, PathSettings settings,
+                ThreadLocal<PathOperation> operationLocal) {
             this.x = x;
             this.y = y;
             this.z = z;
@@ -60,43 +58,60 @@ public class BasicPathfinder implements Pathfinder {
 
         @Override
         public void run() {
-            if (tryMerge()) {
-                //even though we haven't initialized a path yet, it's possible we can merge right away
-                //this can happen if we have the same settings, position, and destination as another path
-                return;
-            }
-
-            //one PathOperation per thread
-            pathOperation = operationLocal.get();
-            pathOperation.init(x, y, z, destX, destY, destZ, settings);
-
-            boolean finished;
-            do {
-                finished = pathOperation.step();
-                if (!(finished || await) && tryMerge()) {
+            try {
+                if (tryMerge()) {
+                    //even though we haven't initialized a path yet, it's possible we can merge right away
+                    //this can happen if we have the same settings, position, and destination as another path
+                    //System.out.println("Succeeded exact merge on " + threadName);
                     return;
                 }
+
+                //one PathOperation per thread
+                pathOperation = operationLocal.get();
+                pathOperation.init(x, y, z, destX, destY, destZ, settings);
+
+                boolean finished;
+                do {
+                    if (Thread.interrupted()) {
+                        throw new InterruptedException();
+                    }
+
+                    finished = pathOperation.step();
+                    if (!(finished || await) && tryMerge()) {
+                        return;
+                    }
+                }
+                while (!finished);
+
+                intermediateCompletion.complete(null);
+
+                //await will be true if there are other paths depending on this one
+                if (await) {
+                    resultPhaser.awaitAdvance(0);
+                }
+
+                future.complete(pathOperation.makeResult());
+
+                if (await) {
+                    completionPhaser.awaitAdvance(0);
+                }
             }
-            while (!finished);
-
-            intermediateCompletion.complete(null);
-
-            if (await) {
-                resultPhaser.awaitAdvance(0);
+            catch (Throwable e) {
+                terminate(e);
             }
-
-            future.complete(pathOperation.makeResult());
-
-            if (await) {
-                completionPhaser.awaitAdvance(0);
+            finally {
+                pathOperation.cleanup();
             }
-
-            pathOperation.cleanup();
         }
 
         private boolean sameDestination(Path other) {
             return destX == other.destX && destY == other.destY && destZ == other.destZ;
         }
+
+        private boolean sameOrigin(Path other) {
+            return x == other.x && y == other.y && z == other.z;
+        }
+
 
         private boolean tryMerge() {
             Path dependentPath = dependent.get();
@@ -105,10 +120,11 @@ public class BasicPathfinder implements Pathfinder {
 
                 PathOperation dependentOperation = dependentPath.pathOperation;
                 if (dependentOperation == null) {
-                    future.completeExceptionally(new IllegalStateException("Expected non-null PathOperation"));
+                    Throwable e = new IllegalStateException("Expected non-null PathOperation");
+                    future.completeExceptionally(e);
 
                     //terminate the phasers (we don't know if arrive will succeed)
-                    dependentPath.terminatePhasers();
+                    dependentPath.terminate(e);
                     return true;
                 }
 
@@ -128,7 +144,11 @@ public class BasicPathfinder implements Pathfinder {
 
                                 Vec3I[] vectors = dependentContactNode.asVectorArray();
 
-                                dependentPath.resultPhaser.arrive();
+                                if (dependentPath.resultPhaser.arrive() < 0) {
+                                    dependentPath.terminate(
+                                            new IllegalStateException("Result phaser terminated"));
+                                    return false;
+                                }
 
                                 PathResult dependentResult = dependentPath.future.get();
 
@@ -146,16 +166,19 @@ public class BasicPathfinder implements Pathfinder {
                                 }
 
                                 if (mergePoint == null) {
-                                    dependentPath.terminatePhasers();
-                                    future.completeExceptionally(new IllegalStateException("Failed to find common " +
-                                            "merge point"));
+                                    dependentPath.terminate(
+                                            new IllegalStateException("Failed to find common merge point"));
                                     return true;
                                 }
 
                                 Node dependentMergeNode = dependentOperationGraph.get(mergePoint.x(), mergePoint.y(),
                                         mergePoint.z());
 
-                                dependentPath.completionPhaser.arrive();
+                                if (dependentPath.completionPhaser.arrive() < 0) {
+                                    dependentPath.terminate(
+                                            new IllegalStateException("Completion phaser terminated"));
+                                    return false;
+                                }
 
                                 int finalLegSize = dependentMergeNode.size();
 
@@ -189,21 +212,10 @@ public class BasicPathfinder implements Pathfinder {
                         }
                     }
 
-                    //signals a "perfect merge" where paths are identical
-                    //dependent's phasers have NOT been registered, but terminate them anyway
-                    //catch ExecutionException here to avoid calling arrive() on them
-                    //only happens if dependentPath.await is false
-                    try {
-                        future.complete(dependentPath.future.get());
-                    }
-                    catch (InterruptedException | ExecutionException e) {
-                        dependentPath.terminatePhasers();
-                        future.completeExceptionally(e);
-                    }
-
+                    future.complete(dependentPath.future.get());
                     return true;
                 } catch (InterruptedException | ExecutionException e) {
-                    dependentPath.terminatePhasers();
+                    dependentPath.terminate(e);
                     future.completeExceptionally(e);
                     return true;
                 }
@@ -212,79 +224,82 @@ public class BasicPathfinder implements Pathfinder {
             return false;
         }
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(x, y, z, destX, destY, destZ, settings);
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == null) {
-                return false;
-            }
-
-            if (obj == this) {
-                return true;
-            }
-
-            if (obj instanceof Path operation) {
-                return operation.x == x && operation.y == y && operation.z == z && operation.destX == destX &&
-                        operation.destY == destY && operation.destZ == destZ && operation.settings.equals(settings);
-            }
-
-            return false;
-        }
-
-        private void terminatePhasers() {
+        private void terminate(Throwable e) {
             resultPhaser.forceTermination();
             completionPhaser.forceTermination();
+
+            if (!intermediateCompletion.isDone()) {
+                intermediateCompletion.completeExceptionally(e);
+            }
+
+            if (!future.isDone()) {
+                future.completeExceptionally(e);
+            }
         }
     }
 
     private final ExecutorService executor;
-    private final ThreadLocal<List<Path>> pathListLocal;
+    private final Deque<Path> pathQueue;
     private final ThreadLocal<PathOperation> pathOperationLocal;
+    private final ScheduledFuture<?> mergeFuture;
+    private final int pathQueueCapacity;
+
+    private final AtomicInteger pathQueueSize;
 
     public BasicPathfinder(@NotNull ExecutorService pathExecutor,
-            @NotNull Supplier<? extends PathOperation> operationSupplier) {
+            @NotNull Supplier<? extends PathOperation> operationSupplier,
+            @NotNull ScheduledExecutorService mergeScheduler, int pathQueueCapacity) {
         this.executor = Objects.requireNonNull(pathExecutor);
-        this.pathListLocal = ThreadLocal.withInitial(LinkedList::new);
+        this.pathQueue = new ConcurrentLinkedDeque<>();
         this.pathOperationLocal = ThreadLocal.withInitial(Objects.requireNonNull(operationSupplier));
+        this.mergeFuture = mergeScheduler.scheduleAtFixedRate(this::doMerges, 0, 10,
+                TimeUnit.MILLISECONDS);
+        this.pathQueueCapacity = pathQueueCapacity;
+        this.pathQueueSize = new AtomicInteger();
     }
 
     private enum MergeResult {
         NEITHER, FIRST, SECOND
     }
 
-    private void doMerges(List<Path> pathQueue) {
-        if (pathQueue.size() <= 1) {
+    private void doMerges() {
+        if (pathQueueSize.get() <= 1) {
             return;
         }
 
-        Iterator<Path> iterator = pathQueue.iterator();
+        boolean removedFirst;
+        do {
+            Iterator<Path> iterator = pathQueue.iterator();
 
-        Path previous = null;
-        while (iterator.hasNext()) {
-            Path operation = iterator.next();
-            if (operation.merged || operation.future.isDone()) {
-                iterator.remove();
-                continue;
-            }
+            removedFirst = false;
+            Path previous = null;
+            while (iterator.hasNext()) {
+                Path operation = iterator.next();
+                if (operation.merged || operation.future.isDone()) {
+                    iterator.remove();
+                    pathQueueSize.decrementAndGet();
+                    continue;
+                }
 
-            if (previous == null) {
-                previous = operation;
-                continue;
-            }
+                if (previous == null) {
+                    previous = operation;
+                    continue;
+                }
 
-            MergeResult result = attemptMerge(operation, previous);
-            if (result == MergeResult.FIRST) {
-                iterator.remove();
-            }
-            else if (result == MergeResult.SECOND) {
-                pathQueue.remove(0);
-                break;
+                MergeResult result = attemptMerge(operation, previous);
+                if (result == MergeResult.FIRST) {
+                    iterator.remove();
+                    pathQueueSize.decrementAndGet();
+                }
+                else if (result == MergeResult.SECOND) {
+                    pathQueue.pollFirst();
+                    pathQueueSize.decrementAndGet();
+                    removedFirst = true;
+                    break;
+                }
             }
         }
+        while (removedFirst);
     }
 
     private MergeResult attemptMerge(Path firstPath, Path secondPath) {
@@ -292,37 +307,39 @@ public class BasicPathfinder implements Pathfinder {
             return MergeResult.NEITHER;
         }
 
-        if (firstPath.sameDestination(secondPath)) { //don't consider merge unless the destinations match
-            PathOperation first = firstPath.pathOperation;
-            PathOperation second = secondPath.pathOperation;
+        PathOperation first = firstPath.pathOperation;
+        PathOperation second = secondPath.pathOperation;
 
-            if (first != null && second != null) {
-                synchronized (first.syncTarget()) {
-                    synchronized (second.syncTarget()) {
-                        if (!first.state().running() || !second.state().running()) {
-                            return MergeResult.NEITHER;
-                        }
+        if (first == null || second == null) {
+            return MergeResult.NEITHER;
+        }
 
-                        if (firstPath.equals(secondPath)) {
-                            //exact same position, destination, and settings, so we can easily merge
-                            //this will cause a "perfect merge" where no modifications to the path are needed
-                            firstPath.merged = true;
-                            firstPath.dependent.set(secondPath);
-                            return MergeResult.FIRST;
-                        }
-
-                        boolean firstMerged = tryPrepareMerge(firstPath, first, secondPath, second);
-                        if (firstMerged) {
-                            return MergeResult.FIRST;
-                        }
-
-                        boolean secondMerged = tryPrepareMerge(secondPath, second, firstPath, first);
-                        if (secondMerged) {
-                            return MergeResult.SECOND;
-                        }
-
+        if (firstPath.sameDestination(secondPath) && firstPath.settings.equals(secondPath.settings)) {
+            synchronized (first.syncTarget()) {
+                synchronized (second.syncTarget()) {
+                    if (!first.state().running() || !second.state().running()) {
                         return MergeResult.NEITHER;
                     }
+
+                    if (firstPath.sameOrigin(secondPath)) {
+                        //exact same position, destination, and settings, so we can easily merge
+                        //this will cause a "perfect merge" where no modifications to the path are needed
+                        firstPath.merged = true;
+                        firstPath.dependent.set(secondPath);
+                        return MergeResult.FIRST;
+                    }
+
+                    boolean firstMerged = tryPrepareMerge(firstPath, first, secondPath, second);
+                    if (firstMerged) {
+                        return MergeResult.FIRST;
+                    }
+
+                    boolean secondMerged = tryPrepareMerge(secondPath, second, firstPath, first);
+                    if (secondMerged) {
+                        return MergeResult.SECOND;
+                    }
+
+                    return MergeResult.NEITHER;
                 }
             }
         }
@@ -379,10 +396,9 @@ public class BasicPathfinder implements Pathfinder {
             @NotNull PathSettings settings) {
         Path operation = new Path(x, y, z, destX, destY, destZ, settings, pathOperationLocal);
 
-        List<Path> pathList = pathListLocal.get();
-        pathList.add(operation);
-        if (pathList.size() > 1) {
-            doMerges(pathList);
+        if (pathQueueSize.get() < pathQueueCapacity) {
+            pathQueue.offer(operation);
+            pathQueueSize.incrementAndGet();
         }
 
         executor.execute(operation);
@@ -392,6 +408,7 @@ public class BasicPathfinder implements Pathfinder {
     @Override
     public void shutdown() {
         executor.shutdown();
+        mergeFuture.cancel(true);
 
         try {
             if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {

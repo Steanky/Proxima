@@ -1,6 +1,5 @@
 package com.github.steanky.proxima;
 
-import com.github.steanky.vector.HashVec3I2ObjectMap;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import com.github.steanky.vector.Vec3IBiPredicate;
 import org.jetbrains.annotations.NotNull;
@@ -93,16 +92,6 @@ public class BasicPathOperation implements PathOperation {
         return false;
     }
 
-    private void clearDataStructures() {
-        openSet.clear();
-        openSet.trim(32);
-
-        graph.clear();
-
-        current = null;
-        best = null;
-    }
-
     private void complete(boolean success) {
         synchronized (syncTarget) {
             if (state == State.COMPLETE) {
@@ -162,11 +151,13 @@ public class BasicPathOperation implements PathOperation {
 
     @Override
     public @NotNull PathResult makeResult() {
-        if (state.running()) {
-            throw new IllegalStateException("Can't compile a result while still running");
-        }
+        synchronized (syncTarget) {
+            if (state.running()) {
+                throw new IllegalStateException("Can't compile a result while still running");
+            }
 
-        return new PathResult(best.reverseToVectorSet(), graph.size(), success);
+            return new PathResult(best.reverseToVectorSet(), graph.size(), success);
+        }
     }
 
     @Override
@@ -176,10 +167,15 @@ public class BasicPathOperation implements PathOperation {
 
     @Override
     public void cleanup() {
-        if (state != State.COMPLETE) {
-            throw new IllegalStateException("Can't cleanup when incomplete");
-        }
+        synchronized (syncTarget) {
+            openSet.clear();
+            openSet.trim(32);
 
-        clearDataStructures();
+            graph.clear();
+
+            current = null;
+            best = null;
+            state = State.UNINITIALIZED;
+        }
     }
 }

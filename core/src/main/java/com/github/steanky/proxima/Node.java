@@ -8,7 +8,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
-import java.util.Collection;
 import java.util.Set;
 
 final class Node implements Comparable<Node> {
@@ -74,6 +73,10 @@ final class Node implements Comparable<Node> {
     }
 
     @NotNull @Unmodifiable Set<Vec3I> reverseToVectorSet() {
+        if (parent == null) {
+            return Set.of(vector());
+        }
+
         Node prev = null;
         Node current = this;
 
@@ -99,6 +102,10 @@ final class Node implements Comparable<Node> {
     }
 
     @NotNull Vec3I[] asVectorArray() {
+        if (parent == null) {
+            return new Vec3I[] { vector() };
+        }
+
         Node current = this;
         int size = size();
 
