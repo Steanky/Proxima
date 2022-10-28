@@ -66,10 +66,22 @@ class BasicPathfinderTest {
 
     private static Pathfinder pathfinder() {
         int threads = Runtime.getRuntime().availableProcessors();
-        return new BasicPathfinder(new ThreadPoolExecutor(threads, threads, 0L,
-                TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(65535),
-                new ThreadPoolExecutor.CallerRunsPolicy()), BasicPathOperation::new,
-                Executors.newSingleThreadScheduledExecutor(), 8192);
+        ForkJoinPool fjp = new ForkJoinPool(threads, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null,
+                false, threads, threads, threads, forkJoinPool -> true, 2, TimeUnit.MINUTES);
+
+        return new BasicPathfinder(fjp, BasicPathOperation::new, 8192, 65535);
+    }
+
+    private static PathSettings simpleEnvironment() {
+        HashSpace space = new HashSpace(-50, -50, -50, 100, 100, 100);
+
+        for (int x = -50; x < 100; x++) {
+            for (int z = -50; z < 100; z++) {
+                space.put(x, 0, z, Solid.FULL);
+            }
+        }
+
+        return settings(1, 1, 1, 1, space);
     }
 
     @Test
@@ -81,22 +93,28 @@ class BasicPathfinderTest {
 
         PathSettings settings = settings(1, 1, 4, 1, space);
         Pathfinder pathfinder = pathfinder();
-        IntStream.range(0, 1000000).parallel().forEach(ignored -> pathfinder.pathfind(0, 0, 0, 10,
-                10, 10, settings));
+
+        Set<Vec3I> expected = Set.of(Vec3I.immutable(0, 0, 0));
+        IntStream.range(0, 1000000).parallel().forEach(ignored -> {
+            PathResult result = assertDoesNotThrow(() -> pathfinder.pathfind(0, 0, 0, 10, 10,
+                    10, settings).get());
+            assertEquals(expected, result.vectors());
+        });
     }
 
     @Test
-    void simplePath()
-    throws ExecutionException, InterruptedException {
-        HashSpace space = new HashSpace(-50, -50, -50, 100, 100, 100);
+    void overloadSimplePath() {
+        PathSettings settings = simpleEnvironment();
+        Pathfinder pathfinder = pathfinder();
 
-        for (int x = -50; x < 100; x++) {
-            for (int z = -50; z < 100; z++) {
-                space.put(x, 0, z, Solid.FULL);
-            }
+        for (int i = 0; i < 10000000; i++) {
+            pathfinder.pathfind(5, 1, 0, 0, 1, 0, settings);
         }
+    }
 
-        PathSettings settings = settings(1, 1, 1, 1, space);
+    @Test
+    void simplePath() throws ExecutionException, InterruptedException {
+        PathSettings settings = simpleEnvironment();
         Pathfinder pathfinder = pathfinder();
 
         PathResult result = pathfinder.pathfind(5, 1, 0, 0, 1, 0, settings).get();
