@@ -107,7 +107,7 @@ class BasicPathfinderTest {
         PathSettings settings = simpleEnvironment();
         Pathfinder pathfinder = pathfinder();
 
-        for (int i = 0; i < 10000000; i++) {
+        for (int i = 0; i < 1000000; i++) {
             pathfinder.pathfind(5, 1, 0, 0, 1, 0, settings);
         }
     }

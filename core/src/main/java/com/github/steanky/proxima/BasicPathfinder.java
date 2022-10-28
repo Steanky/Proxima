@@ -70,7 +70,8 @@ public class BasicPathfinder implements Pathfinder {
                 boolean finished;
                 do {
                     if (Thread.interrupted()) {
-                        throw new InterruptedException();
+                        future.completeExceptionally(new InterruptedException("Path computation interrupted"));
+                        return;
                     }
 
                     finished = pathOperation.step();
@@ -92,9 +93,6 @@ public class BasicPathfinder implements Pathfinder {
                 if (await) {
                     completionPhaser.awaitAdvance(0);
                 }
-            }
-            catch (Throwable e) {
-                terminate(e);
             }
             finally {
                 if (pathOperation != null) {
@@ -166,9 +164,7 @@ public class BasicPathfinder implements Pathfinder {
                             }
 
                             if (mergePoint == null) {
-                                dependentPath.terminate(
-                                        new IllegalStateException("Failed to find common merge point"));
-                                return true;
+                                return false;
                             }
 
                             Node dependentMergeNode = dependentOperationGraph.get(mergePoint.x(), mergePoint.y(),
@@ -215,19 +211,6 @@ public class BasicPathfinder implements Pathfinder {
             }
 
             return false;
-        }
-
-        private void terminate(Throwable e) {
-            resultPhaser.forceTermination();
-            completionPhaser.forceTermination();
-
-            if (!intermediateCompletion.isDone()) {
-                intermediateCompletion.completeExceptionally(e);
-            }
-
-            if (!future.isDone()) {
-                future.completeExceptionally(e);
-            }
         }
     }
 
