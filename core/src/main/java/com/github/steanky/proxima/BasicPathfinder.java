@@ -60,6 +60,7 @@ public class BasicPathfinder implements Pathfinder {
                 if (tryMerge()) {
                     //even though we haven't initialized a path yet, it's possible we can merge right away
                     //this can happen if we have the same settings, position, and destination as another path
+                    //we won't need a PathOperation for this
                     return;
                 }
 
@@ -76,6 +77,7 @@ public class BasicPathfinder implements Pathfinder {
 
                     finished = pathOperation.step();
                     if (!(finished || await) && tryMerge()) {
+                        //if tryMerge returns true, it completed our future
                         return;
                     }
                 }
@@ -134,8 +136,8 @@ public class BasicPathfinder implements Pathfinder {
                     //wait for the path to be found, but not for the operation to create a PathResult yet
                     dependentPath.intermediateCompletion.get();
 
-                    synchronized (dependentOperation.syncTarget()) {
-                        synchronized (pathOperation.syncTarget()) {
+                    synchronized (dependentOperation.stateSync()) {
+                        synchronized (pathOperation.stateSync()) {
                             if (!dependentPath.await) {
                                 future.completeExceptionally(new IllegalStateException("Dependent path has not been " +
                                         "prepared for merge"));
@@ -167,8 +169,12 @@ public class BasicPathfinder implements Pathfinder {
                                 return false;
                             }
 
-                            Node dependentMergeNode = dependentOperationGraph.get(mergePoint.x(), mergePoint.y(),
-                                    mergePoint.z());
+
+                            Node dependentMergeNode;
+                            synchronized (dependentOperation.graphSync()) {
+                                dependentMergeNode = dependentOperationGraph.get(mergePoint.x(), mergePoint.y(),
+                                        mergePoint.z());
+                            }
 
                             if (dependentPath.completionPhaser.arrive() < 0) {
                                 return false;
@@ -331,8 +337,8 @@ public class BasicPathfinder implements Pathfinder {
                 return MergeResult.NEITHER;
             }
 
-            synchronized (first.syncTarget()) {
-                synchronized (second.syncTarget()) {
+            synchronized (first.stateSync()) {
+                synchronized (second.stateSync()) {
                     if (!first.state().running() || !second.state().running()) {
                         return MergeResult.NEITHER;
                     }
@@ -362,7 +368,11 @@ public class BasicPathfinder implements Pathfinder {
         int y = current.y;
         int z = current.z;
 
-        Node node = second.graph().get(x, y, z);
+        Node node;
+        synchronized (second.graphSync()) {
+            node = second.graph().get(x, y, z);
+        }
+
         if (node == null) {
             //no merge if we didn't run into any of the nodes covered by the other graph
             return false;
@@ -401,8 +411,15 @@ public class BasicPathfinder implements Pathfinder {
 
     private void execute(Path path) {
         if (executorSize.get() < executorCapacity) {
-            executor.submit(path);
-            executorSize.incrementAndGet();
+            try {
+                executor.submit(path);
+                executorSize.incrementAndGet();
+            }
+            catch (RejectedExecutionException e) {
+                //executorSize is decremented slightly before the task actually finishes, meaning we (rarely) get this
+                //exception
+                path.run();
+            }
         }
         else {
             //if using an ExecutorService with no bounded capacity, run the task on whatever thread we are in

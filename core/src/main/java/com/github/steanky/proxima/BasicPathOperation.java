@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 public class BasicPathOperation implements PathOperation {
     private final NodeQueue openSet;
     private final Object syncTarget;
+    private final Object graphSync;
 
     private Vec3I2ObjectMap<Node> graph;
 
@@ -31,6 +32,7 @@ public class BasicPathOperation implements PathOperation {
     public BasicPathOperation() {
         this.openSet = new NodeQueue();
         this.syncTarget = new Object();
+        this.graphSync = new Object();
         this.state = State.UNINITIALIZED;
     }
 
@@ -79,7 +81,7 @@ public class BasicPathOperation implements PathOperation {
             }
 
             //reference the explore method: this is not strictly necessary, but it is cleaner, and prevents from
-            //accidentally capturing a variable from step's scope, which would result in unnecessary object allocation
+            //accidentally capturing a variable from step's scope, which could result in unnecessary object allocation
             explorer.exploreEach(current, this::explore);
             if (current.h < best.h) {
                 best = current;
@@ -105,7 +107,12 @@ public class BasicPathOperation implements PathOperation {
     }
 
     private void explore(Node current, Movement movementToNeighbor, int x, int y, int z) {
-        Node neighbor = graph.computeIfAbsent(x, y, z, this::buildNode);
+        Node neighbor;
+        synchronized (graphSync) {
+            neighbor = graph.computeIfAbsent(x, y, z, (x1, y1, z1) -> new Node(x1, y1, z1, Float.POSITIVE_INFINITY,
+                    heuristic.heuristic(x1, y1, z1, destinationX, destinationY, destinationZ), movementToNeighbor,
+                    null));
+        }
 
         float g = current.g + heuristic.distance(current.x, current.y, current.z, neighbor.x, neighbor.y, neighbor.z);
         if (g < neighbor.g) {
@@ -113,11 +120,6 @@ public class BasicPathOperation implements PathOperation {
             neighbor.g = g;
             openSet.enqueueOrUpdate(neighbor);
         }
-    }
-
-    private Node buildNode(int x, int y, int z) {
-        return new Node(x, y, z, Float.POSITIVE_INFINITY, heuristic.heuristic(x, y, z, destinationX, destinationY,
-                destinationZ), Movement.UNKNOWN, null);
     }
 
     @Override
@@ -162,8 +164,13 @@ public class BasicPathOperation implements PathOperation {
     }
 
     @Override
-    public @NotNull Object syncTarget() {
+    public @NotNull Object stateSync() {
         return syncTarget;
+    }
+
+    @Override
+    public @NotNull Object graphSync() {
+        return graphSync;
     }
 
     @Override

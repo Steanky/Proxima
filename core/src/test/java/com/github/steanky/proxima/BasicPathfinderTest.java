@@ -108,8 +108,10 @@ class BasicPathfinderTest {
         Pathfinder pathfinder = pathfinder();
 
         for (int i = 0; i < 1000000; i++) {
-            pathfinder.pathfind(5, 1, 0, 0, 1, 0, settings);
+            pathfinder.pathfind(30, 1, 0, 0, 1, 0, settings);
         }
+
+        pathfinder.shutdown();
     }
 
     @Test

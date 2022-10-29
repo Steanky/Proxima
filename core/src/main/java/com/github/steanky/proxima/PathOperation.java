@@ -23,7 +23,9 @@ public interface PathOperation {
 
     @NotNull PathResult makeResult();
 
-    @NotNull Object syncTarget();
+    @NotNull Object stateSync();
+
+    @NotNull Object graphSync();
 
     void cleanup();
 
