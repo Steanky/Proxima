@@ -417,12 +417,11 @@ public class BasicPathfinder implements Pathfinder {
             }
             catch (RejectedExecutionException e) {
                 //executorSize is decremented slightly before the task actually finishes, meaning we (rarely) get this
-                //exception
+                //exception with some executors (particularly those with bounded capacities)
                 path.run();
             }
         }
         else {
-            //if using an ExecutorService with no bounded capacity, run the task on whatever thread we are in
             path.run();
         }
     }

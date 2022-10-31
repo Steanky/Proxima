@@ -29,13 +29,14 @@ public class SpatialPostProcessor implements PathPostProcessor {
     }
 
     private NavigationNode processNode(Vec3I position) {
-        Solid solid = space.solidAt(position.x(), position.y() - 1, position.z());
+        Vec3I below = position.sub(Direction.DOWN.vector());
+        Solid solid = space.solidAt(below);
 
         Vec3I newPosition;
         double offset;
         if (!solid.isFull()) {
             if (!solid.isEmpty()) {
-                newPosition = position.sub(Direction.DOWN.vector());
+                newPosition = position.sub(below);
                 offset = solid.bounds().lengthY();
             }
             else {
