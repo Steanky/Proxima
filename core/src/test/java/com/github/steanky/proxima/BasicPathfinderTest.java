@@ -69,7 +69,7 @@ class BasicPathfinderTest {
         ForkJoinPool fjp = new ForkJoinPool(threads, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null,
                 false, threads, threads, threads, forkJoinPool -> true, 2, TimeUnit.MINUTES);
 
-        return new BasicPathfinder(fjp, BasicPathOperation::new, 8192, 65535);
+        return new BasicPathfinder(fjp, BasicPathOperation::new, 1000000);
     }
 
     private static PathSettings simpleEnvironment() {
@@ -103,11 +103,11 @@ class BasicPathfinderTest {
     }
 
     @Test
-    void overloadSimplePath() {
+    void overloadSimplePath() throws ExecutionException, InterruptedException {
         PathSettings settings = simpleEnvironment();
         Pathfinder pathfinder = pathfinder();
 
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < 100000; i++) {
             pathfinder.pathfind(30, 1, 0, 0, 1, 0, settings);
         }
 
