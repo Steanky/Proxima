@@ -1,6 +1,7 @@
 package com.github.steanky.proxima;
 
 import com.github.steanky.vector.Bounds3D;
+import com.github.steanky.vector.Bounds3I;
 import com.github.steanky.vector.Vec3I;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,7 +17,10 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
     private final int jumpHeight;
     private final Space space;
 
-    public WalkNodeSnapper(int width, int height, int fallTolerance, int jumpHeight, @NotNull Space space) {
+    private final Bounds3I searchArea;
+
+    public WalkNodeSnapper(int width, int height, int fallTolerance, int jumpHeight, @NotNull Space space,
+            @NotNull Bounds3I searchArea) {
         if ((width & 1) == 0) {
             throw new IllegalArgumentException("Width must be an odd number");
         }
@@ -46,12 +50,18 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         this.fallTolerance = fallTolerance;
         this.jumpHeight = jumpHeight;
         this.space = Objects.requireNonNull(space);
+        this.searchArea = Objects.requireNonNull(searchArea);
     }
 
     @Override
     public void snap(@NotNull Direction direction, @NotNull Node node, @NotNull NodeHandler handler) {
         int nX = node.x + direction.x;
+        int nY = node.y + direction.y;
         int nZ = node.z + direction.z;
+
+        if (!searchArea.contains(nX, nY, nZ)) {
+            return;
+        }
 
         if (direction.y == 0) {
             boolean tryJump = false;
@@ -123,8 +133,8 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                             if (y - lastSolid >= height) { //found a gap we can fit in
                                 //this node is bidirectional, unless the jump distance is greater than the fall
                                 //tolerance
-                                handler.handle(node, lastSolid - node.y > fallTolerance ? Movement.UNIDIRECTIONAL :
-                                        Movement.BIDIRECTIONAL, nX, lastSolid, nZ);
+                                handleIfInBounds(handler, node, lastSolid - node.y > fallTolerance ?
+                                        Movement.UNIDIRECTIONAL : Movement.BIDIRECTIONAL, nX, lastSolid, nZ);
                                 return;
                             }
 
@@ -132,15 +142,15 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                             break;
                         }
                         else if ((y + 1) - lastSolid >= height) {
-                            handler.handle(node, lastSolid - node.y > fallTolerance ? Movement.UNIDIRECTIONAL :
-                                    Movement.BIDIRECTIONAL, nX, lastSolid, nZ);
+                            handleIfInBounds(handler, node, lastSolid - node.y > fallTolerance ?
+                                    Movement.UNIDIRECTIONAL : Movement.BIDIRECTIONAL, nX, lastSolid, nZ);
                             return;
                         }
                     }
 
                     if (!foundSolid) {
-                        handler.handle(node, lastSolid - node.y > fallTolerance ? Movement.UNIDIRECTIONAL :
-                                Movement.BIDIRECTIONAL, nX, lastSolid, nZ);
+                        handleIfInBounds(handler, node, lastSolid - node.y > fallTolerance ?
+                                Movement.UNIDIRECTIONAL : Movement.BIDIRECTIONAL, nX, lastSolid, nZ);
                         return;
                     }
                 }
@@ -164,7 +174,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                 }
             }
 
-            handler.handle(node, Movement.UNIDIRECTIONAL, node.x, node.y + 1, node.z);
+            handleIfInBounds(handler, node, Movement.UNIDIRECTIONAL, node.x, node.y + 1, node.z);
             return;
         }
 
@@ -179,8 +189,8 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                     int newY = y + 1;
                     int fallDistance = node.y - newY;
 
-                    handler.handle(node, jumpHeight < fallDistance ? Movement.UNIDIRECTIONAL : Movement.BIDIRECTIONAL,
-                            nX, y + 1, nZ);
+                    handleIfInBounds(handler, node, jumpHeight < fallDistance ? Movement.UNIDIRECTIONAL :
+                            Movement.BIDIRECTIONAL, nX, newY, nZ);
                     return;
                 }
             }
@@ -193,5 +203,11 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         int dZ = parent.z - currentNode.z;
 
         return Math.signum(dX) == direction.x && Math.signum(dZ) == direction.z;
+    }
+
+    private void handleIfInBounds(NodeHandler handler, Node node, Movement movement, int x, int y, int z) {
+        if (searchArea.contains(x, y, z)) {
+            handler.handle(node, movement, x, y, z);
+        }
     }
 }

@@ -40,7 +40,8 @@ class BasicPathfinderTest {
                     Direction.EAST,
                     Direction.SOUTH,
                     Direction.WEST
-            }, new WalkNodeSnapper(width, height, fallTolerance, jumpHeight, space));
+            }, new WalkNodeSnapper(width, height, fallTolerance, jumpHeight, space, Bounds3I.immutable(-100, -100,
+                    -100, 200, 200, 200)));
 
             @Override
             public @NotNull Vec3IBiPredicate successPredicate() {
@@ -103,11 +104,11 @@ class BasicPathfinderTest {
     }
 
     @Test
-    void overloadSimplePath() throws ExecutionException, InterruptedException {
+    void overloadSimplePath() {
         PathSettings settings = simpleEnvironment();
         Pathfinder pathfinder = pathfinder();
 
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 1000000; i++) {
             pathfinder.pathfind(30, 1, 0, 0, 1, 0, settings);
         }
 

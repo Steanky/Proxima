@@ -6,8 +6,6 @@ import org.jetbrains.annotations.NotNull;
 
 public class BasicPathOperation implements PathOperation {
     private final NodeQueue openSet;
-    private final Object syncTarget;
-    private final Object graphSync;
 
     private Vec3I2ObjectMap<Node> graph;
 
@@ -31,39 +29,35 @@ public class BasicPathOperation implements PathOperation {
 
     public BasicPathOperation() {
         this.openSet = new NodeQueue();
-        this.syncTarget = new Object();
-        this.graphSync = new Object();
         this.state = State.UNINITIALIZED;
     }
 
     @Override
-    public void init(int startX, int startY, int startZ, int destinationX, int destinationY, int destinationZ,
+    public void init(int startX, int startY, int startZ, int destX, int destY, int destZ,
             @NotNull PathSettings settings) {
-        synchronized (syncTarget) {
-            this.graph = settings.graph();
+        this.graph = settings.graph();
 
-            this.successPredicate = settings.successPredicate();
-            this.explorer = settings.explorer();
-            this.heuristic = settings.heuristic();
+        this.successPredicate = settings.successPredicate();
+        this.explorer = settings.explorer();
+        this.heuristic = settings.heuristic();
 
-            //indicate that we can start stepping
-            state = State.INITIALIZED;
-            success = false;
+        //indicate that we can start stepping
+        state = State.INITIALIZED;
+        success = false;
 
-            //set the current node, g == 0
-            current = new Node(startX, startY, startZ, 0, heuristic.distance(startX, startY, startZ, destinationX,
-                    destinationY, destinationZ), Movement.UNKNOWN, null);
-            openSet.enqueue(current);
-            best = current;
+        //set the current node, g == 0
+        current = new Node(startX, startY, startZ, 0, heuristic.distance(startX, startY, startZ, destX, destY,
+                destZ), Movement.UNKNOWN, null);
+        openSet.enqueue(current);
+        best = current;
 
-            this.startX = startX;
-            this.startY = startY;
-            this.startZ = startZ;
+        this.startX = startX;
+        this.startY = startY;
+        this.startZ = startZ;
 
-            this.destinationX = destinationX;
-            this.destinationY = destinationY;
-            this.destinationZ = destinationZ;
-        }
+        this.destinationX = destX;
+        this.destinationY = destY;
+        this.destinationZ = destZ;
     }
 
     @Override
@@ -96,23 +90,18 @@ public class BasicPathOperation implements PathOperation {
     }
 
     private void complete(boolean success) {
-        synchronized (syncTarget) {
-            if (state == State.COMPLETE) {
-                throw new IllegalStateException("Cannot complete already-completed path");
-            }
-
-            state = State.COMPLETE;
-            this.success = success;
+        if (state == State.COMPLETE) {
+            throw new IllegalStateException("Cannot complete already-completed path");
         }
+
+        state = State.COMPLETE;
+        this.success = success;
     }
 
     private void explore(Node current, Movement movementToNeighbor, int x, int y, int z) {
-        Node neighbor;
-        synchronized (graphSync) {
-            neighbor = graph.computeIfAbsent(x, y, z, (x1, y1, z1) -> new Node(x1, y1, z1, Float.POSITIVE_INFINITY,
-                    heuristic.heuristic(x1, y1, z1, destinationX, destinationY, destinationZ), movementToNeighbor,
-                    null));
-        }
+        Node neighbor = graph.computeIfAbsent(x, y, z, (x1, y1, z1) -> new Node(x1, y1, z1, Float.POSITIVE_INFINITY,
+                heuristic.heuristic(x1, y1, z1, destinationX, destinationY, destinationZ), movementToNeighbor,
+                null));
 
         float g = current.g + heuristic.distance(current.x, current.y, current.z, neighbor.x, neighbor.y, neighbor.z);
         if (g < neighbor.g) {
@@ -154,36 +143,22 @@ public class BasicPathOperation implements PathOperation {
 
     @Override
     public @NotNull PathResult makeResult() {
-        synchronized (syncTarget) {
-            if (state.running()) {
-                throw new IllegalStateException("Can't compile a result while still running");
-            }
-
-            return new PathResult(best.reverseToVectorSet(), graph.size(), success);
+        if (state != State.COMPLETE) {
+            throw new IllegalStateException("Can't compile a result while incomplete");
         }
-    }
 
-    @Override
-    public @NotNull Object stateSync() {
-        return syncTarget;
-    }
-
-    @Override
-    public @NotNull Object graphSync() {
-        return graphSync;
+        return new PathResult(best.reverseToVectorSet(), graph.size(), success);
     }
 
     @Override
     public void cleanup() {
-        synchronized (syncTarget) {
-            openSet.clear();
-            openSet.trim(32);
+        openSet.clear();
+        openSet.trim(32);
 
-            graph.clear();
+        graph.clear();
 
-            current = null;
-            best = null;
-            state = State.UNINITIALIZED;
-        }
+        current = null;
+        best = null;
+        state = State.UNINITIALIZED;
     }
 }

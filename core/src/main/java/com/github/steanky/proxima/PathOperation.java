@@ -23,19 +23,11 @@ public interface PathOperation {
 
     @NotNull PathResult makeResult();
 
-    @NotNull Object stateSync();
-
-    @NotNull Object graphSync();
-
     void cleanup();
 
     enum State {
         UNINITIALIZED,
         INITIALIZED,
-        COMPLETE;
-
-        public boolean running() {
-            return this == INITIALIZED;
-        }
+        COMPLETE
     }
 }
