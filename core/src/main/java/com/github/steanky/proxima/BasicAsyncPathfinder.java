@@ -7,13 +7,13 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-public class BasicPathfinder implements Pathfinder {
+public class BasicAsyncPathfinder implements Pathfinder {
     private final ForkJoinPool pathPool;
     private final ThreadLocal<PathOperation> pathOperationLocal;
     private final int poolCapacity;
     private final AtomicInteger poolSize;
 
-    public BasicPathfinder(@NotNull ForkJoinPool pathPool,
+    public BasicAsyncPathfinder(@NotNull ForkJoinPool pathPool,
             @NotNull Supplier<? extends PathOperation> pathOperationSupplier, int poolCapacity) {
         this.pathPool = Objects.requireNonNull(pathPool);
         this.pathOperationLocal = ThreadLocal.withInitial(pathOperationSupplier);
@@ -36,6 +36,7 @@ public class BasicPathfinder implements Pathfinder {
                 //step the path until the method reports completion by returning false
                 while (!localOperation.step()) {
                     if (Thread.interrupted()) {
+                        //exit if interrupted, this can occur if the pathfinder is shut down unexpectedly
                         throw new IllegalStateException("Interrupted during path computation");
                     }
                 }
@@ -43,7 +44,11 @@ public class BasicPathfinder implements Pathfinder {
                 return localOperation.makeResult();
             }
             finally {
-                //immediately reduce memory pressure by cleaning up the operation
+                //decrement the poolSize since this operation is finishing
+                poolSize.decrementAndGet();
+
+                //immediately reduce memory pressure by cleaning up the operation; PathOperation instances hang around
+                //for a while in ThreadLocals, so we want to make sure they aren't huge
                 localOperation.cleanup();
             }
         };
@@ -55,14 +60,13 @@ public class BasicPathfinder implements Pathfinder {
             }
             catch (RejectedExecutionException ignored) {
                 //if execution is rejected, run the callable on the caller thread
-            }
-            finally {
-                //make sure we always decrement the poolSize after
+                //decrement the poolSize again because the callable wasn't actually added
                 poolSize.decrementAndGet();
             }
         }
 
         try {
+            //if the poolCapacity is exceeded, pathfind on the caller thread
             return CompletableFuture.completedFuture(callable.call());
         }
         catch (Throwable e) {
@@ -72,19 +76,20 @@ public class BasicPathfinder implements Pathfinder {
 
     @Override
     public void shutdown() {
+        if (pathPool == ForkJoinPool.commonPool()) {
+            //common pool can't be shut down
+            return;
+        }
+
         pathPool.shutdown();
 
-        try {
-            if (!pathPool.awaitTermination(10, TimeUnit.SECONDS)) {
-                pathPool.shutdownNow();
+        if (!pathPool.awaitQuiescence(10, TimeUnit.SECONDS)) {
+            //if we took longer than 10 seconds to shut down, interrupt the workers
+            pathPool.shutdownNow();
 
-                if (!pathPool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS)) {
-                    throw new IllegalStateException("Did you really wait this long?");
-                }
+            if (!pathPool.awaitQuiescence(Long.MAX_VALUE, TimeUnit.DAYS)) {
+                throw new IllegalStateException("Did you really wait this long?");
             }
-        }
-        catch (InterruptedException e) {
-            throw new IllegalStateException("Interrupted when waiting for shutdown");
         }
     }
 }

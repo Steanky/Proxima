@@ -12,7 +12,7 @@ import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class BasicPathfinderTest {
+class BasicAsyncPathfinderTest {
     private static PathSettings settings(int width, int height, int fallTolerance, int jumpHeight,
             @NotNull Space space) {
         return new PathSettings() {
@@ -70,7 +70,7 @@ class BasicPathfinderTest {
         ForkJoinPool fjp = new ForkJoinPool(threads, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null,
                 false, threads, threads, threads, forkJoinPool -> true, 2, TimeUnit.MINUTES);
 
-        return new BasicPathfinder(fjp, BasicPathOperation::new, 1000000);
+        return new BasicAsyncPathfinder(fjp, BasicPathOperation::new, 1000000);
     }
 
     private static PathSettings simpleEnvironment() {
