@@ -8,14 +8,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 public class BasicAsyncPathfinder implements Pathfinder {
-    private final ForkJoinPool pathPool;
+    private final ExecutorService pathExecutor;
     private final ThreadLocal<PathOperation> pathOperationLocal;
     private final int poolCapacity;
     private final AtomicInteger poolSize;
 
-    public BasicAsyncPathfinder(@NotNull ForkJoinPool pathPool,
+    public BasicAsyncPathfinder(@NotNull ExecutorService pathExecutor,
             @NotNull Supplier<? extends PathOperation> pathOperationSupplier, int poolCapacity) {
-        this.pathPool = Objects.requireNonNull(pathPool);
+        this.pathExecutor = Objects.requireNonNull(pathExecutor);
         this.pathOperationLocal = ThreadLocal.withInitial(pathOperationSupplier);
         if (poolCapacity <= 0) {
             throw new IllegalArgumentException("executorCapacity cannot be negative");
@@ -56,7 +56,7 @@ public class BasicAsyncPathfinder implements Pathfinder {
         if (poolSize.get() < poolCapacity) {
             try {
                 poolSize.incrementAndGet();
-                return pathPool.submit(callable);
+                return pathExecutor.submit(callable);
             }
             catch (RejectedExecutionException ignored) {
                 //if execution is rejected, run the callable on the caller thread
@@ -76,20 +76,25 @@ public class BasicAsyncPathfinder implements Pathfinder {
 
     @Override
     public void shutdown() {
-        if (pathPool == ForkJoinPool.commonPool()) {
+        if (pathExecutor == ForkJoinPool.commonPool()) {
             //common pool can't be shut down
             return;
         }
 
-        pathPool.shutdown();
+        pathExecutor.shutdown();
 
-        if (!pathPool.awaitQuiescence(10, TimeUnit.SECONDS)) {
-            //if we took longer than 10 seconds to shut down, interrupt the workers
-            pathPool.shutdownNow();
+        try {
+            if (!pathExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
+                //if we took longer than 10 seconds to shut down, interrupt the workers
+                pathExecutor.shutdownNow();
 
-            if (!pathPool.awaitQuiescence(Long.MAX_VALUE, TimeUnit.DAYS)) {
-                throw new IllegalStateException("Did you really wait this long?");
+                if (!pathExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS)) {
+                    throw new IllegalStateException("Did you really wait this long?");
+                }
             }
+        }
+        catch (InterruptedException ignored) {
+            //if interrupted, just return immediately
         }
     }
 }
