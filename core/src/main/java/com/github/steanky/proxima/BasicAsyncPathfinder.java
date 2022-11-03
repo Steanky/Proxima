@@ -77,7 +77,8 @@ public class BasicAsyncPathfinder implements Pathfinder {
     @Override
     public void shutdown() {
         if (pathExecutor == ForkJoinPool.commonPool()) {
-            //common pool can't be shut down
+            //common pool can't be shut down don't await quiescence either: there may be tasks unrelated to pathfinding
+            //being performed which we don't care about waiting for
             return;
         }
 
@@ -88,6 +89,7 @@ public class BasicAsyncPathfinder implements Pathfinder {
                 //if we took longer than 10 seconds to shut down, interrupt the workers
                 pathExecutor.shutdownNow();
 
+                //wait indefinitely
                 if (!pathExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS)) {
                     throw new IllegalStateException("Did you really wait this long?");
                 }

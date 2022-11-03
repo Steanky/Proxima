@@ -4,6 +4,7 @@ import com.github.steanky.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -14,11 +15,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class BasicAsyncPathfinderTest {
     private static PathSettings settings(int width, int height, int fallTolerance, int jumpHeight,
-            @NotNull Space space) {
+            @NotNull Space space, Bounds3I searchArea) {
         return new PathSettings() {
             //using a ThreadLocal HashVec3I2ObjectMap is a very significant performance save
-            private static final ThreadLocal<Vec3I2ObjectMap<Node>> THREAD_LOCAL_GRAPH = ThreadLocal.withInitial(() ->
-                    new HashVec3I2ObjectMap<>(-100, -100, -100, 100, 100, 100));
+            private final ThreadLocal<Vec3I2ObjectMap<Node>> THREAD_LOCAL_GRAPH = ThreadLocal.withInitial(() ->
+                    new HashVec3I2ObjectMap<>(searchArea.originX(), searchArea.originX(), searchArea.originZ(),
+                            searchArea.lengthX(), searchArea.lengthY(), searchArea.lengthZ()));
 
             private static final Heuristic HEURISTIC = new Heuristic() {
                 @Override
@@ -40,8 +42,7 @@ class BasicAsyncPathfinderTest {
                     Direction.EAST,
                     Direction.SOUTH,
                     Direction.WEST
-            }, new WalkNodeSnapper(width, height, fallTolerance, jumpHeight, space, Bounds3I.immutable(-100, -100,
-                    -100, 200, 200, 200)));
+            }, new WalkNodeSnapper(width, height, fallTolerance, jumpHeight, space, searchArea));
 
             @Override
             public @NotNull Vec3IBiPredicate successPredicate() {
@@ -82,7 +83,21 @@ class BasicAsyncPathfinderTest {
             }
         }
 
-        return settings(1, 1, 1, 1, space);
+        return settings(1, 1, 1, 1, space, Bounds3I.immutable(-100, -100,
+                -100, 200, 200, 200));
+    }
+
+    private static PathSettings hugeEnvironment() {
+        HashSpace space = new HashSpace(0, 0, 0, 1000, 4, 1000);
+
+        for (int x = 0; x < 1000; x++) {
+            for (int z = 0; z < 1000; z++) {
+                space.put(x, 0, z, Solid.FULL);
+            }
+        }
+
+        return settings(1, 1, 1, 1, space, Bounds3I.immutable(0, 0,
+                0, 1000, 4, 1000));
     }
 
     @Test
@@ -92,7 +107,8 @@ class BasicAsyncPathfinderTest {
             space.put(direction.vector(), Solid.FULL);
         }
 
-        PathSettings settings = settings(1, 1, 4, 1, space);
+        PathSettings settings = settings(1, 1, 4, 1, space, Bounds3I
+                .immutable(-100, -100, -100, 200, 200, 200));
         Pathfinder pathfinder = pathfinder();
 
         Set<Vec3I> expected = Set.of(Vec3I.immutable(0, 0, 0));
@@ -127,5 +143,19 @@ class BasicAsyncPathfinderTest {
                 Vec3I.immutable(1, 1, 0), Vec3I.immutable(0, 1, 0)));
 
         assertEquals(expected, result.vectors());
+        assertTrue(result.isSuccessful());
+    }
+
+    @Test
+    void hugePath()
+    throws ExecutionException, InterruptedException {
+        PathSettings settings = hugeEnvironment();
+        Pathfinder pathfinder = pathfinder();
+
+        for (int i = 0; i < 10000; i++) {
+            pathfinder.pathfind(0, 1, 0, 900, 1, 900, settings);
+        }
+
+        pathfinder.shutdown();
     }
 }
