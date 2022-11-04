@@ -38,15 +38,9 @@ public class SpatialPostProcessor implements PathPostProcessor {
 
         Vec3I newPosition;
         double offset;
-        if (!solid.isFull()) {
-            if (!solid.isEmpty()) {
-                newPosition = position.sub(0, bY, 0);
-                offset = solid.bounds().lengthY();
-            }
-            else {
-                newPosition = position;
-                offset = 0;
-            }
+        if (!solid.isFull() && !solid.isEmpty()) {
+            newPosition = Vec3I.immutable(position.x(), bY, position.z());
+            offset = solid.bounds().lengthY();
         }
         else {
             newPosition = position;

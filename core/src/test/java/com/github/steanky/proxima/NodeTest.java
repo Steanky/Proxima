@@ -11,8 +11,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class NodeTest {
     @Test
     void invertToList() {
-        Node second = new Node(0, 0, 0, 0, 0, Movement.UNKNOWN, null);
-        Node first = new Node(0, 0, 1, 0, 0, Movement.UNKNOWN, second);
+        Node second = new Node(0, 0, 0, 0, 0, null);
+        Node first = new Node(0, 0, 1, 0, 0, second);
 
         Set<Vec3I> positions = first.reverseToVectorSet();
         assertEquals(Vec3I.ORIGIN, positions.iterator().next());

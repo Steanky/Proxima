@@ -21,12 +21,12 @@ class WalkNodeSnapperTest {
         space.put(0, 0, 0, Solid.FULL);
         space.put(1, 0, 0, Solid.FULL);
 
-        Node node = new Node(0, 1, 0, 0, 0, Movement.UNKNOWN, null);
+        Node node = new Node(0, 1, 0, 0, 0, null);
         WalkNodeSnapper snapper = new WalkNodeSnapper(1, 2, 4, 1, space,
                 Bounds3I.immutable(-10, -10, -10, 20, 20, 20));
 
         Wrapper<Boolean> callIndicator = Wrapper.of(false);
-        snapper.snap(Direction.EAST, node, (n, d, x, y, z) -> {
+        snapper.snap(Direction.EAST, node, (n, x, y, z) -> {
             callIndicator.set(true);
 
             assertSame(node, n);
@@ -44,12 +44,12 @@ class WalkNodeSnapperTest {
         space.put(0, 0, 0, Solid.FULL);
         space.put(1, 1, 0, Solid.FULL);
 
-        Node node = new Node(0, 1, 0, 0, 0, Movement.UNKNOWN, null);
+        Node node = new Node(0, 1, 0, 0, 0, null);
         WalkNodeSnapper snapper = new WalkNodeSnapper(1, 2, 4, 1, space, Bounds3I
                 .immutable(-10, -10, -10, 20, 20, 20));
 
         Wrapper<Boolean> callIndicator = Wrapper.of(false);
-        snapper.snap(Direction.EAST, node, (n, d, x, y, z) -> {
+        snapper.snap(Direction.EAST, node, (n, x, y, z) -> {
             callIndicator.set(true);
 
             assertSame(node, n);
@@ -67,12 +67,12 @@ class WalkNodeSnapperTest {
         space.put(0, 0, 0, Solid.FULL);
         space.put(1, 2, 0, Solid.FULL);
 
-        Node node = new Node(0, 1, 0, 0, 0, Movement.UNKNOWN, null);
+        Node node = new Node(0, 1, 0, 0, 0, null);
         WalkNodeSnapper snapper = new WalkNodeSnapper(1, 2, 4, 2, space, Bounds3I
                 .immutable(-10, -10, -10, 20, 20, 20));
 
         Wrapper<Boolean> callIndicator = Wrapper.of(false);
-        snapper.snap(Direction.EAST, node, (n, d, x, y, z) -> {
+        snapper.snap(Direction.EAST, node, (n, x, y, z) -> {
             callIndicator.set(true);
 
             assertSame(node, n);
@@ -90,11 +90,11 @@ class WalkNodeSnapperTest {
         space.put(0, 0, 0, Solid.FULL);
         space.put(1, 2, 0, Solid.FULL);
 
-        Node node = new Node(0, 1, 0, 0, 0, Movement.UNKNOWN, null);
+        Node node = new Node(0, 1, 0, 0, 0, null);
         WalkNodeSnapper snapper = new WalkNodeSnapper(1, 2, 4, 1, space, Bounds3I
                 .immutable(-10, -10, -10, 20, 20, 20));
 
-        snapper.snap(Direction.EAST, node, (n, d, x, y, z) -> fail("NodeHandler should not be called"));
+        snapper.snap(Direction.EAST, node, (n, x, y, z) -> fail("NodeHandler should not be called"));
     }
 
     @Test
@@ -104,12 +104,12 @@ class WalkNodeSnapperTest {
         space.put(1, 1, 0, Solid.FULL);
         space.put(1, 4, 0, Solid.FULL);
 
-        Node node = new Node(0, 1, 0, 0, 0, Movement.UNKNOWN, null);
+        Node node = new Node(0, 1, 0, 0, 0, null);
         WalkNodeSnapper snapper = new WalkNodeSnapper(1, 2, 4, 1, space, Bounds3I
                 .immutable(-10, -10, -10, 20, 20, 20));
 
         Wrapper<Boolean> callIndicator = Wrapper.of(false);
-        snapper.snap(Direction.EAST, node, (n, d, x, y, z) -> {
+        snapper.snap(Direction.EAST, node, (n, x, y, z) -> {
             callIndicator.set(true);
 
             assertSame(node, n);
@@ -128,9 +128,9 @@ class WalkNodeSnapperTest {
         space.put(1, 1, 0, Solid.FULL);
         space.put(0, 3, 0, Solid.FULL);
 
-        Node node = new Node(0, 1, 0, 0, 0, Movement.UNKNOWN, null);
+        Node node = new Node(0, 1, 0, 0, 0, null);
         WalkNodeSnapper snapper = new WalkNodeSnapper(1, 2, 4, 1, space, Bounds3I
                 .immutable(-10, -10, -10, 20, 20, 20));
-        snapper.snap(Direction.EAST, node, (n, d, x, y, z) -> fail("NodeHandler should not be called"));
+        snapper.snap(Direction.EAST, node, (n, x, y, z) -> fail("NodeHandler should not be called"));
     }
 }

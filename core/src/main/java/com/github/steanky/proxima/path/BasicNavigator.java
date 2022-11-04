@@ -67,7 +67,8 @@ public class BasicNavigator implements Navigator {
     public void cancel() {
         if (result != null && !result.isDone() && !result.isCancelled()) {
             result.cancel(true);
-            result = null;
         }
+
+        result = null;
     }
 }

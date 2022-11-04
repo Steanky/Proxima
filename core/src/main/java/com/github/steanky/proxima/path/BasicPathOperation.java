@@ -2,7 +2,6 @@ package com.github.steanky.proxima.path;
 
 import com.github.steanky.proxima.Explorer;
 import com.github.steanky.proxima.Heuristic;
-import com.github.steanky.proxima.Movement;
 import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.node.NodeQueue;
 import com.github.steanky.vector.Vec3I2ObjectMap;
@@ -23,10 +22,6 @@ public class BasicPathOperation implements PathOperation {
 
     private Node current;
     private Node best;
-
-    private int startX;
-    private int startY;
-    private int startZ;
 
     private int destinationX;
     private int destinationY;
@@ -52,13 +47,9 @@ public class BasicPathOperation implements PathOperation {
 
         //set the current node, g == 0
         current = new Node(startX, startY, startZ, 0, heuristic.distance(startX, startY, startZ, destX, destY,
-                destZ), Movement.UNKNOWN, null);
+                destZ), null);
         openSet.enqueue(current);
         best = current;
-
-        this.startX = startX;
-        this.startY = startY;
-        this.startZ = startZ;
 
         this.destinationX = destX;
         this.destinationY = destY;
@@ -103,10 +94,9 @@ public class BasicPathOperation implements PathOperation {
         this.success = success;
     }
 
-    private void explore(Node current, Movement movementToNeighbor, int x, int y, int z) {
+    private void explore(Node current, int x, int y, int z) {
         Node neighbor = graph.computeIfAbsent(x, y, z, (x1, y1, z1) -> new Node(x1, y1, z1, Float.POSITIVE_INFINITY,
-                heuristic.heuristic(x1, y1, z1, destinationX, destinationY, destinationZ), movementToNeighbor,
-                null));
+                heuristic.heuristic(x1, y1, z1, destinationX, destinationY, destinationZ), null));
 
         float g = current.g + heuristic.distance(current.x, current.y, current.z, neighbor.x, neighbor.y, neighbor.z);
         if (g < neighbor.g) {
@@ -114,36 +104,6 @@ public class BasicPathOperation implements PathOperation {
             neighbor.g = g;
             openSet.enqueueOrUpdate(neighbor);
         }
-    }
-
-    @Override
-    public @NotNull State state() {
-        return state;
-    }
-
-    @Override
-    public int startX() {
-        return startX;
-    }
-
-    @Override
-    public int startY() {
-        return startY;
-    }
-
-    @Override
-    public int startZ() {
-        return startZ;
-    }
-
-    @Override
-    public @NotNull Node current() {
-        return current;
-    }
-
-    @Override
-    public @NotNull Vec3I2ObjectMap<Node> graph() {
-        return graph;
     }
 
     @Override

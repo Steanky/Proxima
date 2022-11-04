@@ -1,6 +1,5 @@
 package com.github.steanky.proxima.node;
 
-import com.github.steanky.proxima.Movement;
 import com.github.steanky.vector.Vec3I;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
@@ -19,12 +18,11 @@ public class Node implements Comparable<Node> {
     public float g;
     public final float h;
 
-    public final Movement movement;
     public Node parent;
 
     int heapIndex;
 
-    public Node(int x, int y, int z, float g, float h, @NotNull Movement movement, @Nullable Node parent) {
+    public Node(int x, int y, int z, float g, float h, @Nullable Node parent) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -32,7 +30,6 @@ public class Node implements Comparable<Node> {
         this.g = g;
         this.h = h;
 
-        this.movement = movement;
         this.parent = parent;
         this.heapIndex = -1;
     }
