@@ -1,9 +1,9 @@
 package com.github.steanky.proxima;
 
+import com.github.steanky.proxima.node.Node;
 import com.github.steanky.vector.Vec3I;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;

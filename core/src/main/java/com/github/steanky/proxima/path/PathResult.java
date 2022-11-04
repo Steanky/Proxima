@@ -1,4 +1,4 @@
-package com.github.steanky.proxima;
+package com.github.steanky.proxima.path;
 
 import com.github.steanky.vector.Vec3I;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;

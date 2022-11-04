@@ -1,5 +1,6 @@
 package com.github.steanky.proxima;
 
+import com.github.steanky.proxima.node.Node;
 import com.github.steanky.vector.Bounds3D;
 import com.github.steanky.vector.Bounds3I;
 import com.github.steanky.vector.Vec3I;

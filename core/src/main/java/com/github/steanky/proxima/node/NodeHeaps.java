@@ -1,4 +1,4 @@
-package com.github.steanky.proxima;
+package com.github.steanky.proxima.node;
 
 import it.unimi.dsi.fastutil.objects.ObjectHeaps;
 import org.jetbrains.annotations.NotNull;

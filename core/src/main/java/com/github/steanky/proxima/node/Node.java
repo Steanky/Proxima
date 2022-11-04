@@ -1,5 +1,6 @@
-package com.github.steanky.proxima;
+package com.github.steanky.proxima.node;
 
+import com.github.steanky.proxima.Movement;
 import com.github.steanky.vector.Vec3I;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
@@ -10,16 +11,16 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.Set;
 
-final class Node implements Comparable<Node> {
-    final int x;
-    final int y;
-    final int z;
+public class Node implements Comparable<Node> {
+    public final int x;
+    public final int y;
+    public final int z;
 
-    float g;
-    final float h;
+    public float g;
+    public final float h;
 
-    final Movement movement;
-    Node parent;
+    public final Movement movement;
+    public Node parent;
 
     int heapIndex;
 
@@ -36,11 +37,11 @@ final class Node implements Comparable<Node> {
         this.heapIndex = -1;
     }
 
-    @NotNull Vec3I vector() {
+    public @NotNull Vec3I vector() {
         return Vec3I.immutable(x, y, z);
     }
 
-    int reversedAddAll(@NotNull Vec3I[] vectors) {
+    public int reversedAddAll(@NotNull Vec3I[] vectors) {
         Node prev = null;
         Node current = this;
 
@@ -60,7 +61,7 @@ final class Node implements Comparable<Node> {
         return i;
     }
 
-    int size() {
+    public int size() {
         Node current = this;
         int size = 0;
         do {
@@ -72,7 +73,7 @@ final class Node implements Comparable<Node> {
         return size;
     }
 
-    @NotNull @Unmodifiable Set<Vec3I> reverseToVectorSet() {
+    public @NotNull @Unmodifiable Set<Vec3I> reverseToVectorSet() {
         if (parent == null) {
             return Set.of(vector());
         }
@@ -101,7 +102,7 @@ final class Node implements Comparable<Node> {
         return ObjectSets.unmodifiable(set);
     }
 
-    @NotNull Vec3I[] asVectorArray() {
+    public @NotNull Vec3I[] asVectorArray() {
         if (parent == null) {
             return new Vec3I[] { vector() };
         }
@@ -118,7 +119,7 @@ final class Node implements Comparable<Node> {
         return array;
     }
 
-    boolean onHeap() {
+    public boolean onHeap() {
         return heapIndex > -1;
     }
 

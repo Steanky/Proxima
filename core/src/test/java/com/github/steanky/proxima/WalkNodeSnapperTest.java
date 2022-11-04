@@ -1,5 +1,6 @@
 package com.github.steanky.proxima;
 
+import com.github.steanky.proxima.node.Node;
 import com.github.steanky.toolkit.function.Wrapper;
 import com.github.steanky.vector.Bounds3I;
 import org.junit.jupiter.api.Test;

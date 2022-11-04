@@ -1,4 +1,4 @@
-package com.github.steanky.proxima;
+package com.github.steanky.proxima.path;
 
 import org.jetbrains.annotations.NotNull;
 

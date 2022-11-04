@@ -1,4 +1,4 @@
-package com.github.steanky.proxima;
+package com.github.steanky.proxima.node;
 
 import it.unimi.dsi.fastutil.PriorityQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrays;

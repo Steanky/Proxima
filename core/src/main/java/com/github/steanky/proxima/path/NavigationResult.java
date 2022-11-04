@@ -1,5 +1,6 @@
-package com.github.steanky.proxima;
+package com.github.steanky.proxima.path;
 
+import com.github.steanky.proxima.node.NavigationNode;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
 

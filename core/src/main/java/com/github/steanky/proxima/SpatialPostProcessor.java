@@ -1,5 +1,9 @@
 package com.github.steanky.proxima;
 
+import com.github.steanky.proxima.node.NavigationNode;
+import com.github.steanky.proxima.path.NavigationResult;
+import com.github.steanky.proxima.path.PathPostProcessor;
+import com.github.steanky.proxima.path.PathResult;
 import com.github.steanky.toolkit.collection.Iterators;
 import com.github.steanky.vector.Vec3I;
 import org.jetbrains.annotations.NotNull;

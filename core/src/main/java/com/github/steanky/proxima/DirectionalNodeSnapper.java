@@ -1,5 +1,6 @@
 package com.github.steanky.proxima;
 
+import com.github.steanky.proxima.node.Node;
 import org.jetbrains.annotations.NotNull;
 
 public interface DirectionalNodeSnapper {

@@ -1,5 +1,6 @@
-package com.github.steanky.proxima;
+package com.github.steanky.proxima.path;
 
+import com.github.steanky.proxima.node.Node;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 

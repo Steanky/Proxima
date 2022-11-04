@@ -1,5 +1,6 @@
 package com.github.steanky.proxima;
 
+import com.github.steanky.proxima.path.NavigationResult;
 import org.jetbrains.annotations.NotNull;
 
 public interface Navigator {
