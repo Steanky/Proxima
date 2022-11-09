@@ -1,6 +1,7 @@
 package com.github.steanky.proxima;
 
 import com.github.steanky.vector.Bounds3D;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 public interface Solid {
