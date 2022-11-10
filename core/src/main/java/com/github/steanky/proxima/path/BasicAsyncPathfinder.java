@@ -32,7 +32,7 @@ public class BasicAsyncPathfinder implements Pathfinder {
             PathOperation localOperation = pathOperationLocal.get();
 
             try {
-                localOperation.init(x, y, z, destX, destY, destZ, settings);
+                localOperation.init(x, y, z, destX, destY, destZ, settings, 0);
 
                 //step the path until the method reports completion by returning false
                 while (!localOperation.step()) {

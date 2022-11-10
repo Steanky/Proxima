@@ -34,7 +34,7 @@ public class BasicPathOperation implements PathOperation {
 
     @Override
     public void init(int startX, int startY, int startZ, int destX, int destY, int destZ,
-            @NotNull PathSettings settings) {
+            @NotNull PathSettings settings, double yOffset) {
         this.graph = settings.graph();
 
         this.successPredicate = settings.successPredicate();
@@ -47,7 +47,7 @@ public class BasicPathOperation implements PathOperation {
 
         //set the current node, g == 0
         current = new Node(startX, startY, startZ, 0, heuristic.distance(startX, startY, startZ, destX, destY,
-                destZ), null);
+                destZ), null, yOffset);
         openSet.enqueue(current);
         best = current;
 
@@ -94,9 +94,9 @@ public class BasicPathOperation implements PathOperation {
         this.success = success;
     }
 
-    private void explore(Node current, int x, int y, int z) {
+    private void explore(Node current, int x, int y, int z, double yOffset) {
         Node neighbor = graph.computeIfAbsent(x, y, z, (x1, y1, z1) -> new Node(x1, y1, z1, Float.POSITIVE_INFINITY,
-                heuristic.heuristic(x1, y1, z1, destinationX, destinationY, destinationZ), null));
+                heuristic.heuristic(x1, y1, z1, destinationX, destinationY, destinationZ), null, yOffset));
 
         float g = current.g + heuristic.distance(current.x, current.y, current.z, neighbor.x, neighbor.y, neighbor.z);
         if (g < neighbor.g) {

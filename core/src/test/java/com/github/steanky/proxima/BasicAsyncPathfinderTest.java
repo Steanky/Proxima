@@ -46,7 +46,7 @@ class BasicAsyncPathfinderTest {
                     Direction.EAST,
                     Direction.SOUTH,
                     Direction.WEST
-            }, new WalkNodeSnapper(width, height, fallTolerance, jumpHeight, space, searchArea));
+            }, new WalkNodeSnapper(width, height, fallTolerance, jumpHeight, space, searchArea, 1E-6));
 
             @Override
             public @NotNull Vec3IBiPredicate successPredicate() {
