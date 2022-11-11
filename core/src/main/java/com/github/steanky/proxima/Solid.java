@@ -22,6 +22,11 @@ public interface Solid {
         public boolean isEmpty() {
             return true;
         }
+
+        @Override
+        public boolean collides(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz) {
+            return false;
+        }
     };
 
     Solid FULL = new Solid() {
@@ -41,6 +46,11 @@ public interface Solid {
         public boolean isEmpty() {
             return false;
         }
+
+        @Override
+        public boolean collides(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz) {
+            return false;
+        }
     };
 
     @NotNull Bounds3D bounds();
@@ -48,4 +58,6 @@ public interface Solid {
     boolean isFull();
 
     boolean isEmpty();
+
+    boolean collides(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz);
 }

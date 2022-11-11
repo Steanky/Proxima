@@ -53,28 +53,28 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
     }
 
     private static void check(double width, double height, double fallTolerance, double jumpHeight, double epsilon) {
+        //width must be non-negative and finite
         if (width < 0 || !Double.isFinite(width)) {
-            //width must be non-negative and finite
             throw new IllegalArgumentException("Invalid width: " + width);
         }
 
+        //height must be non-negative and finite
         if (height < 0 || !Double.isFinite(height)) {
-            //height must be non-negative and finite
             throw new IllegalArgumentException("Invalid height: " + height);
         }
 
+        //fallTolerance must be non-negative and not a NaN (positive infinity is allowed)
         if (fallTolerance < 0 || Double.isNaN(fallTolerance)) {
-            //fallTolerance must be non-negative and not a NaN (positive infinity is allowed)
             throw new IllegalArgumentException("Invalid fallTolerance: " + fallTolerance);
         }
 
+        //jumpHeight must be non-negative and not a NaN (positive infinity is allowed)
         if (jumpHeight < 0 || Double.isNaN(jumpHeight)) {
-            //jumpHeight must be non-negative and not a NaN (positive infinity is allowed)
             throw new IllegalArgumentException("Invalid jumpHeight: " + jumpHeight);
         }
 
+        //epsilon must be positive and finite
         if (epsilon < 0 || !Double.isFinite(epsilon)) {
-            //epsilon must be positive and finite
             throw new IllegalArgumentException("Invalid epsilon: " + epsilon);
         }
     }
@@ -97,7 +97,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         double newY = Double.NaN;
 
         for (int i = 0; i < searchHeight; i++) {
-            int y = node.y + i; //y of the solid
+            int y = node.y + i;
 
             Solid tallestSolid = Solid.EMPTY;
 
@@ -118,24 +118,20 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         Bounds3D bounds = solid.bounds();
 
                         //if we're overlapping, we don't have any collision
-                        if (overlaps(x, z, bounds, node)) {
-                            continue;
-                        }
+                        if (!overlaps(x, z, bounds, node)) {
+                            double ex = dx * wDiff;
+                            double ez = dz * wDiff;
 
-                        double ex = dx * wDiff;
-                        double ez = dz * wDiff;
+                            //if we overlap the expanded bounding box, we do have a collision
+                            if (expandOverlaps(x, z, ex, ez, bounds, node)) {
+                                //fast exit: can't jump over this block
+                                if (y + bounds.lengthY() - node.y > jumpHeight) {
+                                    return;
+                                }
 
-                        //if we overlap the expanded bounding box, we do have a collision
-                        if (expandOverlaps(x, z, ex, ez, bounds, node)) {
-                            double requiredJumpHeight = y + bounds.lengthY() - node.y;
-
-                            //fast exit: can't jump over this block
-                            if (requiredJumpHeight > jumpHeight) {
-                                return;
-                            }
-
-                            if (bounds.lengthY() > tallestSolid.bounds().lengthY()) {
-                                tallestSolid = solid;
+                                if (bounds.lengthY() > tallestSolid.bounds().lengthY()) {
+                                    tallestSolid = solid;
+                                }
                             }
                         }
                     }
@@ -154,7 +150,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
                 //simpler check if the solid is full, we don't need to test overlap
                 if (solid.isFull()) {
-                    double requiredJumpHeight = y + 1 - (node.y + yOffset);
+                    double requiredJumpHeight = y + 1 - exactY;
                     if (requiredJumpHeight > jumpHeight) {
                         return;
                     }
@@ -167,7 +163,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
                 //if the directionally-expanded bounds overlaps, we have a collision
                 if (expandOverlaps(x, z, dx, dz, bounds, node)) {
-                    double requiredJumpHeight = y + bounds.lengthY() - (node.y + yOffset);
+                    double requiredJumpHeight = y + bounds.lengthY() - exactY;
                     if (requiredJumpHeight > jumpHeight) {
                         return;
                     }
@@ -195,14 +191,15 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         }
 
         //newY was never assigned, so we can't move this direction
-        if (Double.isNaN(newY)) {
+        //or, our target y is outside the search area
+        if (Double.isNaN(newY) || newY < searchArea.originY() || newY > searchArea.originY() + searchArea.lengthY()) {
             return;
         }
 
         //jumping is necessary, so we need to check above us
         if (newY > node.y + yOffset) {
             //only search as high as we need to in order to reach the target elevation
-            int jumpSearch = (int)Math.ceil(newY - (node.y + yOffset));
+            int jumpSearch = (int)Math.ceil(newY - exactY);
 
             //check for blocks above the agent
             for (int i = fullHeight ? 0 : -1; i < jumpSearch; i++) {
@@ -310,7 +307,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
             aoz += dz;
         }
 
-        return overlaps(box, boz, bounds.lengthX(), bounds.lengthZ(), aox, aoz, awx, awz);
+        return CollisionUtils.overlaps(box, boz, bounds.lengthX(), bounds.lengthZ(), aox, aoz, awx, awz);
     }
 
     //two-dimensional collision check that only takes into account the xz plane
@@ -321,18 +318,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         double aox = node.x + 0.5D - halfWidth;
         double aoz = node.z + 0.5D - halfWidth;
 
-        return overlaps(box, boz, bounds.lengthX(), bounds.lengthZ(), aox, aoz, width, width);
-    }
-
-    private static boolean overlaps(double ox1, double oz1, double lx1, double lz1,
-            double ox2, double oz2, double lx2, double lz2) {
-        double mx1 = ox1 + lx1;
-        double mz1 = oz1 + lz1;
-
-        double mx2 = ox2 + lx2;
-        double mz2 = oz2 + lz2;
-
-        return mx1 > ox2 && mz1 > oz2 && mx2 > ox1 && mz2 > ox1;
+        return CollisionUtils.overlaps(box, boz, bounds.lengthX(), bounds.lengthZ(), aox, aoz, width, width);
     }
 
     @Override
