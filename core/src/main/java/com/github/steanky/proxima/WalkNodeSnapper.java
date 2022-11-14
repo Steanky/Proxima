@@ -124,14 +124,14 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         double az = ((node.z + 0.5) - z) - halfWidth;
 
                         //if we're overlapping, we don't have any collision
-                        if (!solid.overlaps(ax, ay, az, width, height, width)) {
-                            Bounds3D bounds = solid.bounds();
-
+                        if (solid.overlaps(ax, ay, az, width, height, width, Solid.Order.NONE) == null) {
                             double ex = dx * wDiff;
                             double ez = dz * wDiff;
 
                             //if we overlap the expanded bounding box, we do have a collision
-                            if (solid.expandOverlaps(ax, ay, az, width, height, width, ex, 0, ez)) {
+                            Bounds3D bounds;
+                            if ((bounds = solid.expandOverlaps(ax, ay, az, width, height, width, ex, 0, ez,
+                                    Solid.Order.HIGHEST)) != null) {
                                 //fast exit: can't jump over this block
                                 if (y + bounds.lengthY() - node.y > jumpHeight) {
                                     return;
@@ -173,9 +173,9 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                 double az = ((node.z + 0.5) - z) - halfWidth;
 
                 //if the directionally-expanded bounds overlaps, we have a collision
-                if (solid.expandOverlaps(ax, ay, az, width, height, width, dx, 0, dz)) {
-                    Bounds3D bounds = solid.bounds();
-
+                Bounds3D bounds;
+                if ((bounds = solid.expandOverlaps(ax, ay, az, width, height, width, dx, 0, dz,
+                        Solid.Order.HIGHEST)) != null) {
                     double requiredJumpHeight = y + bounds.lengthY() - exactY;
                     if (requiredJumpHeight > jumpHeight) {
                         return;
@@ -205,7 +205,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
         //newY was never assigned, so we can't move this direction
         //or, our target y is outside the search area
-        if (Double.isNaN(newY) || newY < searchArea.originY() || newY > searchArea.originY() + searchArea.lengthY()) {
+        if (Double.isNaN(newY) || newY < searchArea.originY() || newY >= searchArea.maxY()) {
             return;
         }
 
@@ -232,8 +232,13 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
                         //simpler check for full solids
                         if (solid.isFull()) {
-                            //return if this solid prevents us from jumping high enough
-                            if (y - height < newY) {
+                            //if full height: any block we run into makes this jump impossible
+                            if (fullHeight) {
+                                return;
+                            }
+
+                            //return if this solid prevents us from jumping high enough, and we aren't intersecting
+                            if (y - height < newY && y > node.y + yOffset + height) {
                                 return;
                             }
 
@@ -241,19 +246,18 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         }
 
                         Bounds3D bounds = solid.bounds();
-                        double originY = bounds.originY();
 
                         //this solid is too high to worry about colliding with
-                        if (originY - height >= newY) {
+                        if (bounds.originY() - height >= newY) {
                             continue;
                         }
 
                         //agent coordinates relative to solid
                         double ax = ((node.x + 0.5) - x) - halfWidth;
-                        double ay = (node.y + yOffset) - y;
+                        double ay = ((node.y + yOffset) - y) + height;
                         double az = ((node.z + 0.5) - z) - halfWidth;
 
-                        if (solid.overlaps(ax, ay, az, width, height, width)) {
+                        if (solid.overlaps(ax, ay, az, width, jumpHeight, width, Solid.Order.LOWEST) != null) {
                             return;
                         }
                     }
@@ -292,10 +296,10 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                     double ay = (node.y + yOffset) - y;
                     double az = ((node.z + 0.5) - z) - halfWidth;
 
-                    if (solid.overlaps(ax, ay, az, width, height, width)) {
-                        Bounds3D bounds = solid.bounds();
-
+                    Bounds3D bounds;
+                    if ((bounds = solid.overlaps(ax, ay, az, width, height, width, Solid.Order.HIGHEST)) != null) {
                         double height = bounds.lengthY();
+
                         if (height > highestY) {
                             highestY = height;
                         }

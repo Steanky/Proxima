@@ -2,6 +2,7 @@ package com.github.steanky.proxima.solid;
 
 import com.github.steanky.vector.Bounds3D;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public final class SingletonSolid extends AbstractSolid {
     private final Bounds3D bounds;
@@ -29,8 +30,12 @@ public final class SingletonSolid extends AbstractSolid {
     }
 
     @Override
-    public boolean overlaps(double ox, double oy, double oz, double lx, double ly, double lz) {
-        return bounds.originX() < ox + lx && bounds.maxX() > ox && bounds.originY() < oy + ly && bounds.maxY() > oy &&
-                bounds.originZ() < oz + lz && bounds.maxZ() > oz;
+    public @Nullable Bounds3D overlaps(double ox, double oy, double oz, double lx, double ly, double lz, @NotNull Solid.Order order) {
+        if (bounds.originX() < ox + lx && bounds.maxX() > ox && bounds.originY() < oy + ly && bounds.maxY() > oy &&
+                bounds.originZ() < oz + lz && bounds.maxZ() > oz) {
+            return bounds;
+        }
+
+        return null;
     }
 }

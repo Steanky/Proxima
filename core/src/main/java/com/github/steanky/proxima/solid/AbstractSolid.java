@@ -1,9 +1,13 @@
 package com.github.steanky.proxima.solid;
 
+import com.github.steanky.vector.Bounds3D;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 public abstract class AbstractSolid implements Solid {
     @Override
-    public boolean expandOverlaps(double ox, double oy, double oz, double lx, double ly, double lz, double ex,
-            double ey, double ez) {
+    public @Nullable Bounds3D expandOverlaps(double ox, double oy, double oz, double lx, double ly, double lz,
+            double ex, double ey, double ez, @NotNull Solid.Order order) {
         lx += Math.abs(ex);
         ly += Math.abs(ey);
         lz += Math.abs(ez);
@@ -20,6 +24,6 @@ public abstract class AbstractSolid implements Solid {
             oz += ez;
         }
 
-        return overlaps(ox, oy, oz, lx, ly, lz);
+        return overlaps(ox, oy, oz, lx, ly, lz, order);
     }
 }

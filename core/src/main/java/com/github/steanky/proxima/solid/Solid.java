@@ -2,8 +2,15 @@ package com.github.steanky.proxima.solid;
 
 import com.github.steanky.vector.Bounds3D;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public interface Solid {
+    enum Order {
+        HIGHEST,
+        LOWEST,
+        NONE
+    }
+
     Solid EMPTY = new Solid() {
         @Override
         public @NotNull Bounds3D bounds() {
@@ -21,14 +28,15 @@ public interface Solid {
         }
 
         @Override
-        public boolean overlaps(double ox, double oy, double oz, double lx, double ly, double lz) {
-            return false;
+        public @Nullable Bounds3D overlaps(double ox, double oy, double oz, double lx, double ly, double lz,
+                @NotNull Solid.Order order) {
+            return null;
         }
 
         @Override
-        public boolean expandOverlaps(double ox, double oy, double oz, double lx, double ly, double lz, double ex,
-                double ey, double ez) {
-            return false;
+        public @Nullable Bounds3D expandOverlaps(double ox, double oy, double oz, double lx, double ly, double lz,
+                double ex, double ey, double ez, @NotNull Solid.Order order) {
+            return null;
         }
     };
 
@@ -40,8 +48,9 @@ public interface Solid {
 
     boolean isEmpty();
 
-    boolean overlaps(double ox, double oy, double oz, double lx, double ly, double lz);
+    @Nullable Bounds3D overlaps(double ox, double oy, double oz, double lx, double ly, double lz,
+            @NotNull Solid.Order order);
 
-    boolean expandOverlaps(double ox, double oy, double oz, double lx, double ly, double lz, double ex,
-            double ey, double ez);
+    @Nullable Bounds3D expandOverlaps(double ox, double oy, double oz, double lx, double ly, double lz, double ex,
+            double ey, double ez, @NotNull Solid.Order order);
 }
