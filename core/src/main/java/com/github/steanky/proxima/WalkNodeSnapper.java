@@ -1,6 +1,7 @@
 package com.github.steanky.proxima;
 
 import com.github.steanky.proxima.node.Node;
+import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.vector.Bounds3D;
 import com.github.steanky.vector.Bounds3I;
 import org.jetbrains.annotations.NotNull;
@@ -41,7 +42,9 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         this.fullWidth = width == Math.rint(width);
         this.fullHeight = height == Math.rint(height);
 
+        //silly, totally unnecessary way to add 1 to a number only if it is even
         int blockWidth = ((int)Math.ceil(width)) | 1;
+
         this.searchHeight = (int)Math.ceil(height + jumpHeight);
         this.fallSearchHeight = (int)Math.ceil(fallTolerance);
 
@@ -115,15 +118,20 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                     //if the solid is empty, it has no collision
                     //if the solid is partial, check if we're overlapping
                     if (!solid.isEmpty() && !solid.isFull()) {
-                        Bounds3D bounds = solid.bounds();
+                        //agent coordinates relative to solid
+                        double ax = ((node.x + 0.5) - x) - halfWidth;
+                        double ay = (node.y + yOffset) - y;
+                        double az = ((node.z + 0.5) - z) - halfWidth;
 
                         //if we're overlapping, we don't have any collision
-                        if (!overlaps(x, z, bounds, node)) {
+                        if (!solid.overlaps(ax, ay, az, width, height, width)) {
+                            Bounds3D bounds = solid.bounds();
+
                             double ex = dx * wDiff;
                             double ez = dz * wDiff;
 
                             //if we overlap the expanded bounding box, we do have a collision
-                            if (expandOverlaps(x, z, ex, ez, bounds, node)) {
+                            if (solid.expandOverlaps(ax, ay, az, width, height, width, ex, 0, ez)) {
                                 //fast exit: can't jump over this block
                                 if (y + bounds.lengthY() - node.y > jumpHeight) {
                                     return;
@@ -159,10 +167,15 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                     continue;
                 }
 
-                Bounds3D bounds = solid.bounds();
+                //agent coordinates relative to solid
+                double ax = ((node.x + 0.5) - x) - halfWidth;
+                double ay = (node.y + yOffset) - y;
+                double az = ((node.z + 0.5) - z) - halfWidth;
 
                 //if the directionally-expanded bounds overlaps, we have a collision
-                if (expandOverlaps(x, z, dx, dz, bounds, node)) {
+                if (solid.expandOverlaps(ax, ay, az, width, height, width, dx, 0, dz)) {
+                    Bounds3D bounds = solid.bounds();
+
                     double requiredJumpHeight = y + bounds.lengthY() - exactY;
                     if (requiredJumpHeight > jumpHeight) {
                         return;
@@ -201,7 +214,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
             //only search as high as we need to in order to reach the target elevation
             int jumpSearch = (int)Math.ceil(newY - exactY);
 
-            //check for blocks above the agent
+            //check for blocks above the agent, possibly including the block intersected by the agent's head
             for (int i = fullHeight ? 0 : -1; i < jumpSearch; i++) {
                 int y = i + ceilHeight + node.y;
 
@@ -235,7 +248,12 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                             continue;
                         }
 
-                        if (overlaps(x, z, bounds, node)) {
+                        //agent coordinates relative to solid
+                        double ax = ((node.x + 0.5) - x) - halfWidth;
+                        double ay = (node.y + yOffset) - y;
+                        double az = ((node.z + 0.5) - z) - halfWidth;
+
+                        if (solid.overlaps(ax, ay, az, width, height, width)) {
                             return;
                         }
                     }
@@ -248,7 +266,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
             return;
         }
 
-        //search below us
+        //search below us, possibly including the block we're in if it's partial
         for (int i = node.yOffset == 0 ? 0 : -1; i < fallSearchHeight; i++) {
             int y = node.y - (i + 1);
 
@@ -269,8 +287,14 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         break;
                     }
 
-                    Bounds3D bounds = solid.bounds();
-                    if (overlaps(x, z, bounds, node)) {
+                    //agent coordinates relative to solid
+                    double ax = ((node.x + 0.5) - x) - halfWidth;
+                    double ay = (node.y + yOffset) - y;
+                    double az = ((node.z + 0.5) - z) - halfWidth;
+
+                    if (solid.overlaps(ax, ay, az, width, height, width)) {
+                        Bounds3D bounds = solid.bounds();
+
                         double height = bounds.lengthY();
                         if (height > highestY) {
                             highestY = height;
@@ -286,39 +310,6 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                 return;
             }
         }
-    }
-
-    private boolean expandOverlaps(int x, int z, double dx, double dz, Bounds3D bounds, Node node) {
-        double box = x + bounds.originX();
-        double boz = z + bounds.originZ();
-
-        double aox = node.x + 0.5D - halfWidth;
-        double aoz = node.z + 0.5D - halfWidth;
-
-        double awx = width + Math.abs(dx);
-        double awz = width + Math.abs(dz);
-
-        //directionally expand the bounding box in the direction we're traveling
-        if (dx < 0) {
-            aox += dx;
-        }
-
-        if (dz < 0) {
-            aoz += dz;
-        }
-
-        return CollisionUtils.overlaps(box, boz, bounds.lengthX(), bounds.lengthZ(), aox, aoz, awx, awz);
-    }
-
-    //two-dimensional collision check that only takes into account the xz plane
-    private boolean overlaps(int x, int z, Bounds3D bounds, Node node) {
-        double box = x + bounds.originX();
-        double boz = z + bounds.originZ();
-
-        double aox = node.x + 0.5D - halfWidth;
-        double aoz = node.z + 0.5D - halfWidth;
-
-        return CollisionUtils.overlaps(box, boz, bounds.lengthX(), bounds.lengthZ(), aox, aoz, width, width);
     }
 
     @Override

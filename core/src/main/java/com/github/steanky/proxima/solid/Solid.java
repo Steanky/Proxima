@@ -1,15 +1,13 @@
-package com.github.steanky.proxima;
+package com.github.steanky.proxima.solid;
 
 import com.github.steanky.vector.Bounds3D;
 import org.jetbrains.annotations.NotNull;
 
 public interface Solid {
     Solid EMPTY = new Solid() {
-        private static final Bounds3D EMPTY = Bounds3D.immutable(0, 0, 0, 0, 0, 0);
-
         @Override
         public @NotNull Bounds3D bounds() {
-            return EMPTY;
+            throw new IllegalStateException("No bounds for empty solids");
         }
 
         @Override
@@ -26,31 +24,15 @@ public interface Solid {
         public boolean overlaps(double ox, double oy, double oz, double lx, double ly, double lz) {
             return false;
         }
-    };
-
-    Solid FULL = new Solid() {
-        private static final Bounds3D FULL = Bounds3D.immutable(0, 0, 0, 1, 1, 1);
 
         @Override
-        public @NotNull Bounds3D bounds() {
-            return FULL;
-        }
-
-        @Override
-        public boolean isFull() {
-            return true;
-        }
-
-        @Override
-        public boolean isEmpty() {
-            return false;
-        }
-
-        @Override
-        public boolean overlaps(double ox, double oy, double oz, double lx, double ly, double lz) {
+        public boolean expandOverlaps(double ox, double oy, double oz, double lx, double ly, double lz, double ex,
+                double ey, double ez) {
             return false;
         }
     };
+
+    Solid FULL = new SingletonSolid(Bounds3D.immutable(0, 0, 0, 1, 1, 1));
 
     @NotNull Bounds3D bounds();
 
@@ -59,4 +41,7 @@ public interface Solid {
     boolean isEmpty();
 
     boolean overlaps(double ox, double oy, double oz, double lx, double ly, double lz);
+
+    boolean expandOverlaps(double ox, double oy, double oz, double lx, double ly, double lz, double ex,
+            double ey, double ez);
 }

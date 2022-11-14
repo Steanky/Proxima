@@ -1,5 +1,6 @@
 package com.github.steanky.proxima;
 
+import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.vector.Vec3I;
 import org.jetbrains.annotations.NotNull;
 
