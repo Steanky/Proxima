@@ -1,7 +1,6 @@
 package com.github.steanky.proxima;
 
 import com.github.steanky.vector.Bounds3D;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 public interface Solid {
@@ -24,7 +23,7 @@ public interface Solid {
         }
 
         @Override
-        public boolean collides(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz) {
+        public boolean overlaps(double ox, double oy, double oz, double lx, double ly, double lz) {
             return false;
         }
     };
@@ -48,7 +47,7 @@ public interface Solid {
         }
 
         @Override
-        public boolean collides(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz) {
+        public boolean overlaps(double ox, double oy, double oz, double lx, double ly, double lz) {
             return false;
         }
     };
@@ -59,5 +58,5 @@ public interface Solid {
 
     boolean isEmpty();
 
-    boolean collides(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz);
+    boolean overlaps(double ox, double oy, double oz, double lx, double ly, double lz);
 }

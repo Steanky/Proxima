@@ -249,7 +249,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         }
 
         //search below us
-        for (int i = 0; i < fallSearchHeight; i++) {
+        for (int i = node.yOffset == 0 ? 0 : -1; i < fallSearchHeight; i++) {
             int y = node.y - (i + 1);
 
             double highestY = Double.NEGATIVE_INFINITY;
