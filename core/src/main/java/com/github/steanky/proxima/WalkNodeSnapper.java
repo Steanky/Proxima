@@ -118,10 +118,10 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                     //if the solid is empty, it has no collision
                     //if the solid is partial, check if we're overlapping
                     if (!solid.isEmpty() && !solid.isFull()) {
-                        //agent coordinates relative to solid and shifted over by dx * width
-                        double ax = (((node.x + 0.5) - x) - halfWidth) + (width * dx);
+                        //agent coordinates relative to solid and shifted over by wDiff * width
+                        double ax = (((node.x + 0.5) - x) - halfWidth) + (dx > 0 ? width : wDiff * dx);
                         double ay = (node.y + yOffset) - y;
-                        double az = (((node.z + 0.5) - z) - halfWidth) + (width * dz);
+                        double az = (((node.z + 0.5) - z) - halfWidth) + (dz > 0 ? width : wDiff * dz);
 
                         double lx = dx == 0 ? width : wDiff;
                         double lz = dz == 0 ? width : wDiff;

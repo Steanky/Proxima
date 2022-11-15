@@ -248,6 +248,229 @@ class WalkNodeSnapperTest {
         }
     }
 
+    @Nested
+    class PartialWidth {
+        @Nested
+        class PartialHeight {
+            private static void walk(Direction direction, int x, int y, int z, double yo, int ex, int ey, int ez,
+                    double eOffset, SolidPos... pos) {
+                WalkNodeSnapperTest.walk(direction, 0.6, 1.95, x, y, z, yo, ex, ey, ez, eOffset, pos);
+            }
+
+            @Nested
+            class FullBlocks {
+                private static SolidPos[] flatWalkBlocks(int x, int y, int z) {
+                    return new SolidPos[] {
+                            full(x, y, z),
+                            full(x + 1, y, z),
+                            full(x - 1, y, z),
+                            full(x, y, z + 1),
+                            full(x, y, z - 1)
+                    };
+                }
+
+                private static SolidPos[] jumpWalkBlocks(int x, int y, int z) {
+                    return new SolidPos[] {
+                            full(x, y, z),
+                            full(x + 1, y + 1, z),
+                            full(x - 1, y + 1, z),
+                            full(x, y + 1, z + 1),
+                            full(x, y + 1, z - 1)
+                    };
+                }
+
+                @Test
+                void straightWalkNorth() {
+                    walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0,
+                            flatWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void straightWalkEast() {
+                    walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0,
+                            flatWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void straightWalkSouth() {
+                    walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0,
+                            flatWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void straightWalkWest() {
+                    walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0,
+                            flatWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void straightWalkNorthOffset() {
+                    walk(Direction.NORTH, 0, 1, 0, 0.5, 0, 1, -1, 0,
+                            flatWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void straightWalkEastOffset() {
+                    walk(Direction.EAST, 0, 1, 0, 0.5,1, 1, 0, 0,
+                            flatWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void straightWalkSouthOffset() {
+                    walk(Direction.SOUTH, 0, 1, 0, 0.5, 0, 1, 1, 0,
+                            flatWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void straightWalkWestOffset() {
+                    walk(Direction.WEST, 0, 1, 0, 0.5, -1, 1, 0, 0,
+                            flatWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void jumpWalkNorth() {
+                    walk(Direction.NORTH, 0, 1, 0, 0.5, 0, 2, -1, 0,
+                            jumpWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void jumpWalkEast() {
+                    walk(Direction.EAST, 0, 1, 0, 0.5, 1, 2, 0, 0,
+                            jumpWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void jumpWalkSouth() {
+                    walk(Direction.SOUTH, 0, 1, 0, 0.5, 0, 2, 1, 0,
+                            jumpWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void jumpWalkWest() {
+                    walk(Direction.WEST, 0, 1, 0, 0.5, -1, 2, 0, 0,
+                            jumpWalkBlocks(0, 0, 0));
+                }
+            }
+
+            @Nested
+            class HalfBlocks {
+                private static final Solid LOWER_HALF_BLOCK = new SingletonSolid(Bounds3D.immutable(0, 0, 0,
+                        1, 0.5, 1));
+
+                private static final Solid PARTIAL_BLOCK_NORTH = new SingletonSolid(Bounds3D.immutable(0, 0, 0,
+                        1, 1, 0.0625));
+
+                private static final Solid PARTIAL_BLOCK_SOUTH = new SingletonSolid(Bounds3D.immutable(0, 0,
+                        0.9375, 1, 1, 0.0625));
+
+                private static final Solid PARTIAL_BLOCK_EAST = new SingletonSolid(Bounds3D.immutable(0.9375, 0,
+                        0, 0.0625, 1, 1));
+
+                private static final Solid PARTIAL_BLOCK_WEST = new SingletonSolid(Bounds3D.immutable(0, 0,
+                        0, 0.0625, 1, 1));
+
+                private static SolidPos[] flatWalkBlocks(int x, int y, int z) {
+                    return new SolidPos[] {
+                            full(x, y, z),
+                            solid(LOWER_HALF_BLOCK, x + 1, y, z),
+                            solid(LOWER_HALF_BLOCK,x - 1, y, z),
+                            solid(LOWER_HALF_BLOCK, x, y, z + 1),
+                            solid(LOWER_HALF_BLOCK, x, y, z - 1)
+                    };
+                }
+
+                private static SolidPos[] intersectPartial(int x, int y, int z, Solid solid) {
+                    return new SolidPos[] {
+                            full(x, y, z),
+                            solid(solid, x, y + 1, z),
+                            full(x, y, z - 1)
+                    };
+                }
+
+                private static SolidPos[] jumpWalkBlocks(int x, int y, int z) {
+                    return new SolidPos[] {
+                            full(x, y, z),
+                            solid(LOWER_HALF_BLOCK,x + 1, y + 1, z),
+                            solid(LOWER_HALF_BLOCK,x - 1, y + 1, z),
+                            solid(LOWER_HALF_BLOCK, x, y + 1, z + 1),
+                            solid(LOWER_HALF_BLOCK, x, y + 1, z - 1)
+                    };
+                }
+
+                @Test
+                void walkNorthIntersectPartialBlock() {
+                    walk(Direction.NORTH, 0, 1, 0, 0, 0, 2, -1, 0,
+                            intersectPartial(0, 0, 0, PARTIAL_BLOCK_NORTH));
+                }
+
+                @Test
+                void walkEastIntersectPartialBlock() {
+                    walk(Direction.EAST, 0, 1, 0, 0, 1, 2, 0, 0,
+                            intersectPartial(0, 0, 0, PARTIAL_BLOCK_EAST));
+                }
+
+                @Test
+                void walkSouthIntersectPartialBlock() {
+                    walk(Direction.SOUTH, 0, 1, 0, 0, 0, 2, 1, 0,
+                            intersectPartial(0, 0, 0, PARTIAL_BLOCK_SOUTH));
+                }
+
+                @Test
+                void walkWestIntersectPartialBlock() {
+                    walk(Direction.WEST, 0, 1, 0, 0, -1, 2, 0, 0,
+                            intersectPartial(0, 0, 0, PARTIAL_BLOCK_WEST));
+                }
+
+                @Test
+                void straightWalkNorth() {
+                    walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0,
+                            flatWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void straightWalkEast() {
+                    walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0,
+                            flatWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void straightWalkSouth() {
+                    walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0,
+                            flatWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void straightWalkWest() {
+                    walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0,
+                            flatWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void jumpWalkNorth() {
+                    walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0.5,
+                            jumpWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void jumpWalkEast() {
+                    walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0.5,
+                            jumpWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void jumpWalkSouth() {
+                    walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0.5,
+                            jumpWalkBlocks(0, 0, 0));
+                }
+
+                @Test
+                void jumpWalkWest() {
+                    walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0.5,
+                            jumpWalkBlocks(0, 0, 0));
+                }
+            }
+        }
+    }
 }
 
 
