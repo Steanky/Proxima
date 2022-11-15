@@ -41,26 +41,6 @@ public class Node implements Comparable<Node> {
         return Vec3I.immutable(x, y, z);
     }
 
-    public int reversedAddAll(@NotNull Vec3I[] vectors) {
-        Node prev = null;
-        Node current = this;
-
-        while (current != null) {
-            Node next = current.parent;
-            current.parent = prev;
-
-            prev = current;
-            current = next;
-        }
-
-        int i = 0;
-        for (; i < vectors.length && prev != null; i++, prev = prev.parent) {
-            vectors[i] = prev.vector();
-        }
-
-        return i;
-    }
-
     public int size() {
         Node current = this;
         int size = 0;
@@ -100,23 +80,6 @@ public class Node implements Comparable<Node> {
         while (prev != null);
 
         return ObjectSets.unmodifiable(set);
-    }
-
-    public @NotNull Vec3I[] asVectorArray() {
-        if (parent == null) {
-            return new Vec3I[] { vector() };
-        }
-
-        Node current = this;
-        int size = size();
-
-        Vec3I[] array = new Vec3I[size];
-        for (int i = 0; i < size && current != null; i++) {
-            array[i] = current.vector();
-            current = current.parent;
-        }
-
-        return array;
     }
 
     public boolean onHeap() {

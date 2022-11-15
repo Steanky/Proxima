@@ -52,7 +52,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
         this.jumpHeight = jumpHeight;
         this.space = Objects.requireNonNull(space);
-        this.searchArea = Objects.requireNonNull(searchArea);
+        this.searchArea = searchArea.immutable();
     }
 
     private static void check(double width, double height, double fallTolerance, double jumpHeight, double epsilon) {
@@ -91,7 +91,8 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         int nz = node.z + dz;
 
         //fast exit: don't check out of bounds
-        if (!searchArea.contains(nx, node.y, nz)) {
+        if (searchArea.originX() > nx || searchArea.originZ() > nz ||
+                searchArea.maxX() <= nx || searchArea.maxZ() <= nz) {
             return;
         }
 

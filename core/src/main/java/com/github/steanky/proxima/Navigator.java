@@ -1,6 +1,6 @@
 package com.github.steanky.proxima;
 
-import com.github.steanky.proxima.path.NavigationResult;
+import com.github.steanky.proxima.path.PathResult;
 import org.jetbrains.annotations.NotNull;
 
 public interface Navigator {
@@ -8,7 +8,7 @@ public interface Navigator {
 
     boolean navigationComplete();
 
-    @NotNull NavigationResult getResult();
+    @NotNull PathResult getResult();
 
     void cancel();
 }

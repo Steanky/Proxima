@@ -53,4 +53,20 @@ public interface Solid {
 
     @Nullable Bounds3D expandOverlaps(double ox, double oy, double oz, double lx, double ly, double lz, double ex,
             double ey, double ez, @NotNull Solid.Order order);
+
+    static @NotNull Solid of(Bounds3D bounds) {
+        return new SingletonSolid(bounds);
+    }
+
+    static @NotNull Solid of(Bounds3D... bounds) {
+        if (bounds.length == 0) {
+            return EMPTY;
+        }
+
+        if(bounds.length == 1) {
+            return new SingletonSolid(bounds[0]);
+        }
+
+        return new CompositeSolid(bounds);
+    }
 }

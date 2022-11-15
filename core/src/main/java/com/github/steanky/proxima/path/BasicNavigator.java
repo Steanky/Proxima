@@ -14,18 +14,16 @@ public class BasicNavigator implements Navigator {
     private final Pathfinder pathfinder;
     private final PositionResolver originResolver;
     private final PositionResolver destinationResolver;
-    private final PathPostProcessor postProcessor;
     private final PathSettings pathSettings;
 
     private Future<PathResult> result;
 
     public BasicNavigator(@NotNull Pathfinder pathfinder, @NotNull PositionResolver originResolver,
-            @NotNull PositionResolver destinationResolver, @NotNull PathPostProcessor postProcessor,
+            @NotNull PositionResolver destinationResolver,
             @NotNull PathSettings pathSettings) {
         this.pathfinder = Objects.requireNonNull(pathfinder);
         this.originResolver = Objects.requireNonNull(originResolver);
         this.destinationResolver = Objects.requireNonNull(destinationResolver);
-        this.postProcessor = Objects.requireNonNull(postProcessor);
         this.pathSettings = Objects.requireNonNull(pathSettings);
     }
 
@@ -48,7 +46,7 @@ public class BasicNavigator implements Navigator {
     }
 
     @Override
-    public @NotNull NavigationResult getResult() {
+    public @NotNull PathResult getResult() {
         if (result == null || !result.isDone()) {
             throw new IllegalStateException("Result not yet complete");
         }
@@ -57,7 +55,7 @@ public class BasicNavigator implements Navigator {
             PathResult pathResult = result.get();
             result = null;
 
-            return postProcessor.process(pathResult);
+            return pathResult;
         } catch (InterruptedException | ExecutionException e) {
             throw new IllegalStateException(e);
         }
