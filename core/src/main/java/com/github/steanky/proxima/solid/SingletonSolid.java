@@ -11,7 +11,7 @@ public final class SingletonSolid extends AbstractSolid {
     public SingletonSolid(@NotNull Bounds3D bounds) {
         this.bounds = bounds.immutable();
         this.isFull = this.bounds.originX() == 0 && this.bounds.originY() == 0 && this.bounds.originZ() == 0 &&
-                this.bounds.lengthX() == 0 && this.bounds.lengthY() == 0 && this.bounds.lengthZ() == 0;
+                this.bounds.lengthX() == 1 && this.bounds.lengthY() == 1 && this.bounds.lengthZ() == 1;
     }
 
     @Override

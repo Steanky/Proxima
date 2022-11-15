@@ -24,8 +24,9 @@ public final class CompositeSolid extends AbstractSolid {
         Arrays.sort(bounds, Comparator.comparing(Bounds3D::maxY));
 
         this.enclosing = Bounds3D.enclosingImmutable(bounds);
-        this.isFull = enclosing.originX() == 0D && enclosing.originY() == 0D && enclosing.originZ() == 0D &&
-                enclosing.lengthX() == 1D && enclosing.lengthY() == 1D && enclosing.lengthZ() == 1D;
+        this.isFull = bounds.length == 1 && enclosing.originX() == 0D && enclosing.originY() == 0D &&
+                enclosing.originZ() == 0D && enclosing.lengthX() == 1D && enclosing.lengthY() == 1D &&
+                enclosing.lengthZ() == 1D;
     }
 
     @Override
