@@ -115,12 +115,13 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         double yOffset = node.yOffset;
         double exactY = node.y + yOffset;
         double newY = Double.NaN;
-        double lastExactY = exactY;
+        double lastTargetY = exactY;
 
         for (int i = 0; i < searchHeight; i++) {
             int y = node.y + i;
 
-            Bounds3D tallestBounds = null;
+            Bounds3D tallest = null;
+            Bounds3D lowest = null;
 
             //search an individual layer
             for (int dh = -halfBlockWidth; dh <= halfBlockWidth; dh++) {
@@ -144,15 +145,17 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         double lx = dx == 0 ? width : wDiff;
                         double lz = dz == 0 ? width : wDiff;
 
-                        Bounds3D bounds;
-                        if ((bounds = solid.overlaps(ax, ay, az, lx, height, lz, Solid.Order.HIGHEST)) != null) {
-                            //fast exit: can't jump over this block
-                            if (y + bounds.lengthY() - node.y > jumpHeight) {
-                                return;
+                        for (Bounds3D child : solid.children()) {
+                            if (!child.overlaps(ax, ay, az, lx, height, lz)) {
+                                continue;
                             }
 
-                            if (tallestBounds == null || bounds.lengthY() > tallestBounds.lengthY()) {
-                                tallestBounds = bounds;
+                            if (tallest == null || child.lengthY() > tallest.lengthY()) {
+                                tallest = child;
+                            }
+
+                            if (lowest == null || child.originY() < lowest.originY()) {
+                                lowest = child;
                             }
                         }
                     }
@@ -176,7 +179,8 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         return;
                     }
 
-                    tallestBounds = solid.bounds();
+                    tallest = solid.bounds();
+                    lowest = tallest;
 
                     //we know the tallest bounds here is this solid
                     break;
@@ -187,33 +191,50 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                 double ay = (node.y + yOffset) - y;
                 double az = ((node.z + 0.5) - z) - halfWidth;
 
+                double lx = width + Math.abs(dx);
+                double lz = width + Math.abs(dz);
+
+                if (dx < 0) {
+                    ax += dx;
+                }
+
+                if (dz < 0) {
+                    az += dz;
+                }
+
                 //if the directionally-expanded bounds overlaps, we have a collision
-                Bounds3D bounds;
-                if ((bounds = solid.expandOverlaps(ax, ay, az, width, height, width, dx, 0, dz,
-                        Solid.Order.HIGHEST)) != null) {
-                    double requiredJumpHeight = y + bounds.lengthY() - exactY;
-                    if (requiredJumpHeight > jumpHeight) {
-                        return;
+                for (Bounds3D child : solid.children()) {
+                    if (!child.overlaps(ax, ay, az, lx, height, lz)) {
+                        continue;
                     }
 
-                    if (tallestBounds == null || bounds.lengthY() > tallestBounds.lengthY()) {
-                        tallestBounds = bounds;
+                    if (tallest == null || child.lengthY() > tallest.lengthY()) {
+                        tallest = child;
+                    }
+
+                    if (lowest == null || child.originY() < lowest.originY()) {
+                        lowest = child;
                     }
                 }
             }
 
-            if (tallestBounds != null) {
-                double target = y + tallestBounds.lengthY();
+            //if we found a solid this layer, check the gap below it
+            if (tallest != null) {
+                double gap = y + lowest.originY();
 
-                if (target - lastExactY >= height) {
-                    newY = target;
+                if (gap - lastTargetY >= height) {
+                    newY = lastTargetY;
                     break;
                 }
 
-                lastExactY = target;
+                lastTargetY = y + tallest.lengthY();
+                if (lastTargetY - exactY > jumpHeight) {
+                    //too high to make this jump
+                    return;
+                }
             }
-            else if ((y + 1) - lastExactY >= height) {
-                newY = lastExactY;
+            else if ((y + 1) - lastTargetY >= height) {
+                newY = lastTargetY;
                 break;
             }
         }
@@ -272,8 +293,11 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         double ay = ((node.y + yOffset) - y) + height;
                         double az = ((node.z + 0.5) - z) - halfWidth;
 
-                        if (solid.overlaps(ax, ay, az, width, jumpHeight, width, Solid.Order.LOWEST) != null) {
-                            return;
+                        for (Bounds3D child : solid.children()) {
+                            if (child.overlaps(ax, ay, az, width, jumpHeight, width) &&
+                                    y + child.originY() - height < newY) {
+                                return;
+                            }
                         }
                     }
                 }
@@ -313,10 +337,12 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                     double ay = (node.y + yOffset) - y;
                     double az = ((node.z + 0.5) - z) - halfWidth;
 
-                    Bounds3D bounds;
-                    if ((bounds = solid.overlaps(ax, ay, az, width, height, width, Solid.Order.HIGHEST)) != null) {
-                        double height = bounds.lengthY();
+                    for (Bounds3D child : solid.children()) {
+                        if (!child.overlaps(ax, ay, az, width, height, width)) {
+                            continue;
+                        }
 
+                        double height = child.lengthY();
                         if (height > highestY) {
                             highestY = height;
                         }

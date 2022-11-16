@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    api(libs.vector)
+    api(libs.vector.core)
     api(libs.toolkit.collection)
     api(libs.toolkit.function)
 }

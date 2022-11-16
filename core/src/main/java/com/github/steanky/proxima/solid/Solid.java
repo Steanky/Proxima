@@ -3,8 +3,13 @@ package com.github.steanky.proxima.solid;
 import com.github.steanky.vector.Bounds3D;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
+
+import java.util.List;
 
 public interface Solid {
+    Bounds3D[] EMPTY_BOUNDS_ARRAY = new Bounds3D[0];
+
     enum Order {
         HIGHEST,
         LOWEST,
@@ -28,15 +33,8 @@ public interface Solid {
         }
 
         @Override
-        public @Nullable Bounds3D overlaps(double ox, double oy, double oz, double lx, double ly, double lz,
-                @NotNull Solid.Order order) {
-            return null;
-        }
-
-        @Override
-        public @Nullable Bounds3D expandOverlaps(double ox, double oy, double oz, double lx, double ly, double lz,
-                double ex, double ey, double ez, @NotNull Solid.Order order) {
-            return null;
+        public @NotNull @Unmodifiable List<Bounds3D> children() {
+            return List.of();
         }
     };
 
@@ -48,17 +46,13 @@ public interface Solid {
 
     boolean isEmpty();
 
-    @Nullable Bounds3D overlaps(double ox, double oy, double oz, double lx, double ly, double lz,
-            @NotNull Solid.Order order);
+    @NotNull @Unmodifiable List<Bounds3D> children();
 
-    @Nullable Bounds3D expandOverlaps(double ox, double oy, double oz, double lx, double ly, double lz, double ex,
-            double ey, double ez, @NotNull Solid.Order order);
-
-    static @NotNull Solid of(Bounds3D bounds) {
+    static @NotNull Solid of(@NotNull Bounds3D bounds) {
         return new SingletonSolid(bounds);
     }
 
-    static @NotNull Solid of(Bounds3D... bounds) {
+    static @NotNull Solid of(Bounds3D @NotNull ... bounds) {
         if (bounds.length == 0) {
             return EMPTY;
         }

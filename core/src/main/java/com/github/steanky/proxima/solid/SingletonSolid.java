@@ -2,14 +2,18 @@ package com.github.steanky.proxima.solid;
 
 import com.github.steanky.vector.Bounds3D;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
-public final class SingletonSolid extends AbstractSolid {
+import java.util.List;
+
+public final class SingletonSolid implements Solid {
     private final Bounds3D bounds;
+    private final List<Bounds3D> boundsList;
     private final boolean isFull;
 
     public SingletonSolid(@NotNull Bounds3D bounds) {
         this.bounds = bounds.immutable();
+        this.boundsList = List.of(this.bounds);
         this.isFull = this.bounds.originX() == 0 && this.bounds.originY() == 0 && this.bounds.originZ() == 0 &&
                 this.bounds.lengthX() == 1 && this.bounds.lengthY() == 1 && this.bounds.lengthZ() == 1;
     }
@@ -30,12 +34,7 @@ public final class SingletonSolid extends AbstractSolid {
     }
 
     @Override
-    public @Nullable Bounds3D overlaps(double ox, double oy, double oz, double lx, double ly, double lz, @NotNull Solid.Order order) {
-        if (bounds.originX() < ox + lx && bounds.maxX() > ox && bounds.originY() < oy + ly && bounds.maxY() > oy &&
-                bounds.originZ() < oz + lz && bounds.maxZ() > oz) {
-            return bounds;
-        }
-
-        return null;
+    public @NotNull @Unmodifiable List<Bounds3D> children() {
+        return boundsList;
     }
 }
