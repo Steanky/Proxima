@@ -15,6 +15,21 @@ import static org.junit.jupiter.api.Assertions.*;
 class WalkNodeSnapperTest {
     private static double EPSILON = 1E-6;
 
+    private static final Solid LOWER_HALF_BLOCK = new SingletonSolid(Bounds3D.immutable(0, 0, 0,
+            1, 0.5, 1));
+
+    private static final Solid PARTIAL_BLOCK_NORTH = new SingletonSolid(Bounds3D.immutable(0, 0, 0,
+            1, 1, 0.0625));
+
+    private static final Solid PARTIAL_BLOCK_SOUTH = new SingletonSolid(Bounds3D.immutable(0, 0,
+            0.9375, 1, 1, 0.0625));
+
+    private static final Solid PARTIAL_BLOCK_EAST = new SingletonSolid(Bounds3D.immutable(0.9375, 0,
+            0, 0.0625, 1, 1));
+
+    private static final Solid PARTIAL_BLOCK_WEST = new SingletonSolid(Bounds3D.immutable(0, 0,
+            0, 0.0625, 1, 1));
+
     private record SolidPos(Solid solid, Vec3I pos) { }
 
     private static SolidPos solid(Solid solid, int x, int y, int z) {
@@ -56,6 +71,11 @@ class WalkNodeSnapperTest {
         assertTrue(called.get(), "handler was not called");
     }
 
+    private static void assertNoSnap(WalkNodeSnapper snapper, Direction direction, Node node) {
+        snapper.snap(direction, node, (node1, x, y, z, yOffset) ->
+                fail("handler called: node=" + node1 + ", x=" + x + ", y=" + y + ", z=" + z + ", yOffset=" + yOffset));
+    }
+
     private static void walk(Direction direction, double width, double height, int x, int y, int z, double yo,
             int ex, int ey, int ez, double eOffset, SolidPos... pos) {
         WalkNodeSnapper snapper = make(width, height, 1, 1, EPSILON, pos);
@@ -66,6 +86,12 @@ class WalkNodeSnapperTest {
             assertEquals(ez, z1, "z-coord");
             assertEquals(eOffset, yOffset, "yOffset");
         });
+    }
+
+    private static void noWalk(Direction direction, double width, double height, int x, int y, int z, double yo,
+            SolidPos... pos) {
+        WalkNodeSnapper snapper = make(width, height, 1, 1, EPSILON, pos);
+        assertNoSnap(snapper, direction, node(x, y, z, yo));
     }
 
     @Nested
@@ -97,6 +123,42 @@ class WalkNodeSnapperTest {
                             full(x, y + 1, z + 1),
                             full(x, y + 1, z - 1)
                     };
+                }
+
+                private static SolidPos[] enclosedBlocks(int x, int y, int z) {
+                    Direction[] dirs = Direction.values();
+                    SolidPos[] pos = new SolidPos[dirs.length];
+
+                    for (int i = 0; i < pos.length; i++) {
+                        Direction dir = dirs[i];
+                        pos[i] = full(x + dir.x, y + dir.y, z + dir.z);
+                    }
+
+                    return pos;
+                }
+
+                @Test
+                void enclosedWalkNorth() {
+                    noWalk(Direction.NORTH, 1, 1, 0, 0, 0, 0.0,
+                            enclosedBlocks(0, 0, 0));
+                }
+
+                @Test
+                void enclosedWalkEast() {
+                    noWalk(Direction.EAST, 1, 1, 0, 0, 0, 0.0,
+                            enclosedBlocks(0, 0, 0));
+                }
+
+                @Test
+                void enclosedWalkSouth() {
+                    noWalk(Direction.SOUTH, 1, 1, 0, 0, 0, 0.0,
+                            enclosedBlocks(0, 0, 0));
+                }
+
+                @Test
+                void enclosedWalkWest() {
+                    noWalk(Direction.WEST, 1, 1, 0, 0, 0, 0.0,
+                            enclosedBlocks(0, 0, 0));
                 }
 
                 @Test
@@ -354,21 +416,6 @@ class WalkNodeSnapperTest {
 
             @Nested
             class HalfBlocks {
-                private static final Solid LOWER_HALF_BLOCK = new SingletonSolid(Bounds3D.immutable(0, 0, 0,
-                        1, 0.5, 1));
-
-                private static final Solid PARTIAL_BLOCK_NORTH = new SingletonSolid(Bounds3D.immutable(0, 0, 0,
-                        1, 1, 0.0625));
-
-                private static final Solid PARTIAL_BLOCK_SOUTH = new SingletonSolid(Bounds3D.immutable(0, 0,
-                        0.9375, 1, 1, 0.0625));
-
-                private static final Solid PARTIAL_BLOCK_EAST = new SingletonSolid(Bounds3D.immutable(0.9375, 0,
-                        0, 0.0625, 1, 1));
-
-                private static final Solid PARTIAL_BLOCK_WEST = new SingletonSolid(Bounds3D.immutable(0, 0,
-                        0, 0.0625, 1, 1));
-
                 private static SolidPos[] flatWalkBlocks(int x, int y, int z) {
                     return new SolidPos[] {
                             full(x, y, z),
@@ -468,6 +515,52 @@ class WalkNodeSnapperTest {
                     walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0.5,
                             jumpWalkBlocks(0, 0, 0));
                 }
+            }
+        }
+    }
+
+    @Nested
+    class LargePartialWidth {
+        @Nested
+        class FullHeight {
+            private static void walk(Direction direction, int x, int y, int z, double yo, int ex, int ey, int ez,
+                    double eOffset, SolidPos... pos) {
+                WalkNodeSnapperTest.walk(direction, 2, 1, x, y, z, yo, ex, ey, ez, eOffset, pos);
+            }
+
+            private static SolidPos[] intersectPartial(int x, int y, int z, Solid solid, Direction direction) {
+                return new SolidPos[] {
+                        full(x, y, z),
+                        full(x + 1, y, z),
+                        full(x - 1, y, z),
+                        full(x, y, z + 1),
+                        full(x, y, z - 1),
+                        solid(solid, x + direction.x, y + 1, z + direction.z)
+                };
+            }
+
+            @Test
+            void walkNorthIntersectPartial() {
+                walk(Direction.NORTH, 0, 1, 0, 0, 0, 2, -1, 0,
+                        intersectPartial(0, 0, 0, PARTIAL_BLOCK_NORTH, Direction.NORTH));
+            }
+
+            @Test
+            void walkEastIntersectPartial() {
+                walk(Direction.EAST, 0, 1, 0, 0, 1, 2, 0, 0,
+                        intersectPartial(0, 0, 0, PARTIAL_BLOCK_EAST, Direction.EAST));
+            }
+
+            @Test
+            void walkSouthIntersectPartial() {
+                walk(Direction.SOUTH, 0, 1, 0, 0, 0, 2, 1, 0,
+                        intersectPartial(0, 0, 0, PARTIAL_BLOCK_SOUTH, Direction.SOUTH));
+            }
+
+            @Test
+            void walkWestIntersectPartial() {
+                walk(Direction.WEST, 0, 1, 0, 0, -1, 2, 0, 0,
+                        intersectPartial(0, 0, 0, PARTIAL_BLOCK_WEST, Direction.WEST));
             }
         }
     }

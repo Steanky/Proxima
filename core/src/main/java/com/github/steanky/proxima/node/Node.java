@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.Set;
 
-public class Node implements Comparable<Node> {
+public final class Node implements Comparable<Node> {
     public final int x;
     public final int y;
     public final int z;
@@ -89,5 +89,11 @@ public class Node implements Comparable<Node> {
     @Override
     public int compareTo(@NotNull Node o) {
         return Float.compare(g + h, o.g + o.h);
+    }
+
+    @Override
+    public String toString() {
+        return "Node{x=" + x + ", y=" + y + ", z=" + z + ", g=" + g + ", h=" + h + ", yOffset=" + yOffset +
+                ", heapIndex=" + heapIndex + "}";
     }
 }
