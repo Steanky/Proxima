@@ -11,6 +11,7 @@ import java.util.Objects;
 public class WalkNodeSnapper implements DirectionalNodeSnapper {
     private final double width;
     private final double halfWidth;
+    private final double fallTolerance;
     private final double wDiff;
     private final double height;
 
@@ -25,10 +26,10 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
     private final int halfBlockWidth;
 
     private final double jumpHeight;
+    private final double jumpHeightBound;
     private final Space space;
 
     private final Bounds3I searchArea;
-    private final double epsilon;
 
     public WalkNodeSnapper(double width, double height, double fallTolerance, double jumpHeight, @NotNull Space space,
             @NotNull Bounds3I searchArea, double epsilon) {
@@ -38,6 +39,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
         this.fullWidth = width == rWidth && (rWidth & 1) != 0;
         this.fullHeight = height == Math.rint(height);
+        this.fallTolerance = fallTolerance + epsilon;
 
         //silly, totally unnecessary way to add 1 to a number only if it is even
         int blockWidth = ((int)Math.ceil(width)) | 1;
@@ -49,15 +51,14 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         this.ceilHeight = (int)Math.ceil(height);
 
         this.searchHeight = (int)Math.ceil(height + jumpHeight);
-        this.fallSearchHeight = (int)Math.ceil(fallTolerance);
+        this.fallSearchHeight = (int)Math.ceil(fallTolerance) + 1;
 
         this.halfBlockWidth = blockWidth >> 1;
 
-        this.jumpHeight = jumpHeight;
+        this.jumpHeight = jumpHeight + epsilon;
+        this.jumpHeightBound = jumpHeight - epsilon;
         this.space = Objects.requireNonNull(space);
         this.searchArea = searchArea.immutable();
-
-        this.epsilon = epsilon;
     }
 
     private static void check(double width, double height, double fallTolerance, double jumpHeight, double epsilon) {
@@ -95,6 +96,10 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         if (epsilon >= height) {
             throw new IllegalArgumentException("Epsilon must not be larger than or equal to height");
         }
+
+        if (epsilon > jumpHeight) {
+            throw new IllegalArgumentException("Epsilon must not be larger than jumpHeight");
+        }
     }
 
     @Override
@@ -112,18 +117,19 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
             return;
         }
 
-        double yOffset = node.yOffset;
-        double exactY = node.y + yOffset;
+        double exactY = node.y + node.yOffset;
         double newY = Double.NaN;
         double lastTargetY = exactY;
 
-        for (int i = 0; i < searchHeight; i++) {
+        int h = node.yOffset == 0 ? searchHeight : searchHeight + 1;
+        for (int i = 0; i < h; i++) {
             int y = node.y + i;
 
             Bounds3D tallest = null;
             Bounds3D lowest = null;
 
             //search an individual layer
+            outer:
             for (int dh = -halfBlockWidth; dh <= halfBlockWidth; dh++) {
                 //full agents don't need to check for collisions inside themselves
                 if (!fullWidth) {
@@ -139,7 +145,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                     if (!solid.isEmpty() && !solid.isFull()) {
                         //agent coordinates relative to solid and shifted over by wDiff * width
                         double ax = (((node.x + 0.5) - x) - halfWidth) + (dx > 0 ? width : wDiff * dx);
-                        double ay = (node.y + yOffset) - y;
+                        double ay = (exactY) - y;
                         double az = (((node.z + 0.5) - z) - halfWidth) + (dz > 0 ? width : wDiff * dz);
 
                         double lx = dx == 0 ? width : wDiff;
@@ -174,11 +180,6 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
                 //simpler check if the solid is full, we don't need to test overlap
                 if (solid.isFull()) {
-                    double requiredJumpHeight = y + 1 - exactY;
-                    if (requiredJumpHeight > jumpHeight) {
-                        return;
-                    }
-
                     tallest = solid.bounds();
                     lowest = tallest;
 
@@ -188,7 +189,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
                 //agent coordinates relative to solid
                 double ax = ((node.x + 0.5) - x) - halfWidth;
-                double ay = (node.y + yOffset) - y;
+                double ay = exactY - y;
                 double az = ((node.z + 0.5) - z) - halfWidth;
 
                 double lx = width + Math.abs(dx);
@@ -208,28 +209,36 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         continue;
                     }
 
-                    if (tallest == null || child.lengthY() > tallest.lengthY()) {
+                    double cly = child.lengthY();
+                    double coy = child.originY();
+                    if (tallest == null || cly > tallest.lengthY()) {
                         tallest = child;
                     }
 
-                    if (lowest == null || child.originY() < lowest.originY()) {
+                    if (lowest == null || coy < lowest.originY()) {
                         lowest = child;
+                    }
+
+                    //highest and lowest possible was found for this layer
+                    if (cly == 1 && coy == 0) {
+                        break outer;
                     }
                 }
             }
 
             //if we found a solid this layer, check the gap below it
             if (tallest != null) {
-                double gap = y + lowest.originY();
+                double ceiling = y + lowest.originY();
 
-                if (gap - lastTargetY >= height) {
+                if (ceiling - lastTargetY >= height) {
                     newY = lastTargetY;
                     break;
                 }
 
                 lastTargetY = y + tallest.lengthY();
+
+                //too high to make this jump
                 if (lastTargetY - exactY > jumpHeight) {
-                    //too high to make this jump
                     return;
                 }
             }
@@ -246,7 +255,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         }
 
         //jumping is necessary, so we need to check above us
-        if (newY > node.y + yOffset) {
+        if (newY > exactY) {
             //only search as high as we need to in order to reach the target elevation
             int jumpSearch = (int)Math.ceil(newY - exactY);
 
@@ -274,7 +283,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                             }
 
                             //return if this solid prevents us from jumping high enough, and we aren't intersecting
-                            if (y - height < newY && y > node.y + yOffset + height) {
+                            if (y - height < newY && y > exactY + height) {
                                 return;
                             }
 
@@ -290,11 +299,11 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
                         //agent coordinates relative to solid
                         double ax = ((node.x + 0.5) - x) - halfWidth;
-                        double ay = ((node.y + yOffset) - y) + height;
+                        double ay = (exactY - y) + height;
                         double az = ((node.z + 0.5) - z) - halfWidth;
 
                         for (Bounds3D child : solid.children()) {
-                            if (child.overlaps(ax, ay, az, width, jumpHeight, width) &&
+                            if (child.overlaps(ax, ay, az, width, jumpHeightBound, width) &&
                                     y + child.originY() - height < newY) {
                                 return;
                             }
@@ -318,8 +327,8 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
             outer:
             for (int dex = -halfBlockWidth; dex <= halfBlockWidth; dex++) {
                 for (int dez = -halfBlockWidth; dez <= halfBlockWidth; dez++) {
-                    int x = node.x + dex;
-                    int z = node.z + dez;
+                    int x = nx + dex;
+                    int z = nz + dez;
 
                     Solid solid = space.solidAt(x, y, z);
                     if (solid.isEmpty()) {
@@ -333,18 +342,21 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                     }
 
                     //agent coordinates relative to solid
-                    double ax = ((node.x + 0.5) - x) - halfWidth;
-                    double ay = (node.y + yOffset) - y;
-                    double az = ((node.z + 0.5) - z) - halfWidth;
+                    double ax = ((nx + 0.5) - x) - halfWidth;
+                    double az = ((nz + 0.5) - z) - halfWidth;
 
                     for (Bounds3D child : solid.children()) {
-                        if (!child.overlaps(ax, ay, az, width, height, width)) {
+                        if (!child.overlaps(ax, 0, az, width, height, width)) {
                             continue;
                         }
 
                         double height = child.lengthY();
                         if (height > highestY) {
                             highestY = height;
+                        }
+
+                        if (height == 1) {
+                            break outer;
                         }
                     }
                 }
@@ -353,9 +365,12 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
             //finite if we found a block
             if (Double.isFinite(highestY)) {
                 double ny = y + highestY;
-                int blockY = (int)Math.floor(ny);
-                handler.handle(node, nx, blockY, nz, ny - blockY);
-                return;
+
+                if (exactY - ny <= fallTolerance) {
+                    int blockY = (int)Math.floor(ny);
+                    handler.handle(node, nx, blockY, nz, ny - blockY);
+                    return;
+                }
             }
         }
     }
