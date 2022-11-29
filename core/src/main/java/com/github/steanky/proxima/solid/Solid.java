@@ -8,14 +8,6 @@ import org.jetbrains.annotations.Unmodifiable;
 import java.util.List;
 
 public interface Solid {
-    Bounds3D[] EMPTY_BOUNDS_ARRAY = new Bounds3D[0];
-
-    enum Order {
-        HIGHEST,
-        LOWEST,
-        NONE
-    }
-
     Solid EMPTY = new Solid() {
         @Override
         public @NotNull Bounds3D bounds() {

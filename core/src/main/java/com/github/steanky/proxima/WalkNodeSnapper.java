@@ -33,7 +33,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
     public WalkNodeSnapper(double width, double height, double fallTolerance, double jumpHeight, @NotNull Space space,
             @NotNull Bounds3I searchArea, double epsilon) {
-        check(width, height, fallTolerance, jumpHeight, epsilon);
+        validate(width, height, fallTolerance, jumpHeight, epsilon);
 
         int rWidth = (int)Math.rint(width);
 
@@ -61,7 +61,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         this.searchArea = searchArea.immutable();
     }
 
-    private static void check(double width, double height, double fallTolerance, double jumpHeight, double epsilon) {
+    private static void validate(double width, double height, double fallTolerance, double jumpHeight, double epsilon) {
         //width must be non-negative and finite
         if (width < 0 || !Double.isFinite(width)) {
             throw new IllegalArgumentException("Invalid width: " + width);
@@ -102,6 +102,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         }
     }
 
+    @SuppressWarnings("DuplicatedCode")
     @Override
     public void snap(@NotNull Direction direction, @NotNull Node node, @NotNull NodeHandler handler) {
         int dx = direction.x;
@@ -145,7 +146,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                     if (!solid.isEmpty() && !solid.isFull()) {
                         //agent coordinates relative to solid and shifted over by wDiff * width
                         double ax = (((node.x + 0.5) - x) - halfWidth) + (dx > 0 ? width : wDiff * dx);
-                        double ay = (exactY) - y;
+                        double ay = exactY - y;
                         double az = (((node.z + 0.5) - z) - halfWidth) + (dz > 0 ? width : wDiff * dz);
 
                         double lx = dx == 0 ? width : wDiff;
@@ -156,12 +157,19 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                                 continue;
                             }
 
-                            if (tallest == null || child.lengthY() > tallest.lengthY()) {
+                            double cly = child.lengthY();
+                            double coy = child.originY();
+                            if (tallest == null || cly > tallest.lengthY()) {
                                 tallest = child;
                             }
 
-                            if (lowest == null || child.originY() < lowest.originY()) {
+                            if (lowest == null || coy < lowest.originY()) {
                                 lowest = child;
+                            }
+
+                            //highest and lowest possible was found for this layer
+                            if (cly == 1 && coy == 0) {
+                                break outer;
                             }
                         }
                     }
@@ -219,7 +227,6 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         lowest = child;
                     }
 
-                    //highest and lowest possible was found for this layer
                     if (cly == 1 && coy == 0) {
                         break outer;
                     }
