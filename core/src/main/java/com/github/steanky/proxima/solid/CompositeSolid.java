@@ -1,6 +1,6 @@
 package com.github.steanky.proxima.solid;
 
-import com.github.steanky.toolkit.collection.Iterators;
+import com.github.steanky.toolkit.collection.Containers;
 import com.github.steanky.vector.Bounds3D;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
@@ -22,7 +22,7 @@ public final class CompositeSolid implements Solid {
             newArray[i] = bounds[i].immutable();
         }
 
-        this.bounds = Iterators.arrayView(newArray);
+        this.bounds = Containers.arrayView(newArray);
 
         this.enclosing = Bounds3D.enclosingImmutable(newArray);
         this.isFull = newArray.length == 1 && enclosing.originX() == 0D && enclosing.originY() == 0D &&

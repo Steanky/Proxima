@@ -3,7 +3,7 @@ package com.github.steanky.proxima;
 import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.solid.SingletonSolid;
 import com.github.steanky.proxima.solid.Solid;
-import com.github.steanky.toolkit.function.Wrapper;
+import com.github.steanky.toolkit.collection.Wrapper;
 import com.github.steanky.vector.Bounds3D;
 import com.github.steanky.vector.Bounds3I;
 import com.github.steanky.vector.Vec3I;
