@@ -26,7 +26,6 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
     private final int halfBlockWidth;
 
     private final double jumpHeight;
-    private final double jumpHeightBound;
     private final Space space;
 
     private final Bounds3I searchArea;
@@ -56,7 +55,6 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         this.halfBlockWidth = blockWidth >> 1;
 
         this.jumpHeight = jumpHeight + epsilon;
-        this.jumpHeightBound = jumpHeight - epsilon;
         this.space = Objects.requireNonNull(space);
         this.searchArea = searchArea.immutable();
     }
@@ -95,10 +93,6 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         //epsilon can't reduce height to 0 or lower
         if (epsilon >= height) {
             throw new IllegalArgumentException("Epsilon must not be larger than or equal to height");
-        }
-
-        if (epsilon > jumpHeight) {
-            throw new IllegalArgumentException("Epsilon must not be larger than jumpHeight");
         }
     }
 
@@ -262,7 +256,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         }
 
         //jumping is necessary, so we need to check above us
-        if (newY > exactY) {
+        if (newY > exactY && jumpHeight != 0) {
             //only search as high as we need to in order to reach the target elevation
             int jumpSearch = (int)Math.ceil(newY - exactY);
 
@@ -310,7 +304,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         double az = ((node.z + 0.5) - z) - halfWidth;
 
                         for (Bounds3D child : solid.children()) {
-                            if (child.overlaps(ax, ay, az, width, jumpHeightBound, width) &&
+                            if (child.overlaps(ax, ay, az, width, jumpHeight, width) &&
                                     y + child.originY() - height < newY) {
                                 return;
                             }

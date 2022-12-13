@@ -10,9 +10,7 @@ import com.github.steanky.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.*;
 import java.util.stream.IntStream;
 
@@ -116,11 +114,12 @@ class BasicAsyncPathfinderTest {
                 .immutable(-100, -100, -100, 200, 200, 200));
         Pathfinder pathfinder = pathfinder();
 
-        Set<Vec3I> expected = Set.of(Vec3I.immutable(0, 0, 0));
+        List<Vec3I> expected = List.of(Vec3I.immutable(0, 0, 0));
         IntStream.range(0, 1000000).parallel().forEach(ignored -> {
             PathResult result = assertDoesNotThrow(() -> pathfinder.pathfind(0, 0, 0, 10, 10,
                     10, settings).get());
-            assertEquals(expected, result.vectors());
+
+            assertPathEquals(expected, false, result);
         });
     }
 
@@ -143,12 +142,11 @@ class BasicAsyncPathfinderTest {
 
         PathResult result = pathfinder.pathfind(5, 1, 0, 0, 1, 0, settings).get();
 
-        Set<Vec3I> expected = new LinkedHashSet<>(List.of(Vec3I.immutable(5, 1, 0),
+        List<Vec3I> expected = List.of(Vec3I.immutable(5, 1, 0),
                 Vec3I.immutable(4, 1, 0), Vec3I.immutable(3, 1, 0), Vec3I.immutable(2, 1, 0),
-                Vec3I.immutable(1, 1, 0), Vec3I.immutable(0, 1, 0)));
+                Vec3I.immutable(1, 1, 0), Vec3I.immutable(0, 1, 0));
 
-        assertEquals(expected, result.vectors());
-        assertTrue(result.isSuccessful());
+        assertPathEquals(expected, true, result);
     }
 
     @Test
@@ -161,5 +159,26 @@ class BasicAsyncPathfinderTest {
         }
 
         pathfinder.shutdown();
+    }
+
+    private void assertPathEquals(List<Vec3I> expected, boolean success, PathResult result) {
+        if (success) {
+            assertTrue(result.isSuccessful(), "expected successful result");
+        }
+        else {
+            assertFalse(result.isSuccessful(), "expected failed result");
+        }
+
+        List<Node> nodes = result.nodes();
+        assertEquals(expected.size(), nodes.size(), "path length mismatch");
+
+        for (int i = 0; i < expected.size(); i++) {
+            Vec3I vec = expected.get(i);
+            Node node = nodes.get(i);
+
+            assertEquals(vec.x(), node.x, "node " + i + " x-coordinate");
+            assertEquals(vec.y(), node.y, "node " + i + " y-coordinate");
+            assertEquals(vec.z(), node.z, "node " + i + " z-coordinate");
+        }
     }
 }

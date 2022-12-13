@@ -112,7 +112,7 @@ public class BasicPathOperation implements PathOperation {
             throw new IllegalStateException("Can't compile a result while incomplete");
         }
 
-        return new PathResult(best.reverseToVectorSet(), graph.size(), success);
+        return new PathResult(best.reverseToNavigationList(), graph.size(), success);
     }
 
     @Override

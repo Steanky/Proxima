@@ -1,14 +1,12 @@
 package com.github.steanky.proxima.node;
 
+import com.github.steanky.toolkit.collection.Containers;
 import com.github.steanky.vector.Vec3I;
-import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectSet;
-import it.unimi.dsi.fastutil.objects.ObjectSets;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
-import java.util.Set;
+import java.util.List;
 
 public final class Node implements Comparable<Node> {
     public final int x;
@@ -37,25 +35,9 @@ public final class Node implements Comparable<Node> {
         this.heapIndex = -1;
     }
 
-    public @NotNull Vec3I vector() {
-        return Vec3I.immutable(x, y, z);
-    }
-
-    public int size() {
-        Node current = this;
-        int size = 0;
-        do {
-            size++;
-            current = current.parent;
-        }
-        while (current != null);
-
-        return size;
-    }
-
-    public @NotNull @Unmodifiable Set<Vec3I> reverseToVectorSet() {
+    public @NotNull @Unmodifiable List<Node> reverseToNavigationList() {
         if (parent == null) {
-            return Set.of(vector());
+            return List.of(this);
         }
 
         Node prev = null;
@@ -72,18 +54,31 @@ public final class Node implements Comparable<Node> {
             size++;
         }
 
-        ObjectSet<Vec3I> set = new ObjectLinkedOpenHashSet<>(size);
+        Node[] nodes = new Node[size];
+        int i = 0;
         do {
-            set.add(prev.vector());
+            nodes[i++] = prev;
             prev = prev.parent;
         }
         while (prev != null);
 
-        return ObjectSets.unmodifiable(set);
+        return Containers.arrayView(nodes);
     }
 
     public boolean onHeap() {
         return heapIndex > -1;
+    }
+
+    public boolean positionEquals(@NotNull Node other) {
+        return positionEquals(other.x, other.y, other.z);
+    }
+
+    public boolean positionEquals(@NotNull Vec3I other) {
+        return positionEquals(other.x(), other.y(), other.z());
+    }
+
+    public boolean positionEquals(int x, int y, int z) {
+        return this.x == x && this.y == y && this.z == z;
     }
 
     @Override
