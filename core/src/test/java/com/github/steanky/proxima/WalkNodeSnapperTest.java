@@ -1,7 +1,6 @@
 package com.github.steanky.proxima;
 
 import com.github.steanky.proxima.node.Node;
-import com.github.steanky.proxima.solid.SingletonSolid;
 import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.toolkit.collection.Wrapper;
 import com.github.steanky.vector.Bounds3D;
@@ -15,22 +14,22 @@ import static org.junit.jupiter.api.Assertions.*;
 class WalkNodeSnapperTest {
     private static double EPSILON = 1E-6;
 
-    private static final Solid LOWER_HALF_BLOCK = new SingletonSolid(Bounds3D.immutable(0, 0, 0,
+    private static final Solid LOWER_HALF_BLOCK = Solid.of(Bounds3D.immutable(0, 0, 0,
             1, 0.5, 1));
 
-    private static final Solid UPPER_HALF_BLOCK = new SingletonSolid(Bounds3D.immutable(0, 0.5, 0,
+    private static final Solid UPPER_HALF_BLOCK = Solid.of(Bounds3D.immutable(0, 0.5, 0,
             1, 0.5, 1));
 
-    private static final Solid PARTIAL_BLOCK_NORTH = new SingletonSolid(Bounds3D.immutable(0, 0, 0,
+    private static final Solid PARTIAL_BLOCK_NORTH = Solid.of(Bounds3D.immutable(0, 0, 0,
             1, 1, 0.0625));
 
-    private static final Solid PARTIAL_BLOCK_SOUTH = new SingletonSolid(Bounds3D.immutable(0, 0,
+    private static final Solid PARTIAL_BLOCK_SOUTH = Solid.of(Bounds3D.immutable(0, 0,
             0.9375, 1, 1, 0.0625));
 
-    private static final Solid PARTIAL_BLOCK_EAST = new SingletonSolid(Bounds3D.immutable(0.9375, 0,
+    private static final Solid PARTIAL_BLOCK_EAST = Solid.of(Bounds3D.immutable(0.9375, 0,
             0, 0.0625, 1, 1));
 
-    private static final Solid PARTIAL_BLOCK_WEST = new SingletonSolid(Bounds3D.immutable(0, 0,
+    private static final Solid PARTIAL_BLOCK_WEST = Solid.of(Bounds3D.immutable(0, 0,
             0, 0.0625, 1, 1));
 
     private record SolidPos(Solid solid, Vec3I pos) { }
@@ -273,7 +272,7 @@ class WalkNodeSnapperTest {
 
             @Nested
             class HalfBlocks {
-                private static final Solid LOWER_HALF_BLOCK = new SingletonSolid(Bounds3D.immutable(0, 0, 0,
+                private static final Solid LOWER_HALF_BLOCK = Solid.of(Bounds3D.immutable(0, 0, 0,
                         1, 0.5, 1));
 
                 private static SolidPos[] flatWalkBlocks(int x, int y, int z) {

@@ -7,12 +7,12 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
 
-public final class CompositeSolid implements Solid {
+final class SolidN implements Solid {
     private final List<Bounds3D> bounds;
     private final Bounds3D enclosing;
     private final boolean isFull;
 
-    public CompositeSolid(@NotNull Bounds3D[] bounds) {
+    SolidN(@NotNull Bounds3D @NotNull [] bounds) {
         if (bounds.length == 0) {
             throw new IllegalArgumentException("Cannot construct solid with no bounds");
         }
