@@ -6,6 +6,7 @@ import com.github.steanky.vector.Bounds3D;
 import com.github.steanky.vector.Bounds3I;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
 import java.util.Objects;
 
 public class WalkNodeSnapper implements DirectionalNodeSnapper {
@@ -96,7 +97,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         }
     }
 
-    @SuppressWarnings("DuplicatedCode")
+    @SuppressWarnings({"DuplicatedCode", "ForLoopReplaceableByForEach"})
     @Override
     public void snap(@NotNull Direction direction, @NotNull Node node, @NotNull NodeHandler handler) {
         int dx = direction.x;
@@ -146,7 +147,10 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         double lx = dx == 0 ? width : wDiff;
                         double lz = dz == 0 ? width : wDiff;
 
-                        for (Bounds3D child : solid.children()) {
+                        List<Bounds3D> children = solid.children();
+                        for (int j = 0; j < children.size(); j++) {
+                            Bounds3D child = children.get(j);
+
                             if (!child.overlaps(ax, ay, az, lx, height, lz)) {
                                 continue;
                             }
@@ -206,7 +210,10 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                 }
 
                 //if the directionally-expanded bounds overlaps, we have a collision
-                for (Bounds3D child : solid.children()) {
+                List<Bounds3D> children = solid.children();
+                for (int j = 0; j < children.size(); j++) {
+                    Bounds3D child = children.get(j);
+
                     if (!child.overlaps(ax, ay, az, lx, height, lz)) {
                         continue;
                     }
@@ -303,7 +310,9 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         double ay = (exactY - y) + height;
                         double az = ((node.z + 0.5) - z) - halfWidth;
 
-                        for (Bounds3D child : solid.children()) {
+                        List<Bounds3D> children = solid.children();
+                        for (int j = 0; j < children.size(); j++) {
+                            Bounds3D child = children.get(j);
                             if (child.overlaps(ax, ay, az, width, jumpHeight, width) &&
                                     y + child.originY() - height < newY) {
                                 return;
@@ -346,7 +355,10 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                     double ax = ((nx + 0.5) - x) - halfWidth;
                     double az = ((nz + 0.5) - z) - halfWidth;
 
-                    for (Bounds3D child : solid.children()) {
+                    List<Bounds3D> children = solid.children();
+                    for (int j = 0; j < children.size(); j++) {
+                        Bounds3D child = children.get(j);
+
                         if (!child.overlaps(ax, 0, az, width, height, width)) {
                             continue;
                         }

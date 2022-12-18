@@ -103,6 +103,21 @@ class BasicAsyncPathfinderTest {
                 0, 1000, 4, 1000));
     }
 
+    private static PathSettings hugeEnvironmentWithPartialBlocks() {
+        Solid stairs = Solid.of(Bounds3D.immutable(0, 0, 0, 1, 0.5, 1),
+                Bounds3D.immutable(0, 0.5, 0.5, 0.5, 0.5, 1));
+
+        HashSpace space = new HashSpace(0, 0, 0, 1000, 4, 1000);
+        for (int x = 0; x < 1000; x++) {
+            for (int z = 0; z < 1000; z++) {
+                space.put(x, 0, z, stairs);
+            }
+        }
+
+        return settings(1, 1, 1, 1, space, Bounds3I.immutable(0, 0,
+                0, 1000, 4, 1000));
+    }
+
     @Test
     void overloadSmallFailedPath() {
         HashSpace space = new HashSpace(-100, -100, -100, 100, 100, 100);
@@ -152,6 +167,18 @@ class BasicAsyncPathfinderTest {
     @Test
     void hugePath() {
         PathSettings settings = hugeEnvironment();
+        Pathfinder pathfinder = pathfinder();
+
+        for (int i = 0; i < 1000; i++) {
+            pathfinder.pathfind(0, 1, 0, 900, 1, 900, settings);
+        }
+
+        pathfinder.shutdown();
+    }
+
+    @Test
+    void hugePathWithPartialBlocks() {
+        PathSettings settings = hugeEnvironmentWithPartialBlocks();
         Pathfinder pathfinder = pathfinder();
 
         for (int i = 0; i < 1000; i++) {
