@@ -6,6 +6,9 @@ import com.github.steanky.vector.Vec3I;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * A basic implementation of {@link Space}. Useful for testing.
+ */
 public class HashSpace implements Space {
     private final Vec3I2ObjectMap<Solid> solidMap;
 

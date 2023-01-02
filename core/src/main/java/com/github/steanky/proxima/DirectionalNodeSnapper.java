@@ -1,7 +1,7 @@
 package com.github.steanky.proxima;
 
 public interface DirectionalNodeSnapper {
-    long FAIL = 0xFFC0_0001L;
+    long FAIL = 0xFFC0_0001L; //lower 32 bits represent a floating-point NaN with a payload of all 0s
 
     long snap(int dx, int dz, int nodeX, int nodeY, int nodeZ, double nodeOffset);
 
@@ -12,6 +12,7 @@ public interface DirectionalNodeSnapper {
      * directionality of movement; i.e. if backwards movement is also permitted.
      *
      * @param height the height to encode
+     * @param bidirectional if this movement is bidirectional
      * @return the encoded height
      */
     static long encode(double height, boolean bidirectional) {

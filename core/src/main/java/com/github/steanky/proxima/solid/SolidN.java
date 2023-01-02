@@ -10,6 +10,7 @@ import java.util.List;
 final class SolidN implements Solid {
     private final List<Bounds3D> bounds;
     private final Bounds3D enclosing;
+
     SolidN(@NotNull Bounds3D @NotNull [] bounds) {
         if (bounds.length == 0) {
             throw new IllegalArgumentException("Cannot construct solid with no bounds");
