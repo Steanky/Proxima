@@ -1,6 +1,5 @@
 package com.github.steanky.proxima;
 
-import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.vector.Bounds3D;
 import com.github.steanky.vector.Bounds3I;
@@ -46,7 +45,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
         this.width = width - epsilon;
         this.halfWidth = width / 2;
-        this.wDiff = (blockWidth - width) / 2;
+        this.wDiff = ((blockWidth - width) / 2) - (epsilon / 2);
         this.height = height - epsilon;
         this.ceilHeight = (int)Math.ceil(height);
 
@@ -99,27 +98,22 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
     @SuppressWarnings({"DuplicatedCode", "ForLoopReplaceableByForEach"})
     @Override
-    public void snap(@NotNull Direction direction, @NotNull Node node, @NotNull NodeHandler handler) {
-        int dx = direction.x;
-        int dz = direction.z;
-
-        int nx = node.x + dx;
-        int nz = node.z + dz;
+    public long snap(int dx, int dz, int nodeX, int nodeY, int nodeZ, double nodeOffset) {
+        int nx = nodeX + dx;
+        int nz = nodeZ + dz;
 
         //fast exit: don't check out of bounds
-        if (searchArea.originX() > nx || searchArea.originZ() > nz ||
-                searchArea.originY() > node.y || searchArea.maxY() <= node.y ||
-                searchArea.maxX() <= nx || searchArea.maxZ() <= nz) {
-            return;
+        if (!searchArea.contains(nx, nodeY, nz)) {
+            return FAIL;
         }
 
-        double exactY = node.y + node.yOffset;
+        double exactY = nodeY + nodeOffset;
         double newY = Double.NaN;
         double lastTargetY = exactY;
 
-        int h = node.yOffset == 0 ? searchHeight : searchHeight + 1;
+        int h = nodeOffset == 0 ? searchHeight : searchHeight + 1;
         for (int i = 0; i < h; i++) {
-            int y = node.y + i;
+            int y = nodeY + i;
 
             Bounds3D tallest = null;
             Bounds3D lowest = null;
@@ -130,8 +124,8 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                 //full agents don't need to check for collisions inside themselves
                 if (!fullWidth) {
                     //first block we may encounter
-                    int x = dx == 0 ? nx + dh : node.x + (dx * halfBlockWidth);
-                    int z = dz == 0 ? nz + dh : node.z + (dz * halfBlockWidth);
+                    int x = dx == 0 ? nx + dh : nodeX + (dx * halfBlockWidth);
+                    int z = dz == 0 ? nz + dh : nodeZ + (dz * halfBlockWidth);
 
                     Solid solid = space.solidAt(x, y, z);
 
@@ -140,9 +134,9 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                     //if the solid is partial, check if we're overlapping
                     if (!solid.isEmpty() && !solid.isFull()) {
                         //agent coordinates relative to solid and shifted over by wDiff * width
-                        double ax = (((node.x + 0.5) - x) - halfWidth) + (dx > 0 ? width : wDiff * dx);
+                        double ax = (((nodeX + 0.5) - x) - halfWidth) + (dx > 0 ? width : wDiff * dx);
                         double ay = exactY - y;
-                        double az = (((node.z + 0.5) - z) - halfWidth) + (dz > 0 ? width : wDiff * dz);
+                        double az = (((nodeZ + 0.5) - z) - halfWidth) + (dz > 0 ? width : wDiff * dz);
 
                         double lx = dx == 0 ? width : wDiff;
                         double lz = dz == 0 ? width : wDiff;
@@ -194,9 +188,9 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                 }
 
                 //agent coordinates relative to solid
-                double ax = ((node.x + 0.5) - x) - halfWidth;
+                double ax = ((nodeX + 0.5) - x) - halfWidth;
                 double ay = exactY - y;
-                double az = ((node.z + 0.5) - z) - halfWidth;
+                double az = ((nodeZ + 0.5) - z) - halfWidth;
 
                 double lx = width + Math.abs(dx);
                 double lz = width + Math.abs(dz);
@@ -247,7 +241,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
                 //too high to make this jump
                 if (lastTargetY - exactY > jumpHeight) {
-                    return;
+                    return FAIL;
                 }
             }
             else if ((y + 1) - lastTargetY >= height) {
@@ -259,7 +253,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         //newY was never assigned, so we can't move this direction
         //or, our target y is outside the search area
         if (Double.isNaN(newY) || newY < searchArea.originY() || newY >= searchArea.maxY()) {
-            return;
+            return FAIL;
         }
 
         //jumping is necessary, so we need to check above us
@@ -269,12 +263,12 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
             //check for blocks above the agent, possibly including the block intersected by the agent's head
             for (int i = fullHeight ? 0 : -1; i < jumpSearch; i++) {
-                int y = i + ceilHeight + node.y;
+                int y = i + ceilHeight + nodeY;
 
                 for (int dex = -halfBlockWidth; dex <= halfBlockWidth; dex++) {
                     for (int dez = -halfBlockWidth; dez <= halfBlockWidth; dez++) {
-                        int x = node.x + dex;
-                        int z = node.z + dez;
+                        int x = nodeX + dex;
+                        int z = nodeZ + dez;
 
                         Solid solid = space.solidAt(x, y, z);
 
@@ -287,12 +281,12 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         if (solid.isFull()) {
                             //if full height: any block we run into makes this jump impossible
                             if (fullHeight) {
-                                return;
+                                return FAIL;
                             }
 
                             //return if this solid prevents us from jumping high enough, and we aren't intersecting
                             if (y - height < newY && y > exactY + height) {
-                                return;
+                                return FAIL;
                             }
 
                             continue;
@@ -306,16 +300,16 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         }
 
                         //agent coordinates relative to solid
-                        double ax = ((node.x + 0.5) - x) - halfWidth;
+                        double ax = ((nodeX + 0.5) - x) - halfWidth;
                         double ay = (exactY - y) + height;
-                        double az = ((node.z + 0.5) - z) - halfWidth;
+                        double az = ((nodeZ + 0.5) - z) - halfWidth;
 
                         List<Bounds3D> children = solid.children();
                         for (int j = 0; j < children.size(); j++) {
                             Bounds3D child = children.get(j);
                             if (child.overlaps(ax, ay, az, width, jumpHeight, width) &&
                                     y + child.originY() - height < newY) {
-                                return;
+                                return FAIL;
                             }
                         }
                     }
@@ -323,14 +317,13 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
             }
 
             //nothing was found preventing our jump
-            int blockY = (int)Math.floor(newY);
-            handler.handle(node, nx, blockY, nz, newY - blockY);
-            return;
+            boolean bidirectional = newY - exactY <= fallTolerance;
+            return DirectionalNodeSnapper.encode(newY, bidirectional);
         }
 
         //search below us, possibly including the block we're in if it's partial
-        for (int i = node.yOffset == 0 ? 0 : -1; i < fallSearchHeight; i++) {
-            int y = node.y - (i + 1);
+        for (int i = nodeOffset == 0 ? 0 : -1; i < fallSearchHeight; i++) {
+            int y = nodeY - (i + 1);
 
             double highestY = Double.NEGATIVE_INFINITY;
 
@@ -378,21 +371,15 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
             //finite if we found a block
             if (Double.isFinite(highestY)) {
                 double ny = y + highestY;
+                double fall = exactY - ny;
 
-                if (exactY - ny <= fallTolerance) {
-                    int blockY = (int)Math.floor(ny);
-                    handler.handle(node, nx, blockY, nz, ny - blockY);
-                    return;
+                if (fall <= fallTolerance) {
+                    boolean bidirectional = fall <= jumpHeight;
+                    return DirectionalNodeSnapper.encode(ny, bidirectional);
                 }
             }
         }
-    }
 
-    @Override
-    public boolean canSkip(@NotNull Node currentNode, @NotNull Node parent, @NotNull Direction direction) {
-        int dX = parent.x - currentNode.x;
-        int dZ = parent.z - currentNode.z;
-
-        return Math.signum(dX) == direction.x && Math.signum(dZ) == direction.z;
+        return FAIL;
     }
 }

@@ -34,7 +34,7 @@ public class BasicPathOperation implements PathOperation {
 
     @Override
     public void init(int startX, int startY, int startZ, int destX, int destY, int destZ,
-            @NotNull PathSettings settings, double yOffset) {
+            @NotNull PathSettings settings, float yOffset) {
         this.graph = settings.graph();
 
         this.successPredicate = settings.successPredicate();
@@ -72,7 +72,7 @@ public class BasicPathOperation implements PathOperation {
 
             //reference the explore method: this is not strictly necessary, but it is cleaner, and prevents from
             //accidentally capturing a variable from step's scope, which could result in unnecessary object allocation
-            explorer.exploreEach(current, this::explore);
+            explorer.exploreEach(current, destinationX, destinationY, destinationZ, this::explore);
             if (current.h < best.h) {
                 best = current;
             }
@@ -94,7 +94,7 @@ public class BasicPathOperation implements PathOperation {
         this.success = success;
     }
 
-    private void explore(Node current, int x, int y, int z, double yOffset) {
+    private void explore(Node current, int x, int y, int z, float yOffset) {
         Node neighbor = graph.computeIfAbsent(x, y, z, (x1, y1, z1) -> new Node(x1, y1, z1, Float.POSITIVE_INFINITY,
                 heuristic.heuristic(x1, y1, z1, destinationX, destinationY, destinationZ), null, yOffset));
 

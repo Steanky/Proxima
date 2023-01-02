@@ -10,8 +10,6 @@ import java.util.List;
 final class SolidN implements Solid {
     private final List<Bounds3D> bounds;
     private final Bounds3D enclosing;
-    private final boolean isFull;
-
     SolidN(@NotNull Bounds3D @NotNull [] bounds) {
         if (bounds.length == 0) {
             throw new IllegalArgumentException("Cannot construct solid with no bounds");
@@ -23,11 +21,7 @@ final class SolidN implements Solid {
         }
 
         this.bounds = Containers.arrayView(newArray);
-
         this.enclosing = Bounds3D.enclosingImmutable(newArray);
-        this.isFull = newArray.length == 1 && enclosing.originX() == 0D && enclosing.originY() == 0D &&
-                enclosing.originZ() == 0D && enclosing.lengthX() == 1D && enclosing.lengthY() == 1D &&
-                enclosing.lengthZ() == 1D;
     }
 
     @Override
@@ -37,7 +31,7 @@ final class SolidN implements Solid {
 
     @Override
     public boolean isFull() {
-        return isFull;
+        return false;
     }
 
     @Override

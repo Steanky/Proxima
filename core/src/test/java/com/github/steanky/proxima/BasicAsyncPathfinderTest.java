@@ -40,12 +40,8 @@ class BasicAsyncPathfinderTest {
             private static final Vec3IBiPredicate SUCCESS_PREDICATE = (x1, y1, z1, x2, y2, z2) -> x1 == x2 && y1 == y2
                     && z1 == z2;
 
-            private final Explorer explorer = new DirectionalExplorer(new Direction[] {
-                    Direction.NORTH,
-                    Direction.EAST,
-                    Direction.SOUTH,
-                    Direction.WEST
-            }, new WalkNodeSnapper(width, height, fallTolerance, jumpHeight, space, searchArea, 1E-6));
+            private final Explorer explorer = new DirectionalExplorer(new WalkNodeSnapper(width, height, fallTolerance,
+                    jumpHeight, space, searchArea, 1E-6));
 
             @Override
             public @NotNull Vec3IBiPredicate successPredicate() {

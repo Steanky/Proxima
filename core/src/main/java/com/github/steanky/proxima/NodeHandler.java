@@ -5,5 +5,5 @@ import org.jetbrains.annotations.NotNull;
 
 @FunctionalInterface
 public interface NodeHandler {
-    void handle(@NotNull Node node, int x, int y, int z, double yOffset);
+    void handle(@NotNull Node node, int x, int y, int z, float yOffset);
 }

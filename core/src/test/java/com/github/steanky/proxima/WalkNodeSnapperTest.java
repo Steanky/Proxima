@@ -2,7 +2,6 @@ package com.github.steanky.proxima;
 
 import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.solid.Solid;
-import com.github.steanky.toolkit.collection.Wrapper;
 import com.github.steanky.vector.Bounds3D;
 import com.github.steanky.vector.Bounds3I;
 import com.github.steanky.vector.Vec3I;
@@ -46,7 +45,7 @@ class WalkNodeSnapperTest {
         return node(x, y, z, 0);
     }
 
-    private static Node node(int x, int y, int z, double yOffset) {
+    private static Node node(int x, int y, int z, float yOffset) {
         return new Node(x, y, z, 0, 0, null, yOffset);
     }
 
@@ -64,21 +63,24 @@ class WalkNodeSnapperTest {
     }
 
     private static void assertSnap(WalkNodeSnapper snapper, Direction direction, Node node, NodeHandler handler) {
-        Wrapper<Boolean> called = Wrapper.of(false);
-        snapper.snap(direction, node, (node1, x, y, z, yOffset) -> {
-            called.set(true);
-            handler.handle(node1, x, y, z, yOffset);
-        });
+        long val = snapper.snap(direction.x, direction.z, node.x, node.y, node.z, node.yOffset);
+        if (val != DirectionalNodeSnapper.FAIL) {
+            int y = DirectionalNodeSnapper.height(val);
+            float offset = DirectionalNodeSnapper.offset(val);
 
-        assertTrue(called.get(), "handler was not called");
+            handler.handle(node, node.x + direction.x, y, node.z + direction.z, offset);
+        }
+        else {
+            fail("snapper returned DirectionalNodeSnapper.FAIL");
+        }
     }
 
     private static void assertNoSnap(WalkNodeSnapper snapper, Direction direction, Node node) {
-        snapper.snap(direction, node, (node1, x, y, z, yOffset) ->
-                fail("handler called: node=" + node1 + ", x=" + x + ", y=" + y + ", z=" + z + ", yOffset=" + yOffset));
+        assertEquals(DirectionalNodeSnapper.FAIL, snapper.snap(direction.x, direction.z, node.x, node.y, node.z,
+                node.yOffset));
     }
 
-    private static void walk(Direction direction, double width, double height, int x, int y, int z, double yo,
+    private static void walk(Direction direction, double width, double height, int x, int y, int z, float yo,
             int ex, int ey, int ez, double eOffset, SolidPos... pos) {
         WalkNodeSnapper snapper = make(width, height, 1, 1, EPSILON, pos);
 
@@ -90,7 +92,7 @@ class WalkNodeSnapperTest {
         });
     }
 
-    private static void noWalk(Direction direction, double width, double height, int x, int y, int z, double yo,
+    private static void noWalk(Direction direction, double width, double height, int x, int y, int z, float yo,
             SolidPos... pos) {
         WalkNodeSnapper snapper = make(width, height, 1, 1, EPSILON, pos);
         assertNoSnap(snapper, direction, node(x, y, z, yo));
@@ -100,7 +102,7 @@ class WalkNodeSnapperTest {
     class FullWidth {
         @Nested
         class FullHeight {
-            private static void walk(Direction direction, int x, int y, int z, double yo, int ex, int ey, int ez,
+            private static void walk(Direction direction, int x, int y, int z, float yo, int ex, int ey, int ez,
                     double eOffset, SolidPos... pos) {
                 WalkNodeSnapperTest.walk(direction, 1, 1, x, y, z, yo, ex, ey, ez, eOffset, pos);
             }
@@ -175,25 +177,25 @@ class WalkNodeSnapperTest {
 
                 @Test
                 void enclosedWalkNorth() {
-                    noWalk(Direction.NORTH, 1, 1, 0, 0, 0, 0.0,
+                    noWalk(Direction.NORTH, 1, 1, 0, 0, 0, 0.0F,
                             enclosedBlocks(0, 0, 0));
                 }
 
                 @Test
                 void enclosedWalkEast() {
-                    noWalk(Direction.EAST, 1, 1, 0, 0, 0, 0.0,
+                    noWalk(Direction.EAST, 1, 1, 0, 0, 0, 0.0F,
                             enclosedBlocks(0, 0, 0));
                 }
 
                 @Test
                 void enclosedWalkSouth() {
-                    noWalk(Direction.SOUTH, 1, 1, 0, 0, 0, 0.0,
+                    noWalk(Direction.SOUTH, 1, 1, 0, 0, 0, 0.0F,
                             enclosedBlocks(0, 0, 0));
                 }
 
                 @Test
                 void enclosedWalkWest() {
-                    noWalk(Direction.WEST, 1, 1, 0, 0, 0, 0.0,
+                    noWalk(Direction.WEST, 1, 1, 0, 0, 0, 0.0F,
                             enclosedBlocks(0, 0, 0));
                 }
 
@@ -223,49 +225,49 @@ class WalkNodeSnapperTest {
 
                 @Test
                 void straightWalkNorthOffset() {
-                    walk(Direction.NORTH, 0, 1, 0, 0.5, 0, 1, -1, 0,
+                    walk(Direction.NORTH, 0, 1, 0, 0.5F, 0, 1, -1, 0,
                             flatWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkEastOffset() {
-                    walk(Direction.EAST, 0, 1, 0, 0.5,1, 1, 0, 0,
+                    walk(Direction.EAST, 0, 1, 0, 0.5F,1, 1, 0, 0,
                             flatWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkSouthOffset() {
-                    walk(Direction.SOUTH, 0, 1, 0, 0.5, 0, 1, 1, 0,
+                    walk(Direction.SOUTH, 0, 1, 0, 0.5F, 0, 1, 1, 0,
                             flatWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkWestOffset() {
-                    walk(Direction.WEST, 0, 1, 0, 0.5, -1, 1, 0, 0,
+                    walk(Direction.WEST, 0, 1, 0, 0.5F, -1, 1, 0, 0,
                             flatWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void jumpWalkNorth() {
-                    walk(Direction.NORTH, 0, 1, 0, 0.5, 0, 2, -1, 0,
+                    walk(Direction.NORTH, 0, 1, 0, 0.5F, 0, 2, -1, 0,
                             jumpWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void jumpWalkEast() {
-                    walk(Direction.EAST, 0, 1, 0, 0.5, 1, 2, 0, 0,
+                    walk(Direction.EAST, 0, 1, 0, 0.5F, 1, 2, 0, 0,
                             jumpWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void jumpWalkSouth() {
-                    walk(Direction.SOUTH, 0, 1, 0, 0.5, 0, 2, 1, 0,
+                    walk(Direction.SOUTH, 0, 1, 0, 0.5F, 0, 2, 1, 0,
                             jumpWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void jumpWalkWest() {
-                    walk(Direction.WEST, 0, 1, 0, 0.5, -1, 2, 0, 0,
+                    walk(Direction.WEST, 0, 1, 0, 0.5F, -1, 2, 0, 0,
                             jumpWalkBlocks(0, 0, 0));
                 }
             }
@@ -297,25 +299,25 @@ class WalkNodeSnapperTest {
 
                 @Test
                 void straightWalkNorth() {
-                    walk(Direction.NORTH, 0, 0, 0, 0.5, 0, 0, -1, 0.5,
+                    walk(Direction.NORTH, 0, 0, 0, 0.5F, 0, 0, -1, 0.5,
                             flatWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkEast() {
-                    walk(Direction.EAST, 0, 0, 0, 0.5, 1, 0, 0, 0.5,
+                    walk(Direction.EAST, 0, 0, 0, 0.5F, 1, 0, 0, 0.5,
                             flatWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkSouth() {
-                    walk(Direction.SOUTH, 0, 0, 0, 0.5, 0, 0, 1, 0.5,
+                    walk(Direction.SOUTH, 0, 0, 0, 0.5F, 0, 0, 1, 0.5,
                             flatWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkWest() {
-                    walk(Direction.WEST, 0, 0, 0, 0.5, -1, 0, 0, 0.5,
+                    walk(Direction.WEST, 0, 0, 0, 0.5F, -1, 0, 0, 0.5,
                             flatWalkBlocks(0, 0, 0));
                 }
 
@@ -350,7 +352,7 @@ class WalkNodeSnapperTest {
     class PartialWidth {
         @Nested
         class PartialHeight {
-            private static void walk(Direction direction, int x, int y, int z, double yo, int ex, int ey, int ez,
+            private static void walk(Direction direction, int x, int y, int z, float yo, int ex, int ey, int ez,
                     double eOffset, SolidPos... pos) {
                 WalkNodeSnapperTest.walk(direction, 0.6, 1.95, x, y, z, yo, ex, ey, ez, eOffset, pos);
             }
@@ -403,49 +405,49 @@ class WalkNodeSnapperTest {
 
                 @Test
                 void straightWalkNorthOffset() {
-                    walk(Direction.NORTH, 0, 1, 0, 0.5, 0, 1, -1, 0,
+                    walk(Direction.NORTH, 0, 1, 0, 0.5F, 0, 1, -1, 0,
                             flatWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkEastOffset() {
-                    walk(Direction.EAST, 0, 1, 0, 0.5,1, 1, 0, 0,
+                    walk(Direction.EAST, 0, 1, 0, 0.5F,1, 1, 0, 0,
                             flatWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkSouthOffset() {
-                    walk(Direction.SOUTH, 0, 1, 0, 0.5, 0, 1, 1, 0,
+                    walk(Direction.SOUTH, 0, 1, 0, 0.5F, 0, 1, 1, 0,
                             flatWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkWestOffset() {
-                    walk(Direction.WEST, 0, 1, 0, 0.5, -1, 1, 0, 0,
+                    walk(Direction.WEST, 0, 1, 0, 0.5F, -1, 1, 0, 0,
                             flatWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void jumpWalkNorth() {
-                    walk(Direction.NORTH, 0, 1, 0, 0.5, 0, 2, -1, 0,
+                    walk(Direction.NORTH, 0, 1, 0, 0.5F, 0, 2, -1, 0,
                             jumpWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void jumpWalkEast() {
-                    walk(Direction.EAST, 0, 1, 0, 0.5, 1, 2, 0, 0,
+                    walk(Direction.EAST, 0, 1, 0, 0.5F, 1, 2, 0, 0,
                             jumpWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void jumpWalkSouth() {
-                    walk(Direction.SOUTH, 0, 1, 0, 0.5, 0, 2, 1, 0,
+                    walk(Direction.SOUTH, 0, 1, 0, 0.5F, 0, 2, 1, 0,
                             jumpWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void jumpWalkWest() {
-                    walk(Direction.WEST, 0, 1, 0, 0.5, -1, 2, 0, 0,
+                    walk(Direction.WEST, 0, 1, 0, 0.5F, -1, 2, 0, 0,
                             jumpWalkBlocks(0, 0, 0));
                 }
             }
@@ -521,73 +523,73 @@ class WalkNodeSnapperTest {
 
                 @Test
                 void jumpUpFromSlabBlockedNorth() {
-                    noWalk(Direction.NORTH, 0.6, 1.95, 0, 0, 0, 0.5,
+                    noWalk(Direction.NORTH, 0.6, 1.95, 0, 0, 0, 0.5F,
                             jumpUpFromSlabBlocked(0, 0, 0));
                 }
 
                 @Test
                 void jumpUpFromSlabBlockedEast() {
-                    noWalk(Direction.EAST, 0.6, 1.95, 0, 0, 0, 0.5,
+                    noWalk(Direction.EAST, 0.6, 1.95, 0, 0, 0, 0.5F,
                             jumpUpFromSlabBlocked(0, 0, 0));
                 }
 
                 @Test
                 void jumpUpFromSlabBlockedSouth() {
-                    noWalk(Direction.SOUTH, 0.6, 1.95, 0, 0, 0, 0.5,
+                    noWalk(Direction.SOUTH, 0.6, 1.95, 0, 0, 0, 0.5F,
                             jumpUpFromSlabBlocked(0, 0, 0));
                 }
 
                 @Test
                 void jumpUpFromSlabBlockedWest() {
-                    noWalk(Direction.WEST, 0.6, 1.95, 0, 0, 0, 0.5,
+                    noWalk(Direction.WEST, 0.6, 1.95, 0, 0, 0, 0.5F,
                             jumpUpFromSlabBlocked(0, 0, 0));
                 }
 
                 @Test
                 void jumpUpFromSlabNorth() {
-                    walk(Direction.NORTH, 0, 0, 0, 0.5, 0, 1, -1, 0.5,
+                    walk(Direction.NORTH, 0, 0, 0, 0.5F, 0, 1, -1, 0.5,
                             jumpUpFromSlabBlocks(0, 0, 0));
                 }
 
                 @Test
                 void jumpUpFromSlabEast() {
-                    walk(Direction.EAST, 0, 0, 0, 0.5, 1, 1, 0, 0.5,
+                    walk(Direction.EAST, 0, 0, 0, 0.5F, 1, 1, 0, 0.5,
                             jumpUpFromSlabBlocks(0, 0, 0));
                 }
 
                 @Test
                 void jumpUpFromSlabSouth() {
-                    walk(Direction.SOUTH, 0, 0, 0, 0.5, 0, 1, 1, 0.5,
+                    walk(Direction.SOUTH, 0, 0, 0, 0.5F, 0, 1, 1, 0.5,
                             jumpUpFromSlabBlocks(0, 0, 0));
                 }
 
                 @Test
                 void jumpUpFromSlabWest() {
-                    walk(Direction.WEST, 0, 0, 0, 0.5, -1, 1, 0, 0.5,
+                    walk(Direction.WEST, 0, 0, 0, 0.5F, -1, 1, 0, 0.5,
                             jumpUpFromSlabBlocks(0, 0, 0));
                 }
 
                 @Test
                 void stepUpFromSlabNorth() {
-                    walk(Direction.NORTH, 0, 0, 0, 0.5, 0, 1, -1, 0,
+                    walk(Direction.NORTH, 0, 0, 0, 0.5F, 0, 1, -1, 0,
                             stepUpFromSlabBlocks(0, 0, 0));
                 }
 
                 @Test
                 void stepUpFromSlabEast() {
-                    walk(Direction.EAST, 0, 0, 0, 0.5, 1, 1, 0, 0,
+                    walk(Direction.EAST, 0, 0, 0, 0.5F, 1, 1, 0, 0,
                             stepUpFromSlabBlocks(0, 0, 0));
                 }
 
                 @Test
                 void stepUpFromSlabSouth() {
-                    walk(Direction.SOUTH, 0, 0, 0, 0.5, 0, 1, 1, 0,
+                    walk(Direction.SOUTH, 0, 0, 0, 0.5F, 0, 1, 1, 0,
                             stepUpFromSlabBlocks(0, 0, 0));
                 }
 
                 @Test
                 void stepUpFromSlabWest() {
-                    walk(Direction.WEST, 0, 0, 0, 0.5, -1, 1, 0, 0,
+                    walk(Direction.WEST, 0, 0, 0, 0.5F, -1, 1, 0, 0,
                             stepUpFromSlabBlocks(0, 0, 0));
                 }
 
@@ -617,25 +619,25 @@ class WalkNodeSnapperTest {
 
                 @Test
                 void straightWalkNorth() {
-                    walk(Direction.NORTH, 0, 0, 0, 0.5, 0, 0, -1, 0.5,
+                    walk(Direction.NORTH, 0, 0, 0, 0.5F, 0, 0, -1, 0.5,
                             flatWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkEast() {
-                    walk(Direction.EAST, 0, 0, 0, 0.5, 1, 0, 0, 0.5,
+                    walk(Direction.EAST, 0, 0, 0, 0.5F, 1, 0, 0, 0.5,
                             flatWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkSouth() {
-                    walk(Direction.SOUTH, 0, 0, 0, 0.5, 0, 0, 1, 0.5,
+                    walk(Direction.SOUTH, 0, 0, 0, 0.5F, 0, 0, 1, 0.5,
                             flatWalkBlocks(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkWest() {
-                    walk(Direction.WEST, 0, 0, 0, 0.5, -1, 0, 0, 0.5,
+                    walk(Direction.WEST, 0, 0, 0, 0.5F, -1, 0, 0, 0.5,
                             flatWalkBlocks(0, 0, 0));
                 }
 
@@ -670,7 +672,7 @@ class WalkNodeSnapperTest {
     class LargePartialWidth {
         @Nested
         class FullHeight {
-            private static void walk(Direction direction, int x, int y, int z, double yo, int ex, int ey, int ez,
+            private static void walk(Direction direction, int x, int y, int z, float yo, int ex, int ey, int ez,
                     double eOffset, SolidPos... pos) {
                 WalkNodeSnapperTest.walk(direction, 2, 1, x, y, z, yo, ex, ey, ez, eOffset, pos);
             }

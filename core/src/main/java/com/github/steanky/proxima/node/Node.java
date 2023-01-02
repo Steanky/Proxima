@@ -15,13 +15,13 @@ public final class Node implements Comparable<Node> {
 
     public float g;
     public final float h;
-    public final double yOffset;
+    public final float yOffset;
 
     public Node parent;
 
     int heapIndex;
 
-    public Node(int x, int y, int z, float g, float h, @Nullable Node parent, double yOffset) {
+    public Node(int x, int y, int z, float g, float h, @Nullable Node parent, float yOffset) {
         this.x = x;
         this.y = y;
         this.z = z;
