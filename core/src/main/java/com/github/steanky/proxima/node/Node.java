@@ -62,6 +62,7 @@ public final class Node implements Comparable<Node> {
         }
         while (prev != null);
 
+        //Containers.arrayView instead of List.of so we don't need to copy the array
         return Containers.arrayView(nodes);
     }
 

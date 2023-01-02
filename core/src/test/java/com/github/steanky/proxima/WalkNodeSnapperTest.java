@@ -67,8 +67,9 @@ class WalkNodeSnapperTest {
         if (val != DirectionalNodeSnapper.FAIL) {
             int y = DirectionalNodeSnapper.height(val);
             float offset = DirectionalNodeSnapper.offset(val);
+            boolean bidirectional = DirectionalNodeSnapper.bidirectional(val);
 
-            handler.handle(node, node.x + direction.x, y, node.z + direction.z, offset);
+            handler.handle(node, null, node.x + direction.x, y, node.z + direction.z, offset, bidirectional);
         }
         else {
             fail("snapper returned DirectionalNodeSnapper.FAIL");
@@ -84,7 +85,7 @@ class WalkNodeSnapperTest {
             int ex, int ey, int ez, double eOffset, SolidPos... pos) {
         WalkNodeSnapper snapper = make(width, height, 1, 1, EPSILON, pos);
 
-        assertSnap(snapper, direction, node(x, y, z, yo), (node, x1, y1, z1, yOffset) -> {
+        assertSnap(snapper, direction, node(x, y, z, yo), (node, other, x1, y1, z1, yOffset, b) -> {
             assertEquals(ex, x1, "x-coord");
             assertEquals(ey, y1, "y-coord");
             assertEquals(ez, z1, "z-coord");

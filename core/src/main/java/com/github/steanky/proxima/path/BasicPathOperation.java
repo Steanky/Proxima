@@ -72,7 +72,7 @@ public class BasicPathOperation implements PathOperation {
 
             //reference the explore method: this is not strictly necessary, but it is cleaner, and prevents from
             //accidentally capturing a variable from step's scope, which could result in unnecessary object allocation
-            explorer.exploreEach(current, destinationX, destinationY, destinationZ, this::explore);
+            explorer.exploreEach(current, destinationX, destinationY, destinationZ, this::explore, graph);
             if (current.h < best.h) {
                 best = current;
             }
@@ -94,15 +94,17 @@ public class BasicPathOperation implements PathOperation {
         this.success = success;
     }
 
-    private void explore(Node current, int x, int y, int z, float yOffset) {
-        Node neighbor = graph.computeIfAbsent(x, y, z, (x1, y1, z1) -> new Node(x1, y1, z1, Float.POSITIVE_INFINITY,
-                heuristic.heuristic(x1, y1, z1, destinationX, destinationY, destinationZ), null, yOffset));
+    private void explore(Node current, Node target, int x, int y, int z, float yOffset, boolean bidirectional) {
+        if (target == null) {
+            target = new Node(x, y, z, Float.POSITIVE_INFINITY,
+                    heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ), null, yOffset);
+        }
 
-        float g = current.g + heuristic.distance(current.x, current.y, current.z, neighbor.x, neighbor.y, neighbor.z);
-        if (g < neighbor.g) {
-            neighbor.parent = current;
-            neighbor.g = g;
-            openSet.enqueueOrUpdate(neighbor);
+        float g = current.g + heuristic.distance(current.x, current.y, current.z, target.x, target.y, target.z);
+        if (g < target.g) {
+            target.parent = current;
+            target.g = g;
+            openSet.enqueueOrUpdate(target);
         }
     }
 
