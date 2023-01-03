@@ -143,11 +143,6 @@ public class ConcurrentChunkedSpatialCache<T> implements SpatialCache<T> {
             int relative = chunkRelative(x, y, z);
 
             long localWriteStamp = local.lock.writeLock();
-            if (!chunkMap.containsKey(chunk)) {
-                //another thread removed this chunk
-                return;
-            }
-
             try {
                 local.map.remove(relative);
                 if (local.map.isEmpty()) {
@@ -163,6 +158,18 @@ public class ConcurrentChunkedSpatialCache<T> implements SpatialCache<T> {
             finally {
                 local.lock.unlockWrite(localWriteStamp);
             }
+        }
+    }
+
+    @Override
+    public void clear() {
+        long writeStamp = stampedLock.writeLock();
+        try {
+            chunkMap.clear();
+            chunkMap.trim(32);
+        }
+        finally {
+            stampedLock.unlockWrite(writeStamp);
         }
     }
 }

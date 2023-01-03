@@ -31,7 +31,8 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
     private final Bounds3I searchArea;
 
-    public WalkNodeSnapper(double width, double height, double fallTolerance, double jumpHeight, @NotNull Space space, @NotNull Bounds3I searchArea, double epsilon) {
+    public WalkNodeSnapper(double width, double height, double fallTolerance, double jumpHeight, @NotNull Space space,
+            @NotNull Bounds3I searchArea, double epsilon) {
         validate(width, height, fallTolerance, jumpHeight, epsilon);
 
         int rWidth = (int) Math.rint(width);
@@ -152,9 +153,9 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                                 continue;
                             }
 
-                            double cly = child.lengthY();
+                            double cmy = child.maxY();
                             double coy = child.originY();
-                            if (tallest == null || cly > tallest.lengthY()) {
+                            if (tallest == null || cmy > tallest.maxY()) {
                                 tallest = child;
                             }
 
@@ -163,7 +164,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                             }
 
                             //highest and lowest possible was found for this layer
-                            if (cly == 1 && coy == 0) {
+                            if (cmy == 1 && coy == 0) {
                                 break outer;
                             }
                         }
@@ -215,9 +216,9 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         continue;
                     }
 
-                    double cly = child.lengthY();
+                    double cmy = child.maxY();
                     double coy = child.originY();
-                    if (tallest == null || cly > tallest.lengthY()) {
+                    if (tallest == null || cmy > tallest.maxY()) {
                         tallest = child;
                     }
 
@@ -225,7 +226,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                         lowest = child;
                     }
 
-                    if (cly == 1 && coy == 0) {
+                    if (cmy == 1 && coy == 0) {
                         break outer;
                     }
                 }
@@ -357,7 +358,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                             continue;
                         }
 
-                        double height = child.lengthY();
+                        double height = child.originY() + child.lengthY();
                         if (height > highestY) {
                             highestY = height;
                         }

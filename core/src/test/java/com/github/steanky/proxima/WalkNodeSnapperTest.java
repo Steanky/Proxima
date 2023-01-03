@@ -42,6 +42,11 @@ class WalkNodeSnapperTest {
         return solid(Solid.FULL, x, y, z);
     }
 
+    private static SolidPos stairs(int x, int y, int z) {
+        return solid(Solid.of(Bounds3D.immutable(0, 0, 0, 1, 0.5, 1),
+                Bounds3D.immutable(0, 0.5, 0.5, 1, 0.5, 0.5)), x, y, z);
+    }
+
     private static Node node(int x, int y, int z) {
         return node(x, y, z, 0);
     }
@@ -106,6 +111,43 @@ class WalkNodeSnapperTest {
             private static void walk(Direction direction, int x, int y, int z, float yo, int ex, int ey, int ez,
                     double eOffset, SolidPos... pos) {
                 WalkNodeSnapperTest.walk(direction, 1, 1, x, y, z, yo, ex, ey, ez, eOffset, pos);
+            }
+
+            @Nested
+            class Stairs {
+                private static SolidPos[] stairBlocks(int x, int y, int z) {
+                    return new SolidPos[] {
+                            stairs(x, y, z),
+                            stairs(x + 1, y, z),
+                            stairs(x - 1, y, z),
+                            stairs(x, y, z + 1),
+                            stairs(x, y, z - 1),
+                    };
+                }
+
+                @Test
+                void straightWalkNorth() {
+                    walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0,
+                            stairBlocks(0, 0, 0));
+                }
+
+                @Test
+                void straightWalkEast() {
+                    walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0,
+                            stairBlocks(0, 0, 0));
+                }
+
+                @Test
+                void straightWalkSouth() {
+                    walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0,
+                            stairBlocks(0, 0, 0));
+                }
+
+                @Test
+                void straightWalkWest() {
+                    walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0,
+                            stairBlocks(0, 0, 0));
+                }
             }
 
             @Nested

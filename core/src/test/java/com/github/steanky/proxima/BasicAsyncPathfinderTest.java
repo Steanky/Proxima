@@ -6,6 +6,7 @@ import com.github.steanky.proxima.path.BasicPathOperation;
 import com.github.steanky.proxima.path.PathResult;
 import com.github.steanky.proxima.path.PathSettings;
 import com.github.steanky.proxima.solid.Solid;
+import com.github.steanky.proxima.space.ConcurrentCachingSpace;
 import com.github.steanky.proxima.space.HashSpace;
 import com.github.steanky.proxima.space.Space;
 import com.github.steanky.vector.*;
@@ -116,6 +117,22 @@ class BasicAsyncPathfinderTest {
                 0, 1000, 4, 1000));
     }
 
+    private static PathSettings synchronizedEnvironment() {
+        Space space = new ConcurrentCachingSpace() {
+            @Override
+            public @NotNull Solid loadSolid(int x, int y, int z) {
+                if (y == 0) {
+                    return Solid.FULL;
+                }
+
+                return Solid.EMPTY;
+            }
+        };
+
+        return settings(1, 1, 1, 1, space, Bounds3I.immutable(0, 0,
+                0, 1000, 4, 1000));
+    }
+
     @Test
     void overloadSmallFailedPath() {
         HashSpace space = new HashSpace(-100, -100, -100, 100, 100, 100);
@@ -177,6 +194,18 @@ class BasicAsyncPathfinderTest {
     @Test
     void hugePathWithPartialBlocks() {
         PathSettings settings = hugeEnvironmentWithPartialBlocks();
+        Pathfinder pathfinder = pathfinder();
+
+        for (int i = 0; i < 1000; i++) {
+            pathfinder.pathfind(0, 1, 0, 900, 1, 900, settings);
+        }
+
+        pathfinder.shutdown();
+    }
+
+    @Test
+    void synchronizedHugePath() {
+        PathSettings settings = synchronizedEnvironment();
         Pathfinder pathfinder = pathfinder();
 
         for (int i = 0; i < 1000; i++) {

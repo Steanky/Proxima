@@ -11,4 +11,6 @@ public interface SpatialCache<T> {
     @NotNull T computeIfAbsent(int x, int y, int z, @NotNull Vec3IFunction<T> supplier);
 
     void remove(int x, int y, int z);
+
+    void clear();
 }
