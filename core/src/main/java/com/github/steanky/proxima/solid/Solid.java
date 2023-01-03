@@ -52,7 +52,7 @@ public interface Solid {
             return EMPTY;
         }
 
-        if(bounds.length == 1) {
+        if (bounds.length == 1) {
             return new Solid12(bounds[0]);
         }
 

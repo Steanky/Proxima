@@ -30,27 +30,26 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
     private final Bounds3I searchArea;
 
-    public WalkNodeSnapper(double width, double height, double fallTolerance, double jumpHeight, @NotNull Space space,
-            @NotNull Bounds3I searchArea, double epsilon) {
+    public WalkNodeSnapper(double width, double height, double fallTolerance, double jumpHeight, @NotNull Space space, @NotNull Bounds3I searchArea, double epsilon) {
         validate(width, height, fallTolerance, jumpHeight, epsilon);
 
-        int rWidth = (int)Math.rint(width);
+        int rWidth = (int) Math.rint(width);
 
         this.fullWidth = width == rWidth && (rWidth & 1) != 0;
         this.fullHeight = height == Math.rint(height);
         this.fallTolerance = fallTolerance + epsilon;
 
         //silly, totally unnecessary way to add 1 to a number only if it is even
-        int blockWidth = ((int)Math.ceil(width)) | 1;
+        int blockWidth = ((int) Math.ceil(width)) | 1;
 
         this.width = width - epsilon;
         this.halfWidth = width / 2;
         this.wDiff = ((blockWidth - width) / 2) - (epsilon / 2);
         this.height = height - epsilon;
-        this.ceilHeight = (int)Math.ceil(height);
+        this.ceilHeight = (int) Math.ceil(height);
 
-        this.searchHeight = (int)Math.ceil(height + jumpHeight);
-        this.fallSearchHeight = (int)Math.ceil(fallTolerance) + 1;
+        this.searchHeight = (int) Math.ceil(height + jumpHeight);
+        this.fallSearchHeight = (int) Math.ceil(fallTolerance) + 1;
 
         this.halfBlockWidth = blockWidth >> 1;
 
@@ -129,11 +128,13 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
                     Solid solid = space.solidAt(x, y, z);
 
-                    //if the solid is full, we know we're overlapping it
+                    //if the solid is full, we know we're overlapping it (therefore no collision)
                     //if the solid is empty, it has no collision
-                    //if the solid is partial, check if we're overlapping
+                    //if the solid is partial, check if we're overlapping (we may have collision)
                     if (!solid.isEmpty() && !solid.isFull()) {
                         //agent coordinates relative to solid and shifted over by wDiff * width
+                        //this is the area within the same block as the agent, that it will travel through in order to
+                        //move to the next node, that does not include its current occupied space
                         double ax = (((nodeX + 0.5) - x) - halfWidth) + (dx > 0 ? width : wDiff * dx);
                         double ay = exactY - y;
                         double az = (((nodeZ + 0.5) - z) - halfWidth) + (dz > 0 ? width : wDiff * dz);
@@ -146,6 +147,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                             Bounds3D child = children.get(j);
 
                             if (!child.overlaps(ax, ay, az, lx, height, lz)) {
+                                //no overlap means this block won't impede our movement
                                 continue;
                             }
 
@@ -243,8 +245,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                 if (lastTargetY - exactY > jumpHeight) {
                     return FAIL;
                 }
-            }
-            else if ((y + 1) - lastTargetY >= height) {
+            } else if ((y + 1) - lastTargetY >= height) {
                 newY = lastTargetY;
                 break;
             }
@@ -259,7 +260,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         //jumping is necessary, so we need to check above us
         if (newY > exactY && jumpHeight != 0) {
             //only search as high as we need to in order to reach the target elevation
-            int jumpSearch = (int)Math.ceil(newY - exactY);
+            int jumpSearch = (int) Math.ceil(newY - exactY);
 
             //check for blocks above the agent, possibly including the block intersected by the agent's head
             for (int i = fullHeight ? 0 : -1; i < jumpSearch; i++) {
@@ -317,8 +318,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
             }
 
             //nothing was found preventing our jump
-            boolean bidirectional = newY - exactY <= fallTolerance;
-            return DirectionalNodeSnapper.encode(newY, bidirectional);
+            return DirectionalNodeSnapper.encode(newY);
         }
 
         //search below us, possibly including the block we're in if it's partial
@@ -374,8 +374,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                 double fall = exactY - ny;
 
                 if (fall <= fallTolerance) {
-                    boolean bidirectional = fall <= jumpHeight;
-                    return DirectionalNodeSnapper.encode(ny, bidirectional);
+                    return DirectionalNodeSnapper.encode(ny);
                 }
             }
         }

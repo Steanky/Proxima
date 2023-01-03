@@ -10,9 +10,12 @@ import org.jetbrains.annotations.NotNull;
 import java.util.concurrent.locks.StampedLock;
 
 /**
- * A thread-safe {@link Space} implementation.
+ * A thread-safe {@link Space} implementation. Must be subclassed by a class which provides actual {@link Solid}
+ * instances from some source, for example a Minecraft chunk.
  */
 public abstract class ConcurrentCachingSpace implements Space {
+    private static final int WRITE_ACQUIRE_ATTEMPTS = 10;
+
     private final Vec3I2ObjectMap<Solid> cache;
     private final StampedLock stampedLock;
 
@@ -21,35 +24,48 @@ public abstract class ConcurrentCachingSpace implements Space {
         this.stampedLock = new StampedLock();
     }
 
+    private long upgradeReadLock(long readStamp) {
+        long newStamp;
+        int attempts = 0;
+
+        do {
+            newStamp = stampedLock.tryConvertToWriteLock(readStamp);
+        }
+        while (newStamp == 0 && attempts++ < WRITE_ACQUIRE_ATTEMPTS);
+
+        if (newStamp == 0) {
+            stampedLock.unlockRead(readStamp);
+            newStamp = stampedLock.writeLock();
+        }
+
+        return newStamp;
+    }
+
     @Override
     public final @NotNull Solid solidAt(int x, int y, int z) {
         long stamp = stampedLock.readLock();
 
-        Solid solid = cache.get(x, y, z);
-        if (solid == null) {
-            //load the solid before acquiring the write lock
-            try {
-                solid = loadSolid(x, y, z);
-            }
-            catch (Throwable e) {
-                //unexpected errors in loadSolid could corrupt our lock state if we didn't catch this
-                //so, unlock first and rethrow as a RuntimeException
-                stampedLock.unlockRead(stamp);
-                throw new RuntimeException(e);
-            }
+        Solid solid;
+        try {
+            solid = cache.get(x, y, z);
+        }
+        finally {
+            stampedLock.unlockRead(stamp);
+        }
 
-            //if we successfully loaded the solid, convert to a write lock
-            //this also closes the read lock
-            stamp = stampedLock.tryConvertToWriteLock(stamp);
+        if (solid == null) {
+            //load the solid first
+            //we don't even hold the read lock for this, which is fine
+            solid = loadSolid(x, y, z);
+
+            //if we successfully loaded the solid, acquire a write lock
+            long writeStamp = stampedLock.writeLock();
             try {
                 cache.put(x, y, z, solid);
             }
             finally {
-                stampedLock.unlockWrite(stamp);
+                stampedLock.unlockWrite(writeStamp);
             }
-        }
-        else {
-            stampedLock.unlockRead(stamp);
         }
 
         return solid;
@@ -66,7 +82,7 @@ public abstract class ConcurrentCachingSpace implements Space {
         //we can check containsKey just with the read lock
         //this avoids costly and unnecessary write locks
         if (cache.containsKey(x, y, z)) {
-            stamp = stampedLock.tryConvertToWriteLock(stamp);
+            stamp = upgradeReadLock(stamp);
 
             try {
                 cache.remove(x, y, z);
@@ -84,7 +100,7 @@ public abstract class ConcurrentCachingSpace implements Space {
         long stamp = stampedLock.readLock();
 
         if (!cache.isEmpty()) {
-            stamp = stampedLock.tryConvertToWriteLock(stamp);
+            stamp = upgradeReadLock(stamp);
 
             try {
                 cache.clear();

@@ -49,6 +49,7 @@ public class BasicPathOperation implements PathOperation {
         current = new Node(startX, startY, startZ, 0, heuristic.distance(startX, startY, startZ, destX, destY,
                 destZ), null, yOffset);
         openSet.enqueue(current);
+        graph.put(startX, startY, startZ, current);
         best = current;
 
         this.destinationX = destX;
@@ -94,13 +95,14 @@ public class BasicPathOperation implements PathOperation {
         this.success = success;
     }
 
-    private void explore(Node current, Node target, int x, int y, int z, float yOffset, boolean bidirectional) {
+    private void explore(Node current, Node target, int x, int y, int z, float yOffset) {
         if (target == null) {
             target = new Node(x, y, z, Float.POSITIVE_INFINITY,
                     heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ), null, yOffset);
+            graph.put(x, y, z, target);
         }
 
-        float g = current.g + heuristic.distance(current.x, current.y, current.z, target.x, target.y, target.z);
+        float g = current.g + heuristic.distance(current.x, current.y, current.z, x, y, z);
         if (g < target.g) {
             target.parent = current;
             target.g = g;

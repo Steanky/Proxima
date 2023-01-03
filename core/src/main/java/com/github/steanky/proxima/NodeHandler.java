@@ -6,5 +6,5 @@ import org.jetbrains.annotations.Nullable;
 
 @FunctionalInterface
 public interface NodeHandler {
-    void handle(@NotNull Node node, @Nullable Node targetNode, int x, int y, int z, float yOffset, boolean bidirectional);
+    void handle(@NotNull Node node, @Nullable Node targetNode, int x, int y, int z, float yOffset);
 }

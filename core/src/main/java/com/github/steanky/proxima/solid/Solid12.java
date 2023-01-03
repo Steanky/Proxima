@@ -14,8 +14,7 @@ final class Solid12 implements Solid {
     Solid12(@NotNull Bounds3D first) {
         this.bounds = first.immutable();
         this.boundsList = List.of(this.bounds);
-        this.isFull = this.bounds.originX() == 0D && this.bounds.originY() == 0D && this.bounds.originZ() == 0D &&
-                this.bounds.lengthX() == 1D && this.bounds.lengthY() == 1D && this.bounds.lengthZ() == 1D;
+        this.isFull = this.bounds.volume() == 1;
     }
 
     Solid12(@NotNull Bounds3D first, @NotNull Bounds3D second) {

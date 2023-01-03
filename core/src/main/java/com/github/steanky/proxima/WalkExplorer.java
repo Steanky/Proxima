@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-public class DirectionalExplorer implements Explorer {
+public class WalkExplorer implements Explorer {
     private static final Direction[] DIRECTIONS = new Direction[] {
             Direction.NORTH,
             Direction.EAST,
@@ -16,7 +16,7 @@ public class DirectionalExplorer implements Explorer {
 
     private final DirectionalNodeSnapper nodeSnapper;
 
-    public DirectionalExplorer(@NotNull DirectionalNodeSnapper nodeSnapper) {
+    public WalkExplorer(@NotNull DirectionalNodeSnapper nodeSnapper) {
         this.nodeSnapper = Objects.requireNonNull(nodeSnapper);
     }
 
@@ -45,8 +45,8 @@ public class DirectionalExplorer implements Explorer {
                 /*
                 ignore travel to nodes that
                 a) we already visited
-                b) the path from our to this node will be longer than the path to the other node
-                we can add 1 to the current node's g, because it is the MINIMUM additional path length, we may determine
+                b) the path from our to this node will be longer than (or equal to) the path to the other node
+                we can add 1 to the current node's g, because it is the MINIMUM additional path length; we may determine
                 that it goes larger after snapping, but it doesn't change this calculation if it does
                  */
                 continue;
@@ -56,7 +56,6 @@ public class DirectionalExplorer implements Explorer {
             if (value != DirectionalNodeSnapper.FAIL) {
                 int height = DirectionalNodeSnapper.height(value);
                 float offset = DirectionalNodeSnapper.offset(value);
-                boolean bidirectional = DirectionalNodeSnapper.bidirectional(value);
 
                 if (height != ny) {
                     /*
@@ -68,7 +67,7 @@ public class DirectionalExplorer implements Explorer {
                     neighborNode = graph.get(tx, height, tz);
                 }
 
-                handler.handle(currentNode, neighborNode, tx, height, tz, offset, bidirectional);
+                handler.handle(currentNode, neighborNode, tx, height, tz, offset);
             }
         }
     }
