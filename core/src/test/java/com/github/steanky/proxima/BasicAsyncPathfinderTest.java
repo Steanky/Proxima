@@ -6,6 +6,8 @@ import com.github.steanky.proxima.path.BasicPathOperation;
 import com.github.steanky.proxima.path.PathResult;
 import com.github.steanky.proxima.path.PathSettings;
 import com.github.steanky.proxima.solid.Solid;
+import com.github.steanky.proxima.space.HashSpace;
+import com.github.steanky.proxima.space.Space;
 import com.github.steanky.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;

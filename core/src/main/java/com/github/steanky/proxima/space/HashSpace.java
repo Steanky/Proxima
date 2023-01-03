@@ -1,6 +1,7 @@
-package com.github.steanky.proxima;
+package com.github.steanky.proxima.space;
 
 import com.github.steanky.proxima.solid.Solid;
+import com.github.steanky.proxima.space.Space;
 import com.github.steanky.vector.HashVec3I2ObjectMap;
 import com.github.steanky.vector.Vec3I;
 import com.github.steanky.vector.Vec3I2ObjectMap;

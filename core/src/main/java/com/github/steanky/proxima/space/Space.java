@@ -1,4 +1,4 @@
-package com.github.steanky.proxima;
+package com.github.steanky.proxima.space;
 
 import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.vector.Vec3I;

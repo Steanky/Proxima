@@ -72,7 +72,7 @@ public class BasicPathOperation implements PathOperation {
             }
 
             //reference the explore method: this is not strictly necessary, but it is cleaner, and prevents from
-            //accidentally capturing a variable from step's scope, which could result in unnecessary object allocation
+            //accidentally capturing a variable from step's scope
             explorer.exploreEach(current, destinationX, destinationY, destinationZ, this::explore, graph);
             if (current.h < best.h) {
                 best = current;
