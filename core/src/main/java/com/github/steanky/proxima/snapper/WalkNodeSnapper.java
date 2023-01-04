@@ -1,5 +1,6 @@
-package com.github.steanky.proxima;
+package com.github.steanky.proxima.snapper;
 
+import com.github.steanky.proxima.Direction;
 import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.proxima.space.Space;
 import com.github.steanky.vector.Bounds3D;
@@ -97,9 +98,11 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         }
     }
 
-    @SuppressWarnings({"DuplicatedCode", "ForLoopReplaceableByForEach"})
     @Override
-    public long snap(int dx, int dz, int nodeX, int nodeY, int nodeZ, double nodeOffset) {
+    public long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, double nodeOffset) {
+        int dx = direction.x;
+        int dz = direction.z;
+
         int nx = nodeX + dx;
         int nz = nodeZ + dz;
 

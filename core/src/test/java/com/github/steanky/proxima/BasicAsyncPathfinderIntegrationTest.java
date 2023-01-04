@@ -1,10 +1,8 @@
 package com.github.steanky.proxima;
 
 import com.github.steanky.proxima.node.Node;
-import com.github.steanky.proxima.path.BasicAsyncPathfinder;
-import com.github.steanky.proxima.path.BasicPathOperation;
-import com.github.steanky.proxima.path.PathResult;
-import com.github.steanky.proxima.path.PathSettings;
+import com.github.steanky.proxima.path.*;
+import com.github.steanky.proxima.snapper.WalkNodeSnapper;
 import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.proxima.space.ConcurrentCachingSpace;
 import com.github.steanky.proxima.space.HashSpace;
@@ -118,7 +116,9 @@ class BasicAsyncPathfinderIntegrationTest {
     }
 
     private static PathSettings synchronizedEnvironment() {
-        Space space = new ConcurrentCachingSpace() {
+        Bounds3I bounds = Bounds3I.immutable(0, 0, 0, 1000, 4, 1000);
+
+        Space space = new ConcurrentCachingSpace(bounds) {
             @Override
             public @NotNull Solid loadSolid(int x, int y, int z) {
                 if (y == 0) {
@@ -129,8 +129,7 @@ class BasicAsyncPathfinderIntegrationTest {
             }
         };
 
-        return settings(1, 1, 1, 1, space, Bounds3I.immutable(0, 0,
-                0, 1000, 4, 1000));
+        return settings(1, 1, 1, 1, space, bounds);
     }
 
     @Test
@@ -139,6 +138,9 @@ class BasicAsyncPathfinderIntegrationTest {
         for (Direction direction : Direction.values()) {
             space.put(direction.vector(), Solid.FULL);
         }
+
+        space.put(0, -1, 0, Solid.FULL);
+        space.put(0, 1, 0, Solid.FULL);
 
         PathSettings settings = settings(1, 1, 4, 1, space, Bounds3I
                 .immutable(-100, -100, -100, 200, 200, 200));

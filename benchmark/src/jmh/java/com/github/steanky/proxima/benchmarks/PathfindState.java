@@ -5,6 +5,8 @@ import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.path.BasicAsyncPathfinder;
 import com.github.steanky.proxima.path.BasicPathOperation;
 import com.github.steanky.proxima.path.PathSettings;
+import com.github.steanky.proxima.path.Pathfinder;
+import com.github.steanky.proxima.snapper.WalkNodeSnapper;
 import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.proxima.space.ConcurrentCachingSpace;
 import com.github.steanky.proxima.space.Space;
@@ -41,7 +43,8 @@ public class PathfindState {
     }
 
     private static PathSettings synchronizedEnvironment() {
-        Space space = new ConcurrentCachingSpace() {
+        Bounds3I bounds = Bounds3I.immutable(0, 0, 0, 1000, 4, 1000);
+        Space space = new ConcurrentCachingSpace(bounds) {
             @Override
             public @NotNull Solid loadSolid(int x, int y, int z) {
                 if (y == 0) {
@@ -52,8 +55,7 @@ public class PathfindState {
             }
         };
 
-        return settings(1, 1, 1, 1, space, Bounds3I.immutable(0, 0,
-                0, 1000, 4, 1000));
+        return settings(1, 1, 1, 1, space, bounds);
     }
 
     private static PathSettings settings(int width, int height, int fallTolerance, int jumpHeight,

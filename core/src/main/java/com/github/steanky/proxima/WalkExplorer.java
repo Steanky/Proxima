@@ -1,6 +1,7 @@
 package com.github.steanky.proxima;
 
 import com.github.steanky.proxima.node.Node;
+import com.github.steanky.proxima.snapper.DirectionalNodeSnapper;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 
@@ -52,7 +53,7 @@ public class WalkExplorer implements Explorer {
                 continue;
             }
 
-            long value = nodeSnapper.snap(dx, dz, nx, ny, nz, currentNode.yOffset);
+            long value = nodeSnapper.snap(direction, nx, ny, nz, currentNode.yOffset);
             if (value != DirectionalNodeSnapper.FAIL) {
                 int height = DirectionalNodeSnapper.height(value);
                 float offset = DirectionalNodeSnapper.offset(value);

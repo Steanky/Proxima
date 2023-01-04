@@ -1,5 +1,7 @@
-package com.github.steanky.proxima;
+package com.github.steanky.proxima.snapper;
 
+import com.github.steanky.proxima.Direction;
+import com.github.steanky.proxima.NodeHandler;
 import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.proxima.space.HashSpace;
@@ -69,7 +71,7 @@ class WalkNodeSnapperTest {
     }
 
     private static void assertSnap(WalkNodeSnapper snapper, Direction direction, Node node, NodeHandler handler) {
-        long val = snapper.snap(direction.x, direction.z, node.x, node.y, node.z, node.yOffset);
+        long val = snapper.snap(direction, node.x, node.y, node.z, node.yOffset);
         if (val != DirectionalNodeSnapper.FAIL) {
             int y = DirectionalNodeSnapper.height(val);
             float offset = DirectionalNodeSnapper.offset(val);
@@ -82,8 +84,7 @@ class WalkNodeSnapperTest {
     }
 
     private static void assertNoSnap(WalkNodeSnapper snapper, Direction direction, Node node) {
-        assertEquals(DirectionalNodeSnapper.FAIL, snapper.snap(direction.x, direction.z, node.x, node.y, node.z,
-                node.yOffset));
+        assertEquals(DirectionalNodeSnapper.FAIL, snapper.snap(direction, node.x, node.y, node.z, node.yOffset));
     }
 
     private static void walk(Direction direction, double width, double height, int x, int y, int z, float yo,
@@ -223,15 +224,14 @@ class WalkNodeSnapperTest {
                 }
 
                 private static SolidPos[] enclosedBlocks(int x, int y, int z) {
-                    Direction[] dirs = Direction.values();
-                    SolidPos[] pos = new SolidPos[dirs.length];
-
-                    for (int i = 0; i < pos.length; i++) {
-                        Direction dir = dirs[i];
-                        pos[i] = full(x + dir.x, y + dir.y, z + dir.z);
-                    }
-
-                    return pos;
+                    return new SolidPos[] {
+                            full(x + 1, y, z),
+                            full(x - 1, y, z),
+                            full(x, y, z + 1),
+                            full(x, y, z - 1),
+                            full(x, y + 1, z),
+                            full(x, y - 1, z),
+                    };
                 }
 
                 @Test

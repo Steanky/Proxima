@@ -1,11 +1,15 @@
 metadata.format.version = "1.1"
 
 [versions]
+flare = "2.0.1"
 jmh = "1.36"
 junit-jupiter = "5.9.0-M1"
 toolkit = "0.3.0"
 
 [libraries]
+flare = { module = "space.vectrix.flare:flare", version.ref = "flare" }
+flare-fastutil = { module = "space.vectrix.flare:flare-fastutil", version.ref = "flare" }
+
 jetbrains-annotations = { module = "org.jetbrains:annotations", version = "23.0.0" }
 
 junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "junit-jupiter" }
@@ -19,4 +23,4 @@ jmh-generator-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess"
 toolkit-collection = { module = "com.github.steanky:toolkit-collection", version.ref = "toolkit" }
 toolkit-function = { module = "com.github.steanky:toolkit-function", version.ref = "toolkit" }
 
-vector-core = { module = "com.github.steanky:vector-core", version = "0.8.0" }
+vector-core = { module = "com.github.steanky:vector-core", version = "0.9.0" }

@@ -1,6 +1,5 @@
 package com.github.steanky.proxima.path;
 
-import com.github.steanky.proxima.Pathfinder;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;

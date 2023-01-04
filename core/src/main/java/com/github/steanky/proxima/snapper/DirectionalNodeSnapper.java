@@ -1,9 +1,14 @@
-package com.github.steanky.proxima;
+package com.github.steanky.proxima.snapper;
+
+import com.github.steanky.proxima.Direction;
+import org.jetbrains.annotations.NotNull;
 
 public interface DirectionalNodeSnapper {
-    long FAIL = 0xFFC0_0001L; //lower 32 bits represent a floating-point NaN with a payload of all 0s
+    long FAIL = 0xFFC0_0001L; //lower 32 bits represent a floating-point qNaN with a payload of all 0s
 
-    long snap(int dx, int dz, int nodeX, int nodeY, int nodeZ, double nodeOffset);
+    long CACHE_MISS = 0xFFC0_0003L; //also a qNaN, but with an extra bit to indicate a cache miss
+
+    long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, double nodeOffset);
 
     /**
      * Encodes a double-precision height value into a single long whose most significant 32 bits represent the integer

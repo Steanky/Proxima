@@ -1,7 +1,10 @@
 package com.github.steanky.proxima.space;
 
 import com.github.steanky.proxima.solid.Solid;
+import com.github.steanky.vector.Bounds3I;
+import com.github.steanky.vector.ConcurrentHashVec3I2ObjectMap;
 import com.github.steanky.vector.Vec3I;
+import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,10 +20,10 @@ import org.jetbrains.annotations.Nullable;
  * structure that allows as much concurrent access as possible.
  */
 public abstract class ConcurrentCachingSpace implements Space {
-    private final SpatialCache<Solid> cache;
+    private final Vec3I2ObjectMap<Solid> cache;
 
-    public ConcurrentCachingSpace() {
-        this.cache = new ConcurrentChunkedSpatialCache<>();
+    public ConcurrentCachingSpace(@NotNull Bounds3I bounds) {
+        this.cache = new ConcurrentHashVec3I2ObjectMap<>(bounds);
     }
 
     @Override
