@@ -241,7 +241,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                     break;
                 }
 
-                lastTargetY = y + tallest.lengthY();
+                lastTargetY = y + tallest.maxY();
 
                 //too high to make this jump
                 if (lastTargetY - exactY > jumpHeight) {
@@ -358,7 +358,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
                             continue;
                         }
 
-                        double height = child.originY() + child.lengthY();
+                        double height = child.maxY();
                         if (height > highestY) {
                             highestY = height;
                         }

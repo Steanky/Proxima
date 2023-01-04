@@ -19,7 +19,7 @@ import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class BasicAsyncPathfinderTest {
+class BasicAsyncPathfinderIntegrationTest {
     private static PathSettings settings(int width, int height, int fallTolerance, int jumpHeight,
             @NotNull Space space, Bounds3I searchArea) {
         return new PathSettings() {

@@ -115,7 +115,7 @@ class WalkNodeSnapperTest {
 
             @Nested
             class Stairs {
-                private static SolidPos[] stairBlocks(int x, int y, int z) {
+                private static SolidPos[] stairsBelow(int x, int y, int z) {
                     return new SolidPos[] {
                             stairs(x, y, z),
                             stairs(x + 1, y, z),
@@ -125,28 +125,68 @@ class WalkNodeSnapperTest {
                     };
                 }
 
+                private static SolidPos[] stairsAround(int x, int y, int z) {
+                    return new SolidPos[] {
+                            stairs(x, y, z),
+
+                            stairs(x + 1, y, z),
+                            stairs(x - 1, y, z),
+                            stairs(x, y, z + 1),
+                            stairs(x, y, z - 1),
+
+                            stairs(x + 1, y + 1, z),
+                            stairs(x - 1, y + 1, z),
+                            stairs(x, y + 1, z + 1),
+                            stairs(x, y + 1, z - 1),
+                    };
+                }
+
                 @Test
                 void straightWalkNorth() {
                     walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0,
-                            stairBlocks(0, 0, 0));
+                            stairsBelow(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkEast() {
                     walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0,
-                            stairBlocks(0, 0, 0));
+                            stairsBelow(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkSouth() {
                     walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0,
-                            stairBlocks(0, 0, 0));
+                            stairsBelow(0, 0, 0));
                 }
 
                 @Test
                 void straightWalkWest() {
                     walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0,
-                            stairBlocks(0, 0, 0));
+                            stairsBelow(0, 0, 0));
+                }
+
+                @Test
+                void straightJumpNorth() {
+                    walk(Direction.NORTH, 0, 1, 0, 0, 0, 2, -1, 0,
+                            stairsAround(0, 0, 0));
+                }
+
+                @Test
+                void straightJumpEast() {
+                    walk(Direction.EAST, 0, 1, 0, 0, 1, 2, 0, 0,
+                            stairsAround(0, 0, 0));
+                }
+
+                @Test
+                void straightJumpSouth() {
+                    walk(Direction.SOUTH, 0, 1, 0, 0, 0, 2, 1, 0,
+                            stairsAround(0, 0, 0));
+                }
+
+                @Test
+                void straightJumpWest() {
+                    walk(Direction.WEST, 0, 1, 0, 0, -1, 2, 0, 0,
+                            stairsAround(0, 0, 0));
                 }
             }
 
