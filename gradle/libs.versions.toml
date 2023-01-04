@@ -1,6 +1,7 @@
 metadata.format.version = "1.1"
 
 [versions]
+jmh = "1.36"
 junit-jupiter = "5.9.0-M1"
 toolkit = "0.3.0"
 
@@ -11,6 +12,9 @@ junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.re
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "junit-jupiter" }
 
 mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version = "4.5.1" }
+
+jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
+jmh-generator-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
 
 toolkit-collection = { module = "com.github.steanky:toolkit-collection", version.ref = "toolkit" }
 toolkit-function = { module = "com.github.steanky:toolkit-function", version.ref = "toolkit" }

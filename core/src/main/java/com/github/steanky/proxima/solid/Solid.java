@@ -24,6 +24,11 @@ public interface Solid {
         }
 
         @Override
+        public boolean hasChildren() {
+            return false;
+        }
+
+        @Override
         public @NotNull @Unmodifiable List<Bounds3D> children() {
             return List.of();
         }
@@ -36,6 +41,8 @@ public interface Solid {
     boolean isFull();
 
     boolean isEmpty();
+
+    boolean hasChildren();
 
     @NotNull @Unmodifiable List<Bounds3D> children();
 
