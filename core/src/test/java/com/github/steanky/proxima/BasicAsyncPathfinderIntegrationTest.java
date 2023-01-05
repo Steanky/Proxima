@@ -4,9 +4,9 @@ import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.path.*;
 import com.github.steanky.proxima.snapper.WalkNodeSnapper;
 import com.github.steanky.proxima.solid.Solid;
-import com.github.steanky.proxima.space.ConcurrentCachingSpace;
 import com.github.steanky.proxima.space.HashSpace;
 import com.github.steanky.proxima.space.Space;
+import com.github.steanky.proxima.space.ConcurrentCachingSpace;
 import com.github.steanky.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
@@ -23,8 +23,7 @@ class BasicAsyncPathfinderIntegrationTest {
         return new PathSettings() {
             //using a ThreadLocal HashVec3I2ObjectMap is a very significant performance save
             private final ThreadLocal<Vec3I2ObjectMap<Node>> THREAD_LOCAL_GRAPH = ThreadLocal.withInitial(() ->
-                    new HashVec3I2ObjectMap<>(searchArea.originX(), searchArea.originX(), searchArea.originZ(),
-                            searchArea.lengthX(), searchArea.lengthY(), searchArea.lengthZ()));
+                    new HashVec3I2ObjectMap<>(searchArea));
 
             private static final Heuristic HEURISTIC = new Heuristic() {
                 @Override
@@ -118,7 +117,7 @@ class BasicAsyncPathfinderIntegrationTest {
     private static PathSettings synchronizedEnvironment() {
         Bounds3I bounds = Bounds3I.immutable(0, 0, 0, 1000, 4, 1000);
 
-        Space space = new ConcurrentCachingSpace(bounds) {
+        Space space = new ConcurrentCachingSpace() {
             @Override
             public @NotNull Solid loadSolid(int x, int y, int z) {
                 if (y == 0) {

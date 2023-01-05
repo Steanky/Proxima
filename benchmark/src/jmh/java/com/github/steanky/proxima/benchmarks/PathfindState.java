@@ -44,7 +44,7 @@ public class PathfindState {
 
     private static PathSettings synchronizedEnvironment() {
         Bounds3I bounds = Bounds3I.immutable(0, 0, 0, 1000, 4, 1000);
-        Space space = new ConcurrentCachingSpace(bounds) {
+        Space space = new ConcurrentCachingSpace() {
             @Override
             public @NotNull Solid loadSolid(int x, int y, int z) {
                 if (y == 0) {

@@ -6,8 +6,6 @@ import org.jetbrains.annotations.NotNull;
 public interface DirectionalNodeSnapper {
     long FAIL = 0xFFC0_0001L; //lower 32 bits represent a floating-point qNaN with a payload of all 0s
 
-    long CACHE_MISS = 0xFFC0_0003L; //also a qNaN, but with an extra bit to indicate a cache miss
-
     long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, double nodeOffset);
 
     /**

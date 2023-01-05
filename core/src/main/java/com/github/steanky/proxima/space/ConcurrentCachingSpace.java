@@ -1,12 +1,15 @@
 package com.github.steanky.proxima.space;
 
 import com.github.steanky.proxima.solid.Solid;
-import com.github.steanky.vector.Bounds3I;
-import com.github.steanky.vector.ConcurrentHashVec3I2ObjectMap;
 import com.github.steanky.vector.Vec3I;
-import com.github.steanky.vector.Vec3I2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.concurrent.locks.StampedLock;
 
 /**
  * A thread-safe {@link Space} implementation. Must be subclassed by a class which provides actual {@link Solid}
@@ -20,15 +23,188 @@ import org.jetbrains.annotations.Nullable;
  * structure that allows as much concurrent access as possible.
  */
 public abstract class ConcurrentCachingSpace implements Space {
-    private final Vec3I2ObjectMap<Solid> cache;
+    private static final int CHUNK_READ_ATTEMPTS = 5;
+    private static final int BLOCK_READ_ATTEMPTS = 5;
 
-    public ConcurrentCachingSpace(@NotNull Bounds3I bounds) {
-        this.cache = new ConcurrentHashVec3I2ObjectMap<>(bounds);
+    private final StampedLock lock;
+    private final Long2ObjectMap<Chunk> cache;
+
+    private record Chunk(Int2ObjectMap<Solid> map, StampedLock lock) {
+        @SuppressWarnings("DuplicatedCode")
+        private Solid read(int key) {
+            long read;
+            Solid solid;
+
+            boolean valid;
+            int i = 0;
+            do {
+                //often, we can grab the map without ever needing to read-lock it
+                //if a writer thread wants access, it will break our optimistic read, and we retry
+                //retries are limited to BLOCK_READ_ATTEMPTS, after which a proper read lock is used
+                read = lock.tryOptimisticRead();
+
+                try {
+                    solid = map.get(key);
+                    valid = lock.validate(read);
+                }
+                catch (Throwable ignored) {
+                    /*
+                    theoretically, a table rehash or trim could occur in the map at exactly the wrong time, which would
+                    cause get(int) to throw an exception; this means our read was definitely broken
+                     */
+                    solid = null;
+                    valid = false;
+                }
+            }
+            while (!valid && i++ < BLOCK_READ_ATTEMPTS);
+
+            if (valid) {
+                //we were able to successfully read the solid without locking on the map
+                return solid;
+            }
+
+            read = lock.readLock();
+            try {
+                //we tried to optimistically read too many times; we need to do a full read
+                return map.get(key);
+            }
+            finally {
+                lock.unlockRead(read);
+            }
+        }
+
+        private void write(int key, Solid solid) {
+            long write = lock.writeLock();
+            try {
+                map.put(key, solid);
+            }
+            finally {
+                lock.unlockWrite(write);
+            }
+        }
+
+        private void remove(int key) {
+            long write = lock.writeLock();
+            try {
+                map.remove(key);
+            }
+            finally {
+                lock.unlockWrite(write);
+            }
+        }
+
+        private Chunk() {
+            this(new Int2ObjectOpenHashMap<>(), new StampedLock());
+        }
+
+        private static long key(int x, int z) {
+            return (((long) x << 4) << 32) | ((long) z << 4);
+        }
+
+        private static int relative(int x, int y, int z) {
+            return ((x & 15) << 15) | ((y & 2047) << 4) | (z & 15);
+        }
+    }
+
+    //works identically to Chunk#read(int), but for the chunk cache rather than individual blocks
+    //methods are duplicated because they effectively differ by primitive type (long vs int)
+    @SuppressWarnings("DuplicatedCode")
+    private Chunk getChunk(long chunkKey) {
+        long read;
+        Chunk chunk;
+
+        boolean valid;
+        int i = 0;
+        do {
+            read = lock.tryOptimisticRead();
+
+            try {
+                chunk = cache.get(chunkKey);
+                valid = lock.validate(read);
+            }
+            catch (Throwable ignored) {
+                chunk = null;
+                valid = false;
+            }
+        }
+        while (!valid && i++ < CHUNK_READ_ATTEMPTS);
+
+        if (valid) {
+            return chunk;
+        }
+
+        read = lock.readLock();
+        try {
+            return cache.get(chunkKey);
+        }
+        finally {
+            lock.unlockRead(read);
+        }
+    }
+
+    private void addToExistingOrNewChunk(Chunk chunk, long chunkKey, int blockKey, Solid solidToWrite) {
+        if (chunk != null) {
+            //in most cases, we can easily add the solid
+            chunk.write(blockKey, solidToWrite);
+            return;
+        }
+
+        boolean addedSolid = false;
+        long write = lock.writeLock();
+        try {
+            //may be non-null if another thread quickly added a chunk to the cache
+            //if so, don't create a new chunk, remove write lock, and add the solid to the chunk
+            //otherwise, if the chunk is null, create a new chunk, add our initial solid to it, and put it in the map
+            Chunk otherChunk = cache.get(chunkKey);
+            if (otherChunk != null) {
+                //another thread added a chunk - use it
+                chunk = otherChunk;
+            }
+            else {
+                //create a new chunk, add our solid to it, and put it in the cache
+                //we don't need to write-lock on the chunk at all this way
+                chunk = new Chunk();
+                chunk.map.put(blockKey, solidToWrite);
+
+                cache.put(chunkKey, chunk);
+
+                //indicate that we already put the solid in the chunk
+                addedSolid = true;
+            }
+        }
+        finally {
+            lock.unlockWrite(write);
+        }
+
+        if (!addedSolid) {
+            chunk.write(blockKey, solidToWrite);
+        }
+    }
+
+    public ConcurrentCachingSpace() {
+        this.lock = new StampedLock();
+        this.cache = new Long2ObjectOpenHashMap<>();
     }
 
     @Override
     public final @NotNull Solid solidAt(int x, int y, int z) {
-        return cache.computeIfAbsent(x, y, z, this::loadSolid);
+        long chunkKey = Chunk.key(x, z);
+        int blockKey = Chunk.relative(x, y, z);
+
+        Chunk chunk = getChunk(chunkKey);
+        Solid solid;
+        if (chunk == null) {
+            addToExistingOrNewChunk(null, chunkKey, blockKey, solid = loadSolid(x, y, z));
+            return solid;
+        }
+
+        solid = chunk.read(blockKey);
+        if (solid != null) {
+            return solid;
+        }
+
+        chunk.write(blockKey, solid = loadSolid(x, y, z));
+        return solid;
     }
 
     @Override
@@ -46,11 +222,19 @@ public abstract class ConcurrentCachingSpace implements Space {
      * @param solid the new solid, or null to remove any cached solid (if present)
      */
     public void updateSolid(int x, int y, int z, @Nullable Solid solid) {
+        long chunkKey = Chunk.key(x, z);
+
+        //null solid means we need to remove from a chunk
         if (solid == null) {
-            cache.remove(x, y, z);
+            Chunk chunk = getChunk(chunkKey);
+            if (chunk != null) {
+                chunk.remove(Chunk.relative(x, y, z));
+            }
         }
         else {
-            cache.put(x, y, z, solid);
+            //if the chunk does not exist (is null); creates it and adds the solid
+            //otherwise, adds the solid to the existing chunk
+            addToExistingOrNewChunk(getChunk(chunkKey), chunkKey, Chunk.relative(x, y, z), solid);
         }
     }
 
