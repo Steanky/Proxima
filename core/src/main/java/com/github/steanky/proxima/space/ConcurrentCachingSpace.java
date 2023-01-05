@@ -4,7 +4,6 @@ import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.vector.Vec3I;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +26,7 @@ public abstract class ConcurrentCachingSpace implements Space {
     private static final int BLOCK_READ_ATTEMPTS = 5;
 
     private final StampedLock lock;
-    private final Long2ObjectMap<Chunk> cache;
+    private final Long2ObjectOpenHashMap<Chunk> cache;
 
     private record Chunk(Int2ObjectMap<Solid> map, StampedLock lock) {
         @SuppressWarnings("DuplicatedCode")
@@ -83,10 +82,11 @@ public abstract class ConcurrentCachingSpace implements Space {
             }
         }
 
-        private void remove(int key) {
+        private boolean remove(int key) {
             long write = lock.writeLock();
             try {
                 map.remove(key);
+                return map.isEmpty();
             }
             finally {
                 lock.unlockWrite(write);
@@ -162,7 +162,7 @@ public abstract class ConcurrentCachingSpace implements Space {
             }
             else {
                 //create a new chunk, add our solid to it, and put it in the cache
-                //we don't need to write-lock on the chunk at all this way
+                //we don't need to write-lock on the newly-created chunk at all this way
                 chunk = new Chunk();
                 chunk.map.put(blockKey, solidToWrite);
 
@@ -228,13 +228,36 @@ public abstract class ConcurrentCachingSpace implements Space {
         if (solid == null) {
             Chunk chunk = getChunk(chunkKey);
             if (chunk != null) {
-                chunk.remove(Chunk.relative(x, y, z));
+                //returns true when we empty the chunk
+                if (chunk.remove(Chunk.relative(x, y, z))) {
+                    long write = lock.writeLock();
+                    try {
+                        cache.remove(chunkKey);
+                    }
+                    finally {
+                        lock.unlockWrite(write);
+                    }
+                }
             }
         }
         else {
             //if the chunk does not exist (is null); creates it and adds the solid
             //otherwise, adds the solid to the existing chunk
             addToExistingOrNewChunk(getChunk(chunkKey), chunkKey, Chunk.relative(x, y, z), solid);
+        }
+    }
+
+    /**
+     * Clears the cache, reducing it to a state similar to when it was first initialized.
+     */
+    public void clearCache() {
+        long write = lock.writeLock();
+        try {
+            cache.clear();
+            cache.trim();
+        }
+        finally {
+            lock.unlockWrite(write);
         }
     }
 
