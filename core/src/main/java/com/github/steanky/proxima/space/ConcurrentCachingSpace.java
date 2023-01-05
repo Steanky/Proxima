@@ -37,7 +37,7 @@ public abstract class ConcurrentCachingSpace implements Space {
             boolean valid;
             int i = 0;
             do {
-                //often, we can grab the map without ever needing to read-lock it
+                //often, we can grab a solid without ever needing to read-lock the map
                 //if a writer thread wants access, it will break our optimistic read, and we retry
                 //retries are limited to BLOCK_READ_ATTEMPTS, after which a proper read lock is used
                 read = lock.tryOptimisticRead();

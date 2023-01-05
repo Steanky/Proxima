@@ -1,6 +1,6 @@
 package com.github.steanky.proxima.path;
 
-import com.github.steanky.proxima.Explorer;
+import com.github.steanky.proxima.explorer.Explorer;
 import com.github.steanky.proxima.Heuristic;
 import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.node.NodeProcessor;
@@ -76,7 +76,7 @@ public class BasicPathOperation implements PathOperation {
 
             //reference the explore method: this is not strictly necessary, but it is cleaner, and prevents from
             //accidentally capturing a variable from step's scope
-            explorer.exploreEach(current, destinationX, destinationY, destinationZ, this::explore, graph);
+            explorer.exploreEach(current, this::explore, graph);
             if (current.h < best.h) {
                 best = current;
             }
