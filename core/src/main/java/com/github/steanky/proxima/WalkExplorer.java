@@ -16,14 +16,21 @@ public class WalkExplorer implements Explorer {
     };
 
     private final DirectionalNodeSnapper nodeSnapper;
+    private final PathLimiter limiter;
 
-    public WalkExplorer(@NotNull DirectionalNodeSnapper nodeSnapper) {
+    public WalkExplorer(@NotNull DirectionalNodeSnapper nodeSnapper, @NotNull PathLimiter limiter) {
         this.nodeSnapper = Objects.requireNonNull(nodeSnapper);
+        this.limiter = Objects.requireNonNull(limiter);
     }
 
     @Override
     public void exploreEach(@NotNull Node currentNode, int goalX, int goalY, int goalZ, @NotNull NodeHandler handler,
             @NotNull Vec3I2ObjectMap<Node> graph) {
+        if (!limiter.inBounds(currentNode)) {
+            //prune nodes that are not in bounds according to the limiter
+            return;
+        }
+
         for (Direction direction : DIRECTIONS) {
             int dx = direction.x;
             int dz = direction.z;
@@ -45,8 +52,11 @@ public class WalkExplorer implements Explorer {
             if (neighborNode != null && currentNode.g + 1 >= neighborNode.g) {
                 /*
                 ignore travel to nodes that
+
                 a) we already visited
-                b) the path from our to this node will be longer than (or equal to) the path to the other node
+                b) the path when going from current to this node will be longer than (or equal to) the path to the other
+                node
+
                 we can add 1 to the current node's g, because it is the MINIMUM additional path length; we may determine
                 that it goes larger after snapping, but it doesn't change this calculation if it does
                  */

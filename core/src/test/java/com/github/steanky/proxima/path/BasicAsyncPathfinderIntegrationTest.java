@@ -1,7 +1,7 @@
-package com.github.steanky.proxima;
+package com.github.steanky.proxima.path;
 
+import com.github.steanky.proxima.*;
 import com.github.steanky.proxima.node.Node;
-import com.github.steanky.proxima.path.*;
 import com.github.steanky.proxima.snapper.WalkNodeSnapper;
 import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.proxima.space.HashSpace;
@@ -41,7 +41,7 @@ class BasicAsyncPathfinderIntegrationTest {
                     && z1 == z2;
 
             private final Explorer explorer = new WalkExplorer(new WalkNodeSnapper(width, height, fallTolerance,
-                    jumpHeight, space, searchArea, 1E-6));
+                    jumpHeight, space, 1E-6), PathLimiter.inBounds(searchArea));
 
             @Override
             public @NotNull Vec3IBiPredicate successPredicate() {
@@ -185,7 +185,7 @@ class BasicAsyncPathfinderIntegrationTest {
         PathSettings settings = hugeEnvironment();
         Pathfinder pathfinder = pathfinder();
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 10000; i++) {
             pathfinder.pathfind(0, 1, 0, 900, 1, 900, settings);
         }
 

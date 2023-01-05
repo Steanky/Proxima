@@ -82,7 +82,7 @@ public class PathfindState {
                     && z1 == z2;
 
             private final Explorer explorer = new WalkExplorer(new WalkNodeSnapper(width, height, fallTolerance,
-                    jumpHeight, space, searchArea, 1E-6));
+                    jumpHeight, space, 1E-6), PathLimiter.inBounds(searchArea));
 
             @Override
             public @NotNull Vec3IBiPredicate successPredicate() {

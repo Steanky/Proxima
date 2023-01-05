@@ -67,7 +67,7 @@ class WalkNodeSnapperTest {
             space.put(solid.pos, solid.solid);
         }
 
-        return new WalkNodeSnapper(width, height, fallTolerance, jumpHeight, space, bounds, epsilon);
+        return new WalkNodeSnapper(width, height, fallTolerance, jumpHeight, space, epsilon);
     }
 
     private static void assertSnap(WalkNodeSnapper snapper, Direction direction, Node node, NodeHandler handler) {

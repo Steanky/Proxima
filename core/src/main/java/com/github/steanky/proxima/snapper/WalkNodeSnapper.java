@@ -30,10 +30,8 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
     private final double jumpHeight;
     private final Space space;
 
-    private final Bounds3I searchArea;
-
     public WalkNodeSnapper(double width, double height, double fallTolerance, double jumpHeight, @NotNull Space space,
-            @NotNull Bounds3I searchArea, double epsilon) {
+            double epsilon) {
         validate(width, height, fallTolerance, jumpHeight, epsilon);
 
         int rWidth = (int) Math.rint(width);
@@ -58,7 +56,6 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
         this.jumpHeight = jumpHeight + epsilon;
         this.space = Objects.requireNonNull(space);
-        this.searchArea = searchArea.immutable();
     }
 
     private static void validate(double width, double height, double fallTolerance, double jumpHeight, double epsilon) {
@@ -98,6 +95,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         }
     }
 
+    @SuppressWarnings("DuplicatedCode")
     @Override
     public long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, double nodeOffset) {
         int dx = direction.x;
@@ -105,11 +103,6 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
 
         int nx = nodeX + dx;
         int nz = nodeZ + dz;
-
-        //fast exit: don't check out of bounds
-        if (!searchArea.contains(nx, nodeY, nz)) {
-            return FAIL;
-        }
 
         double exactY = nodeY + nodeOffset;
         double newY = Double.NaN;
@@ -257,8 +250,7 @@ public class WalkNodeSnapper implements DirectionalNodeSnapper {
         }
 
         //newY was never assigned, so we can't move this direction
-        //or, our target y is outside the search area
-        if (Double.isNaN(newY) || newY < searchArea.originY() || newY >= searchArea.maxY()) {
+        if (Double.isNaN(newY)) {
             return FAIL;
         }
 
