@@ -1,14 +1,14 @@
 package com.github.steanky.proxima.space;
 
 import com.github.steanky.proxima.solid.Solid;
-import com.github.steanky.proxima.space.Space;
 import com.github.steanky.vector.HashVec3I2ObjectMap;
 import com.github.steanky.vector.Vec3I;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * A basic implementation of {@link Space}. Useful for testing.
+ * A basic implementation of {@link Space}. Useful for testing. Not thread-safe; should not be used outside the context
+ * of pre-constructed, unchanged environments.
  */
 public class HashSpace implements Space {
     private final Vec3I2ObjectMap<Solid> solidMap;

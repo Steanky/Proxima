@@ -2,6 +2,7 @@ package com.github.steanky.proxima.benchmarks;
 
 import com.github.steanky.proxima.*;
 import com.github.steanky.proxima.node.Node;
+import com.github.steanky.proxima.node.NodeProcessor;
 import com.github.steanky.proxima.path.BasicAsyncPathfinder;
 import com.github.steanky.proxima.path.BasicPathOperation;
 import com.github.steanky.proxima.path.PathSettings;
@@ -102,6 +103,11 @@ public class PathfindState {
             @Override
             public @NotNull Vec3I2ObjectMap<Node> graph() {
                 return THREAD_LOCAL_GRAPH.get();
+            }
+
+            @Override
+            public @NotNull NodeProcessor nodeProcessor() {
+                return NodeProcessor.NO_CHANGE;
             }
         };
     }

@@ -3,6 +3,7 @@ package com.github.steanky.proxima.path;
 import com.github.steanky.proxima.Explorer;
 import com.github.steanky.proxima.Heuristic;
 import com.github.steanky.proxima.node.Node;
+import com.github.steanky.proxima.node.NodeProcessor;
 import com.github.steanky.proxima.node.NodeQueue;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import com.github.steanky.vector.Vec3IBiPredicate;
@@ -16,6 +17,7 @@ public class BasicPathOperation implements PathOperation {
     private Vec3IBiPredicate successPredicate;
     private Explorer explorer;
     private Heuristic heuristic;
+    private NodeProcessor nodeProcessor;
 
     private State state;
     private boolean success;
@@ -40,6 +42,7 @@ public class BasicPathOperation implements PathOperation {
         this.successPredicate = settings.successPredicate();
         this.explorer = settings.explorer();
         this.heuristic = settings.heuristic();
+        this.nodeProcessor = settings.nodeProcessor();
 
         //indicate that we can start stepping
         state = State.INITIALIZED;
@@ -116,7 +119,8 @@ public class BasicPathOperation implements PathOperation {
             throw new IllegalStateException("Can't compile a result while incomplete");
         }
 
-        return new PathResult(best.reverseToNavigationList(), graph.size(), success);
+        Node target = nodeProcessor.processPath(best, graph);
+        return new PathResult(target.reverseToNavigationList(), graph.size(), success);
     }
 
     @Override

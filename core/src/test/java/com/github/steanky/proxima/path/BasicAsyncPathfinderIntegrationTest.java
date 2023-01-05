@@ -2,6 +2,7 @@ package com.github.steanky.proxima.path;
 
 import com.github.steanky.proxima.*;
 import com.github.steanky.proxima.node.Node;
+import com.github.steanky.proxima.node.NodeProcessor;
 import com.github.steanky.proxima.snapper.WalkNodeSnapper;
 import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.proxima.space.HashSpace;
@@ -61,6 +62,11 @@ class BasicAsyncPathfinderIntegrationTest {
             @Override
             public @NotNull Vec3I2ObjectMap<Node> graph() {
                 return THREAD_LOCAL_GRAPH.get();
+            }
+
+            @Override
+            public @NotNull NodeProcessor nodeProcessor() {
+                return NodeProcessor.NO_CHANGE;
             }
         };
     }
