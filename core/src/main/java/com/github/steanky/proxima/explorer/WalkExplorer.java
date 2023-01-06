@@ -4,9 +4,10 @@ import com.github.steanky.proxima.Direction;
 import com.github.steanky.proxima.NodeHandler;
 import com.github.steanky.proxima.PathLimiter;
 import com.github.steanky.proxima.node.Node;
-import com.github.steanky.proxima.snapper.WalkNodeSnapper;
+import com.github.steanky.proxima.snapper.NodeSnapper;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -18,29 +19,29 @@ public class WalkExplorer extends DirectionalExplorer {
             Direction.WEST
     };
 
-    private final WalkNodeSnapper nodeSnapper;
+    private final NodeSnapper nodeSnapper;
 
-    public WalkExplorer(@NotNull WalkNodeSnapper nodeSnapper, @NotNull PathLimiter limiter) {
+    public WalkExplorer(@NotNull NodeSnapper nodeSnapper, @NotNull PathLimiter limiter) {
         super(DIRECTIONS, limiter);
         this.nodeSnapper = Objects.requireNonNull(nodeSnapper);
     }
 
     @Override
-    protected boolean isParent(@NotNull Node other, int tx, int ty, int tz) {
-        return tx == other.x && tz == other.z;
+    protected boolean isParent(@NotNull Node parent, int tx, int ty, int tz) {
+        return tx == parent.x && tz == parent.z;
     }
 
     @Override
-    protected void handleDirection(@NotNull Direction direction, @NotNull Node currentNode, @NotNull Node neighborNode,
+    protected void handleDirection(@NotNull Direction direction, @NotNull Node currentNode, @Nullable Node neighborNode,
             @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph) {
         int nx = currentNode.x;
         int ny = currentNode.y;
         int nz = currentNode.z;
 
         long value = nodeSnapper.snap(direction, nx, ny, nz, currentNode.yOffset);
-        if (value != WalkNodeSnapper.FAIL) {
-            int height = WalkNodeSnapper.height(value);
-            float offset = WalkNodeSnapper.offset(value);
+        if (value != NodeSnapper.FAIL) {
+            int height = NodeSnapper.height(value);
+            float offset = NodeSnapper.offset(value);
 
             int tx = nx + direction.x;
             int tz = nz + direction.z;

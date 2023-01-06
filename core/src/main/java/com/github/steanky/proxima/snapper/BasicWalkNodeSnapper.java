@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.Objects;
 
-public class BasicWalkNodeSnapper implements WalkNodeSnapper {
+public class BasicWalkNodeSnapper implements NodeSnapper {
     private final double width;
     private final double halfWidth;
     private final double fallTolerance;
@@ -94,9 +94,14 @@ public class BasicWalkNodeSnapper implements WalkNodeSnapper {
         }
     }
 
-    @SuppressWarnings({"DuplicatedCode", "ForLoopReplaceableByForEach"})
+    @SuppressWarnings({"DuplicatedCode"})
     @Override
     public long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, double nodeOffset) {
+        if (direction.ordinal() > 3) {
+            //can't snap up or down
+            return FAIL;
+        }
+
         int dx = direction.x;
         int dz = direction.z;
 
@@ -143,9 +148,7 @@ public class BasicWalkNodeSnapper implements WalkNodeSnapper {
                         double lz = dz == 0 ? width : wDiff;
 
                         List<Bounds3D> children = solid.children();
-                        for (int j = 0; j < children.size(); j++) {
-                            Bounds3D child = children.get(j);
-
+                        for (Bounds3D child : children) {
                             if (!child.overlaps(ax, ay, az, lx, height, lz)) {
                                 //no overlap means this block won't impede our movement
                                 continue;
@@ -207,9 +210,7 @@ public class BasicWalkNodeSnapper implements WalkNodeSnapper {
 
                 //if the directionally-expanded bounds overlaps, we have a collision
                 List<Bounds3D> children = solid.children();
-                for (int j = 0; j < children.size(); j++) {
-                    Bounds3D child = children.get(j);
-
+                for (Bounds3D child : children) {
                     if (!child.overlaps(ax, ay, az, lx, height, lz)) {
                         continue;
                     }
@@ -257,7 +258,12 @@ public class BasicWalkNodeSnapper implements WalkNodeSnapper {
         }
 
         //jumping is necessary, so we need to check above us
-        if (newY > exactY && jumpHeight != 0) {
+        if (newY > exactY) {
+            if (jumpHeight == 0) {
+                //sanity check: if a block was too high to jump over, we should have already returned
+                return FAIL;
+            }
+
             //only search as high as we need to in order to reach the target elevation
             int jumpSearch = (int) Math.ceil(newY - exactY);
 
@@ -305,8 +311,7 @@ public class BasicWalkNodeSnapper implements WalkNodeSnapper {
                         double az = ((nodeZ + 0.5) - z) - halfWidth;
 
                         List<Bounds3D> children = solid.children();
-                        for (int j = 0; j < children.size(); j++) {
-                            Bounds3D child = children.get(j);
+                        for (Bounds3D child : children) {
                             if (child.overlaps(ax, ay, az, width, jumpHeight, width) &&
                                     y + child.originY() - height < newY) {
                                 return FAIL;
@@ -317,7 +322,7 @@ public class BasicWalkNodeSnapper implements WalkNodeSnapper {
             }
 
             //nothing was found preventing our jump
-            return WalkNodeSnapper.encode(newY);
+            return NodeSnapper.encode(newY);
         }
 
         //search below us, possibly including the block we're in if it's partial
@@ -348,9 +353,7 @@ public class BasicWalkNodeSnapper implements WalkNodeSnapper {
                     double az = ((nz + 0.5) - z) - halfWidth;
 
                     List<Bounds3D> children = solid.children();
-                    for (int j = 0; j < children.size(); j++) {
-                        Bounds3D child = children.get(j);
-
+                    for (Bounds3D child : children) {
                         if (!child.overlaps(ax, 0, az, width, height, width)) {
                             continue;
                         }
@@ -373,7 +376,7 @@ public class BasicWalkNodeSnapper implements WalkNodeSnapper {
                 double fall = exactY - ty;
 
                 if (fall <= fallTolerance) {
-                    return WalkNodeSnapper.encode(ty);
+                    return NodeSnapper.encode(ty);
                 }
             }
         }

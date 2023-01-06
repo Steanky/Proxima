@@ -4,7 +4,7 @@ import com.github.steanky.proxima.Direction;
 import com.github.steanky.proxima.NodeHandler;
 import com.github.steanky.proxima.PathLimiter;
 import com.github.steanky.proxima.node.Node;
-import com.github.steanky.proxima.space.Space;
+import com.github.steanky.proxima.snapper.NodeSnapper;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,16 +21,16 @@ public class FlightExplorer extends DirectionalExplorer {
             Direction.DOWN
     };
 
-    private final Space space;
+    private final NodeSnapper snapper;
 
-    public FlightExplorer(@NotNull PathLimiter limiter, @NotNull Space space) {
+    public FlightExplorer(@NotNull PathLimiter limiter, @NotNull NodeSnapper snapper) {
         super(DIRECTIONS, limiter);
-        this.space = Objects.requireNonNull(space);
+        this.snapper = Objects.requireNonNull(snapper);
     }
 
     @Override
-    protected boolean isParent(@NotNull Node other, int tx, int ty, int tz) {
-        return other.x == tx && other.y == ty && other.z == tz;
+    protected boolean isParent(@NotNull Node parent, int tx, int ty, int tz) {
+        return parent.x == tx && parent.y == ty && parent.z == tz;
     }
 
     @Override
@@ -40,6 +40,10 @@ public class FlightExplorer extends DirectionalExplorer {
         int ty = currentNode.y + direction.y;
         int tz = currentNode.z + direction.z;
 
-
+        long result = snapper.snap(direction, currentNode.x, currentNode.y, currentNode.z, currentNode.yOffset);
+        if (result != NodeSnapper.FAIL) {
+            float offset = NodeSnapper.offset(result);
+            handler.handle(currentNode, neighborNode, tx, ty, tz, offset);
+        }
     }
 }

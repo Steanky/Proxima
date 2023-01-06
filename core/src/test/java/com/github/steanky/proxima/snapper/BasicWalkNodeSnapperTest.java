@@ -72,9 +72,9 @@ class BasicWalkNodeSnapperTest {
 
     private static void assertSnap(BasicWalkNodeSnapper snapper, Direction direction, Node node, NodeHandler handler) {
         long val = snapper.snap(direction, node.x, node.y, node.z, node.yOffset);
-        if (val != WalkNodeSnapper.FAIL) {
-            int y = WalkNodeSnapper.height(val);
-            float offset = WalkNodeSnapper.offset(val);
+        if (val != NodeSnapper.FAIL) {
+            int y = NodeSnapper.height(val);
+            float offset = NodeSnapper.offset(val);
 
             handler.handle(node, null, node.x + direction.x, y, node.z + direction.z, offset);
         }
@@ -84,7 +84,7 @@ class BasicWalkNodeSnapperTest {
     }
 
     private static void assertNoSnap(BasicWalkNodeSnapper snapper, Direction direction, Node node) {
-        assertEquals(WalkNodeSnapper.FAIL, snapper.snap(direction, node.x, node.y, node.z, node.yOffset));
+        assertEquals(NodeSnapper.FAIL, snapper.snap(direction, node.x, node.y, node.z, node.yOffset));
     }
 
     private static void walk(Direction direction, double width, double height, int x, int y, int z, float yo,

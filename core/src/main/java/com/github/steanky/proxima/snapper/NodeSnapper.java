@@ -3,7 +3,7 @@ package com.github.steanky.proxima.snapper;
 import com.github.steanky.proxima.Direction;
 import org.jetbrains.annotations.NotNull;
 
-public interface WalkNodeSnapper {
+public interface NodeSnapper {
     long FAIL = 0xFFC0_0001L; //lower 32 bits represent a floating-point qNaN with a payload of all 0s
 
     long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, double nodeOffset);

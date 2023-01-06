@@ -37,13 +37,14 @@ public abstract class DirectionalExplorer implements Explorer {
             int dy = direction.y;
             int dz = direction.z;
 
+            //target x, y, z
             int tx = nx + dx;
             int ty = ny + dy;
             int tz = nz + dz;
 
             Node parent = currentNode.parent;
             if (parent != null && isParent(parent, tx, ty, tz)) {
-                //fast skip, don't re-visit our parent
+                //don't re-visit our parent, there's never a reason to do this
                 continue;
             }
 
@@ -66,7 +67,7 @@ public abstract class DirectionalExplorer implements Explorer {
         }
     }
 
-    protected abstract boolean isParent(@NotNull Node other, int tx, int ty, int tz);
+    protected abstract boolean isParent(@NotNull Node parent, int tx, int ty, int tz);
 
     protected abstract void handleDirection(@NotNull Direction direction, @NotNull Node currentNode,
             @Nullable Node neighborNode, @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph);
