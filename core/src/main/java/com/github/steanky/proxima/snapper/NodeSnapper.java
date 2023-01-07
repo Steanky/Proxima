@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 public interface NodeSnapper {
     long FAIL = 0xFFC0_0001L; //lower 32 bits represent a floating-point qNaN with a payload of all 0s
 
-    long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, double nodeOffset);
+    long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, float nodeOffset);
 
     /**
      * Encodes a double-precision height value into a single long whose most significant 32 bits represent the integer

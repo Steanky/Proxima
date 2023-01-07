@@ -41,6 +41,10 @@ public interface Solid {
 
     @NotNull @Unmodifiable List<Bounds3D> children();
 
+    static long result(float lowest, float highest) {
+        return (((long) Float.floatToRawIntBits(lowest)) << 32) | Float.floatToRawIntBits(highest);
+    }
+
     static float lowest(long collisionResult) {
         return Float.intBitsToFloat((int) (collisionResult >>> 32));
     }
@@ -119,9 +123,9 @@ public interface Solid {
                     }
                 }
             }
-        };
+        }
 
-        return (((long) Float.floatToRawIntBits(lowest)) << 32) | Float.floatToRawIntBits(highest);
+        return result(lowest, highest);
     }
 
     default @Nullable Bounds3D closestCollision(int x, int y, int z, double ox, double oy, double oz,
@@ -178,6 +182,52 @@ public interface Solid {
                 }
 
                 yield closest;
+            }
+        };
+    }
+
+    default boolean hasCollision(int x, int y, int z, double ox, double oy, double oz,
+            double lx, double ly, double lz, @NotNull Direction direction, double l) {
+        if (isEmpty()) {
+            return false;
+        }
+
+        return switch (direction) {
+            case EAST, WEST -> {
+                double dx = direction.x * l;
+                double mx = ox + lx;
+
+                for (Bounds3D child : children()) {
+                    if (!Double.isNaN(Util.checkDirection(dx, x, child.originX(), child.maxX(), ox, mx))) {
+                        yield true;
+                    }
+                }
+
+                yield false;
+            }
+            case UP, DOWN -> {
+                double dy = direction.y * l;
+                double my = oy + ly;
+
+                for (Bounds3D child : children()) {
+                    if (!Double.isNaN(Util.checkDirection(dy, y, child.originY(), child.maxY(), oy, my))) {
+                        yield true;
+                    }
+                }
+
+                yield false;
+            }
+            case NORTH, SOUTH -> {
+                double dz = direction.z * l;
+                double mz = oz + lz;
+
+                for (Bounds3D child : children()) {
+                    if (!Double.isNaN(Util.checkDirection(dz, z, child.originZ(), child.maxZ(), oz, mz))) {
+                        yield true;
+                    }
+                }
+
+                yield false;
             }
         };
     }

@@ -6,27 +6,21 @@ import com.github.steanky.proxima.space.Space;
 import com.github.steanky.vector.Bounds3D;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.List;
 import java.util.Objects;
 
 public class BasicNodeSnapper implements NodeSnapper {
     private final double width;
     private final double halfWidth;
     private final double fallTolerance;
-    private final double wDiff;
     private final double height;
-
-    private final int ceilHeight;
 
     private final int searchHeight;
     private final int fallSearchHeight;
 
     private final boolean fullWidth;
-    private final boolean fullHeight;
 
     private final int halfBlockWidth;
 
-    private final double jumpHeightCompare;
     private final double jumpHeight;
     private final Space space;
     private final boolean walk;
@@ -43,24 +37,19 @@ public class BasicNodeSnapper implements NodeSnapper {
         int rWidth = (int) Math.rint(width);
 
         this.fullWidth = width == rWidth && (rWidth & 1) != 0;
-        this.fullHeight = height == Math.rint(height);
-        this.fallTolerance = fallTolerance + epsilon;
+        this.fallTolerance = fallTolerance;
 
         //silly, totally unnecessary way to add 1 to a number only if it is even
         int blockWidth = ((int) Math.ceil(width)) | 1;
 
-        this.width = width - epsilon;
+        this.width = width;
         this.halfWidth = width / 2;
-        this.wDiff = ((blockWidth - width) / 2) - (epsilon / 2);
-        this.height = height - epsilon;
-        this.ceilHeight = (int) Math.ceil(height);
+        this.height = height;
 
         this.searchHeight = (int) Math.ceil(height + jumpHeight);
         this.fallSearchHeight = (int) Math.ceil(fallTolerance) + 1;
 
         this.halfBlockWidth = blockWidth >> 1;
-
-        this.jumpHeightCompare = jumpHeight + epsilon;
         this.jumpHeight = jumpHeight;
         this.space = Objects.requireNonNull(space);
         this.walk = walk;
@@ -103,21 +92,72 @@ public class BasicNodeSnapper implements NodeSnapper {
         }
     }
 
-    private long snapVertical(Direction direction, int nodeX, int nodeY, int nodeZ, double nodeOffset) {
-        return switch (direction) {
-            case UP -> {
-                yield FAIL;
+    private long snapVertical(Direction direction, int nodeX, int nodeY, int nodeZ, float nodeOffset) {
+        int dx = direction.x;
+        int dz = direction.z;
+
+        int nx = nodeX + dx;
+        int nz = nodeZ + dz;
+
+        double exactY = nodeY + nodeOffset;
+
+        double ax = nodeX + 0.5 - halfWidth;
+        double az = nodeZ + 0.5 - halfWidth;
+
+        if (direction == Direction.UP) {
+            double exactHeight = height + nodeOffset;
+            int ceilHeight = (int)Math.ceil(exactHeight);
+            int offset = ceilHeight + nodeY;
+            boolean fullHeight = exactHeight == ceilHeight;
+
+            for (int i = fullHeight ? 0 : -1; i < 1; i++) {
+                int y = i + offset;
+
+                for (int dex = -halfBlockWidth; dex <= halfBlockWidth; dex++) {
+                    for (int dez = -halfBlockWidth; dez <= halfBlockWidth; dez++) {
+                        int x = nx + dex;
+                        int z = nz + dez;
+
+                        Solid solid = space.solidAt(x, y, z);
+                        if (solid.isEmpty() || (solid.isFull() && i == -1)) {
+                            continue;
+                        }
+
+                        if (solid.hasCollision(x, y, z, ax, exactY, az, width, height, width, Direction.UP, 1)) {
+                            return FAIL;
+                        }
+                    }
+                }
             }
-            case DOWN -> {
-                yield FAIL;
+
+            return NodeSnapper.encode(nodeY + 1);
+        }
+
+        for (int i = nodeOffset == 0 ? 0 : -1; i < 1; i++) {
+            int y = nodeY - (i + 1);
+
+            for (int dex = -halfBlockWidth; dex <= halfBlockWidth; dex++) {
+                for (int dez = -halfBlockWidth; dez <= halfBlockWidth; dez++) {
+                    int x = nx + dex;
+                    int z = nz + dez;
+
+                    Solid solid = space.solidAt(x, y, z);
+                    if (solid.isEmpty() || (solid.isFull() && i == -1)) {
+                        continue;
+                    }
+
+                    if (solid.hasCollision(x, y, z, ax, exactY, az, width, height, width, Direction.DOWN, 1)) {
+                        return FAIL;
+                    }
+                }
             }
-            default -> throw new IllegalStateException("Unexpected direction " + direction);
-        };
+        }
+
+        return NodeSnapper.encode(nodeY - 1);
     }
 
-    @SuppressWarnings({"DuplicatedCode"})
     @Override
-    public long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, double nodeOffset) {
+    public long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, float nodeOffset) {
         if (direction.ordinal() > 3) {
             //can't pathfind up or down while walking
             if (walk) {
@@ -142,14 +182,16 @@ public class BasicNodeSnapper implements NodeSnapper {
         int actualSearchHeight = nodeOffset == 0 ? searchHeight :
                 ((int)Math.ceil(nodeOffset + height + jumpHeight) - nodeY) + 1;
 
+        double ax = nodeX + 0.5 - halfWidth;
+        double az = nodeZ + 0.5 - halfWidth;
+
         for (int i = 0; i < actualSearchHeight; i++) {
             int y = nodeY + i;
 
-            Bounds3D tallest = null;
-            Bounds3D lowest = null;
+            float lowest = Float.POSITIVE_INFINITY;
+            float highest = Float.NEGATIVE_INFINITY;
 
             //search an individual y-layer of blocks
-            outer:
             for (int dh = -halfBlockWidth; dh <= halfBlockWidth; dh++) {
                 //full agents don't need to check for collisions inside themselves
                 if (!fullWidth) {
@@ -163,37 +205,20 @@ public class BasicNodeSnapper implements NodeSnapper {
                     //if the solid is empty, it has no collision
                     //if the solid is partial, check if we're overlapping (we may have collision)
                     if (!solid.isEmpty() && !solid.isFull()) {
-                        //agent coordinates relative to solid and shifted over by wDiff * width
-                        //this is the area within the same block as the agent, that it will travel through in order to
-                        //move to the next node, that does not include its current occupied space
-                        double ax = (((nodeX + 0.5) - x) - halfWidth) + (dx > 0 ? width : wDiff * dx);
-                        double ay = exactY - y;
-                        double az = (((nodeZ + 0.5) - z) - halfWidth) + (dz > 0 ? width : wDiff * dz);
+                        long res = solid.minMaxCollision(x, y, z, ax, exactY, az, width, height, width, direction, 1);
+                        float low = Solid.lowest(res);
+                        float high = Solid.highest(res);
 
-                        double lx = dx == 0 ? width : wDiff;
-                        double lz = dz == 0 ? width : wDiff;
+                        if (low < lowest) {
+                            lowest = low;
+                        }
 
-                        List<Bounds3D> children = solid.children();
-                        for (Bounds3D child : children) {
-                            if (!child.overlaps(ax, ay, az, lx, height, lz)) {
-                                //no overlap means this block won't impede our movement
-                                continue;
-                            }
+                        if (high > highest) {
+                            highest = high;
+                        }
 
-                            double cmy = child.maxY();
-                            double coy = child.originY();
-                            if (tallest == null || cmy > tallest.maxY()) {
-                                tallest = child;
-                            }
-
-                            if (lowest == null || coy < lowest.originY()) {
-                                lowest = child;
-                            }
-
-                            //highest and lowest possible was found for this layer
-                            if (cmy == 1 && coy == 0) {
-                                break outer;
-                            }
+                        if (low == 0 && high == 1) {
+                            break;
                         }
                     }
                 }
@@ -211,65 +236,43 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                 //simpler check if the solid is full, we don't need to test overlap
                 if (solid.isFull()) {
-                    tallest = solid.bounds();
-                    lowest = tallest;
+                    highest = 1;
+                    lowest = 0;
 
                     //we know the tallest bounds here is this solid
                     break;
                 }
 
-                //agent coordinates relative to solid
-                double ax = ((nodeX + 0.5) - x) - halfWidth;
-                double ay = exactY - y;
-                double az = ((nodeZ + 0.5) - z) - halfWidth;
+                long res = solid.minMaxCollision(x, y, z, ax, exactY, az, width, height, width, direction, 1);
+                float low = Solid.lowest(res);
+                float high = Solid.highest(res);
 
-                double lx = width + Math.abs(dx);
-                double lz = width + Math.abs(dz);
-
-                if (dx < 0) {
-                    ax += dx;
+                if (low < lowest) {
+                    lowest = low;
                 }
 
-                if (dz < 0) {
-                    az += dz;
+                if (high > highest) {
+                    highest = high;
                 }
 
-                //if the directionally-expanded bounds overlaps, we have a collision
-                List<Bounds3D> children = solid.children();
-                for (Bounds3D child : children) {
-                    if (!child.overlaps(ax, ay, az, lx, height, lz)) {
-                        continue;
-                    }
-
-                    double cmy = child.maxY();
-                    double coy = child.originY();
-                    if (tallest == null || cmy > tallest.maxY()) {
-                        tallest = child;
-                    }
-
-                    if (lowest == null || coy < lowest.originY()) {
-                        lowest = child;
-                    }
-
-                    if (cmy == 1 && coy == 0) {
-                        break outer;
-                    }
+                if (low == 0 && high == 1) {
+                    break;
                 }
             }
 
             //if we found a solid this layer, check the gap below it
-            if (tallest != null) {
-                double ceiling = y + lowest.originY();
+            if (Float.isFinite(highest)) {
+                double ceiling = y + lowest;
 
                 if (ceiling - lastTargetY >= height) {
                     newY = lastTargetY;
                     break;
                 }
 
-                lastTargetY = y + tallest.maxY();
+                lastTargetY = y + highest;
 
                 //too high to make this jump
-                if (lastTargetY - exactY > jumpHeightCompare) {
+                if (lastTargetY - exactY > jumpHeight) {
                     return FAIL;
                 }
             } else if ((y + 1) - lastTargetY >= height) {
@@ -287,7 +290,12 @@ public class BasicNodeSnapper implements NodeSnapper {
         if (newY > exactY) {
             //only search as high as we need to in order to reach the target elevation
             int jumpSearch = (int) Math.ceil(newY - exactY);
-            int offset = (nodeOffset == 0 ? ceilHeight : (int)Math.ceil(height + nodeOffset)) + nodeY;
+
+            double exactHeight = height + nodeOffset;
+            int ceilHeight = (int)Math.ceil(exactHeight);
+            int offset = ceilHeight + nodeY;
+
+            boolean fullHeight = exactHeight == ceilHeight;
 
             //check for blocks above the agent, possibly including the block intersected by the agent's head
             for (int i = fullHeight ? 0 : -1; i < jumpSearch; i++) {
@@ -320,10 +328,6 @@ public class BasicNodeSnapper implements NodeSnapper {
                             continue;
                         }
 
-                        //agent coordinates relative to node
-                        double ax = nodeX + 0.5 - halfWidth;
-                        double az = nodeZ + 0.5 - halfWidth;
-
                         Bounds3D closest = solid.closestCollision(x, y, z, ax, exactY, az, width, height, width,
                                 Direction.UP, jumpHeight);
 
@@ -351,7 +355,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     int z = nz + dez;
 
                     Solid solid = space.solidAt(x, y, z);
-                    if (solid.isEmpty()) {
+                    if (solid.isEmpty() || (solid.isFull() && i == -1)) {
                         continue;
                     }
 
@@ -360,9 +364,6 @@ public class BasicNodeSnapper implements NodeSnapper {
                         highestY = 1;
                         break outer;
                     }
-
-                    double ax = nodeX + 0.5 - halfWidth;
-                    double az = nodeZ + 0.5 - halfWidth;
 
                     Bounds3D bounds = solid.closestCollision(x, y, z, ax, exactY, az, width, height, width,
                             Direction.DOWN, 1);
@@ -379,6 +380,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                 }
             }
 
+            //only search 1 layer if flying, just so we adjust our offset if necessary
             if (!walk) {
                 return NodeSnapper.encode(y + (Double.isFinite(highestY) ? highestY : 0));
             }
