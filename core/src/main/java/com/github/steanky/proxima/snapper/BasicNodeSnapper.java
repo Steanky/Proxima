@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.Objects;
 
-public class BasicWalkNodeSnapper implements NodeSnapper {
+public class BasicNodeSnapper implements NodeSnapper {
     private final double width;
     private final double halfWidth;
     private final double fallTolerance;
@@ -26,12 +26,19 @@ public class BasicWalkNodeSnapper implements NodeSnapper {
 
     private final int halfBlockWidth;
 
+    private final double jumpHeightCompare;
     private final double jumpHeight;
     private final Space space;
+    private final boolean walk;
 
-    public BasicWalkNodeSnapper(double width, double height, double fallTolerance, double jumpHeight,
-            @NotNull Space space, double epsilon) {
+    public BasicNodeSnapper(double width, double height, double fallTolerance, double jumpHeight,
+            @NotNull Space space, boolean walk, double epsilon) {
         validate(width, height, fallTolerance, jumpHeight, epsilon);
+
+        if (!walk) {
+            jumpHeight = 0;
+            fallTolerance = 0;
+        }
 
         int rWidth = (int) Math.rint(width);
 
@@ -53,8 +60,10 @@ public class BasicWalkNodeSnapper implements NodeSnapper {
 
         this.halfBlockWidth = blockWidth >> 1;
 
-        this.jumpHeight = jumpHeight + epsilon;
+        this.jumpHeightCompare = jumpHeight + epsilon;
+        this.jumpHeight = jumpHeight;
         this.space = Objects.requireNonNull(space);
+        this.walk = walk;
     }
 
     private static void validate(double width, double height, double fallTolerance, double jumpHeight, double epsilon) {
@@ -94,12 +103,29 @@ public class BasicWalkNodeSnapper implements NodeSnapper {
         }
     }
 
+    private long snapVertical(Direction direction, int nodeX, int nodeY, int nodeZ, double nodeOffset) {
+        return switch (direction) {
+            case UP -> {
+                yield FAIL;
+            }
+            case DOWN -> {
+                yield FAIL;
+            }
+            default -> throw new IllegalStateException("Unexpected direction " + direction);
+        };
+    }
+
     @SuppressWarnings({"DuplicatedCode"})
     @Override
     public long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, double nodeOffset) {
         if (direction.ordinal() > 3) {
-            //can't snap up or down
-            return FAIL;
+            //can't pathfind up or down while walking
+            if (walk) {
+                return FAIL;
+            }
+
+            //if not walking, we can do vertical snaps
+            return snapVertical(direction, nodeX, nodeY, nodeZ, nodeOffset);
         }
 
         int dx = direction.x;
@@ -122,7 +148,7 @@ public class BasicWalkNodeSnapper implements NodeSnapper {
             Bounds3D tallest = null;
             Bounds3D lowest = null;
 
-            //search an individual layer
+            //search an individual y-layer of blocks
             outer:
             for (int dh = -halfBlockWidth; dh <= halfBlockWidth; dh++) {
                 //full agents don't need to check for collisions inside themselves
@@ -243,7 +269,7 @@ public class BasicWalkNodeSnapper implements NodeSnapper {
                 lastTargetY = y + tallest.maxY();
 
                 //too high to make this jump
-                if (lastTargetY - exactY > jumpHeight) {
+                if (lastTargetY - exactY > jumpHeightCompare) {
                     return FAIL;
                 }
             } else if ((y + 1) - lastTargetY >= height) {
@@ -259,17 +285,13 @@ public class BasicWalkNodeSnapper implements NodeSnapper {
 
         //jumping is necessary, so we need to check above us
         if (newY > exactY) {
-            if (jumpHeight == 0) {
-                //sanity check: if a block was too high to jump over, we should have already returned
-                return FAIL;
-            }
-
             //only search as high as we need to in order to reach the target elevation
             int jumpSearch = (int) Math.ceil(newY - exactY);
+            int offset = (nodeOffset == 0 ? ceilHeight : (int)Math.ceil(height + nodeOffset)) + nodeY;
 
             //check for blocks above the agent, possibly including the block intersected by the agent's head
             for (int i = fullHeight ? 0 : -1; i < jumpSearch; i++) {
-                int y = i + ceilHeight + nodeY;
+                int y = i + offset;
 
                 for (int dex = -halfBlockWidth; dex <= halfBlockWidth; dex++) {
                     for (int dez = -halfBlockWidth; dez <= halfBlockWidth; dez++) {
@@ -298,24 +320,15 @@ public class BasicWalkNodeSnapper implements NodeSnapper {
                             continue;
                         }
 
-                        Bounds3D bounds = solid.bounds();
+                        //agent coordinates relative to node
+                        double ax = nodeX + 0.5 - halfWidth;
+                        double az = nodeZ + 0.5 - halfWidth;
 
-                        //this solid is too high to worry about colliding with
-                        if (bounds.originY() - height >= newY) {
-                            continue;
-                        }
+                        Bounds3D closest = solid.closestCollision(x, y, z, ax, exactY, az, width, height, width,
+                                Direction.UP, jumpHeight);
 
-                        //agent coordinates relative to solid
-                        double ax = ((nodeX + 0.5) - x) - halfWidth;
-                        double ay = (exactY - y) + height;
-                        double az = ((nodeZ + 0.5) - z) - halfWidth;
-
-                        List<Bounds3D> children = solid.children();
-                        for (Bounds3D child : children) {
-                            if (child.overlaps(ax, ay, az, width, jumpHeight, width) &&
-                                    y + child.originY() - height < newY) {
-                                return FAIL;
-                            }
+                        if (closest != null && y + closest.originY() - newY < height) {
+                            return FAIL;
                         }
                     }
                 }
@@ -348,26 +361,26 @@ public class BasicWalkNodeSnapper implements NodeSnapper {
                         break outer;
                     }
 
-                    //agent coordinates relative to solid
-                    double ax = ((nx + 0.5) - x) - halfWidth;
-                    double az = ((nz + 0.5) - z) - halfWidth;
+                    double ax = nodeX + 0.5 - halfWidth;
+                    double az = nodeZ + 0.5 - halfWidth;
 
-                    List<Bounds3D> children = solid.children();
-                    for (Bounds3D child : children) {
-                        if (!child.overlaps(ax, 0, az, width, height, width)) {
-                            continue;
-                        }
+                    Bounds3D bounds = solid.closestCollision(x, y, z, ax, exactY, az, width, height, width,
+                            Direction.DOWN, 1);
 
-                        double height = child.maxY();
+                    if (bounds != null) {
+                        double height = bounds.maxY();
                         if (height > highestY) {
                             highestY = height;
-                        }
-
-                        if (height == 1) {
-                            break outer;
+                            if (height == 1) {
+                                break outer;
+                            }
                         }
                     }
                 }
+            }
+
+            if (!walk) {
+                return NodeSnapper.encode(y + (Double.isFinite(highestY) ? highestY : 0));
             }
 
             //finite if we found a block

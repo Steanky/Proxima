@@ -9,7 +9,7 @@ import com.github.steanky.proxima.path.BasicAsyncPathfinder;
 import com.github.steanky.proxima.path.BasicPathOperation;
 import com.github.steanky.proxima.path.PathSettings;
 import com.github.steanky.proxima.path.Pathfinder;
-import com.github.steanky.proxima.snapper.BasicWalkNodeSnapper;
+import com.github.steanky.proxima.snapper.BasicNodeSnapper;
 import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.proxima.space.ConcurrentCachingSpace;
 import com.github.steanky.proxima.space.Space;
@@ -84,8 +84,8 @@ public class PathfindState {
             private static final Vec3IBiPredicate SUCCESS_PREDICATE = (x1, y1, z1, x2, y2, z2) -> x1 == x2 && y1 == y2
                     && z1 == z2;
 
-            private final Explorer explorer = new WalkExplorer(new BasicWalkNodeSnapper(width, height, fallTolerance,
-                    jumpHeight, space, 1E-6), PathLimiter.inBounds(searchArea));
+            private final Explorer explorer = new WalkExplorer(new BasicNodeSnapper(width, height, fallTolerance,
+                    jumpHeight, space, false, 1E-6), PathLimiter.inBounds(searchArea));
 
             @Override
             public @NotNull Vec3IBiPredicate successPredicate() {

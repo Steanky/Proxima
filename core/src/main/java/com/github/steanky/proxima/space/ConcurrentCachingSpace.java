@@ -152,7 +152,7 @@ public abstract class ConcurrentCachingSpace implements Space {
         boolean addedSolid = false;
         long write = lock.writeLock();
         try {
-            //may be non-null if another thread quickly added a chunk to the cache
+            //may be non-null
             //if so, don't create a new chunk, remove write lock, and add the solid to the chunk
             //otherwise, if the chunk is null, create a new chunk, add our initial solid to it, and put it in the map
             Chunk otherChunk = cache.get(chunkKey);

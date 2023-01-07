@@ -42,11 +42,6 @@ final class Solid12 implements Solid {
     }
 
     @Override
-    public boolean hasChildren() {
-        return hasChildren;
-    }
-
-    @Override
     public @NotNull @Unmodifiable List<Bounds3D> children() {
         return boundsList;
     }
