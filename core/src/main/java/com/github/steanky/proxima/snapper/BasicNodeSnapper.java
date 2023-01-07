@@ -9,7 +9,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 
 public class BasicNodeSnapper implements NodeSnapper {
-    private final double width;
     private final double halfWidth;
     private final double fallTolerance;
     private final double height;
@@ -24,6 +23,9 @@ public class BasicNodeSnapper implements NodeSnapper {
     private final double jumpHeight;
     private final Space space;
     private final boolean walk;
+
+    private final double adjustedWidth;
+    private final double adjustedHeight;
 
     public BasicNodeSnapper(double width, double height, double fallTolerance, double jumpHeight,
             @NotNull Space space, boolean walk, double epsilon) {
@@ -42,7 +44,6 @@ public class BasicNodeSnapper implements NodeSnapper {
         //silly, totally unnecessary way to add 1 to a number only if it is even
         int blockWidth = ((int) Math.ceil(width)) | 1;
 
-        this.width = width;
         this.halfWidth = width / 2;
         this.height = height;
 
@@ -53,6 +54,9 @@ public class BasicNodeSnapper implements NodeSnapper {
         this.jumpHeight = jumpHeight;
         this.space = Objects.requireNonNull(space);
         this.walk = walk;
+
+        this.adjustedWidth = width - epsilon;
+        this.adjustedHeight = height - epsilon;
     }
 
     private static void validate(double width, double height, double fallTolerance, double jumpHeight, double epsilon) {
@@ -123,7 +127,8 @@ public class BasicNodeSnapper implements NodeSnapper {
                             continue;
                         }
 
-                        if (solid.hasCollision(x, y, z, ax, exactY, az, width, height, width, Direction.UP, 1)) {
+                        if (solid.hasCollision(x, y, z, ax, exactY, az, adjustedWidth, adjustedHeight, adjustedWidth,
+                                Direction.UP, 1)) {
                             return FAIL;
                         }
                     }
@@ -146,7 +151,8 @@ public class BasicNodeSnapper implements NodeSnapper {
                         continue;
                     }
 
-                    if (solid.hasCollision(x, y, z, ax, exactY, az, width, height, width, Direction.DOWN, 1)) {
+                    if (solid.hasCollision(x, y, z, ax, exactY, az, adjustedWidth, adjustedHeight, adjustedWidth,
+                            Direction.DOWN, 1)) {
                         return FAIL;
                     }
                 }
@@ -159,7 +165,7 @@ public class BasicNodeSnapper implements NodeSnapper {
     @Override
     public long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, float nodeOffset) {
         if (direction.ordinal() > 3) {
-            //can't pathfind up or down while walking
+            //can't pathfind straight up or down while walking
             if (walk) {
                 return FAIL;
             }
@@ -193,70 +199,41 @@ public class BasicNodeSnapper implements NodeSnapper {
 
             //search an individual y-layer of blocks
             for (int dh = -halfBlockWidth; dh <= halfBlockWidth; dh++) {
-                //full agents don't need to check for collisions inside themselves
-                if (!fullWidth) {
-                    //first block we may encounter
-                    int x = dx == 0 ? nx + dh : nodeX + (dx * halfBlockWidth);
-                    int z = dz == 0 ? nz + dh : nodeZ + (dz * halfBlockWidth);
+                //executes either once or twice, depending on if we're full-width
+                for (int j = fullWidth ? 1 : 0; j < 2; j++) {
+                    int x = dx == 0 ? nx + dh : nodeX + (dx * halfBlockWidth) + (dx * j);
+                    int z = dz == 0 ? nz + dh : nodeZ + (dz * halfBlockWidth) + (dz * j);
 
                     Solid solid = space.solidAt(x, y, z);
 
-                    //if the solid is full, we know we're overlapping it (therefore no collision)
-                    //if the solid is empty, it has no collision
-                    //if the solid is partial, check if we're overlapping (we may have collision)
-                    if (!solid.isEmpty() && !solid.isFull()) {
-                        long res = solid.minMaxCollision(x, y, z, ax, exactY, az, width, height, width, direction, 1);
-                        float low = Solid.lowest(res);
-                        float high = Solid.highest(res);
-
-                        if (low < lowest) {
-                            lowest = low;
-                        }
-
-                        if (high > highest) {
-                            highest = high;
-                        }
-
-                        if (low == 0 && high == 1) {
-                            break;
-                        }
+                    if (solid.isEmpty() || j == 0 && solid.isFull()) {
+                        continue;
                     }
-                }
 
-                //second block we might encounter (first block, if full)
-                int x = dx == 0 ? nx + dh : nx + (dx * halfBlockWidth);
-                int z = dz == 0 ? nz + dh : nz + (dz * halfBlockWidth);
+                    if (solid.isFull()) {
+                        highest = 1;
+                        lowest = 0;
 
-                Solid solid = space.solidAt(x, y, z);
+                        //we know the tallest bounds here is this solid
+                        break;
+                    }
 
-                //nothing to check if empty
-                if (solid.isEmpty()) {
-                    continue;
-                }
+                    long res = solid.minMaxCollision(x, y, z, ax, exactY, az, adjustedWidth, adjustedHeight,
+                            adjustedWidth, direction, 1);
+                    float low = Solid.lowest(res);
+                    float high = Solid.highest(res);
 
-                //simpler check if the solid is full, we don't need to test overlap
-                if (solid.isFull()) {
-                    highest = 1;
-                    lowest = 0;
+                    if (low < lowest) {
+                        lowest = low;
+                    }
 
-                    //we know the tallest bounds here is this solid
-                    break;
-                }
+                    if (high > highest) {
+                        highest = high;
+                    }
 
-                long res = solid.minMaxCollision(x, y, z, ax, exactY, az, width, height, width, direction, 1);
-                float low = Solid.lowest(res);
-                float high = Solid.highest(res);
-
-                if (low < lowest) {
-                    lowest = low;
-                }
-
-                if (high > highest) {
-                    highest = high;
-                }
-
-                if (low == 0 && high == 1) {
-                    break;
+                    if (low == 0 && high == 1) {
+                        break;
+                    }
                 }
             }
 
@@ -264,7 +241,7 @@ public class BasicNodeSnapper implements NodeSnapper {
             if (Float.isFinite(highest)) {
                 double ceiling = y + lowest;
 
-                if (ceiling - lastTargetY >= height) {
+                if (ceiling - lastTargetY > adjustedHeight) {
                     newY = lastTargetY;
                     break;
                 }
@@ -275,7 +252,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                 if (lastTargetY - exactY > jumpHeight) {
                     return FAIL;
                 }
-            } else if ((y + 1) - lastTargetY >= height) {
+            } else if ((y + 1) - lastTargetY > adjustedHeight) {
                 newY = lastTargetY;
                 break;
             }
@@ -328,8 +305,8 @@ public class BasicNodeSnapper implements NodeSnapper {
                             continue;
                         }
 
-                        Bounds3D closest = solid.closestCollision(x, y, z, ax, exactY, az, width, height, width,
-                                Direction.UP, jumpHeight);
+                        Bounds3D closest = solid.closestCollision(x, y, z, ax, exactY, az, adjustedWidth,
+                                adjustedHeight, adjustedWidth, Direction.UP, jumpHeight);
 
                         if (closest != null && y + closest.originY() - newY < height) {
                             return FAIL;
@@ -365,8 +342,8 @@ public class BasicNodeSnapper implements NodeSnapper {
                         break outer;
                     }
 
-                    Bounds3D bounds = solid.closestCollision(x, y, z, ax, exactY, az, width, height, width,
-                            Direction.DOWN, 1);
+                    Bounds3D bounds = solid.closestCollision(x, y, z, ax, exactY, az, adjustedWidth, adjustedHeight,
+                            adjustedWidth, Direction.DOWN, 1);
 
                     if (bounds != null) {
                         double height = bounds.maxY();
