@@ -1,7 +1,7 @@
 package com.github.steanky.proxima.path;
 
-import com.github.steanky.proxima.explorer.Explorer;
 import com.github.steanky.proxima.Heuristic;
+import com.github.steanky.proxima.explorer.Explorer;
 import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.node.NodeProcessor;
 import com.github.steanky.proxima.node.NodeQueue;
@@ -62,28 +62,27 @@ public class BasicPathOperation implements PathOperation {
 
     @Override
     public boolean step() {
-        if (!openSet.isEmpty()) {
-            current = openSet.dequeue();
-
-            //Vec3IPredicate to avoid needing to create a Vec3I object
-            //predicate returns true = we found our destination and have a path
-            if (successPredicate.test(current.x, current.y, current.z, destinationX, destinationY, destinationZ)) {
-                //complete (may throw an exception if already completed)
-                best = current;
-                complete(true);
-                return true;
-            }
-
-            //reference the explore method: this is not strictly necessary, but it is cleaner, and prevents from
-            //accidentally capturing a variable from step's scope
-            explorer.exploreEach(current, this::explore, graph);
-            if (current.h < best.h) {
-                best = current;
-            }
-        }
-        else {
+        if (openSet.isEmpty()) {
             complete(false);
             return true;
+        }
+
+        current = openSet.dequeue();
+
+        //Vec3IBiPredicate to avoid needing to create a Vec3I object
+        //predicate returns true = we found our destination and have a path
+        if (successPredicate.test(current.x, current.y, current.z, destinationX, destinationY, destinationZ)) {
+            //complete (may throw an exception if already completed)
+            best = current;
+            complete(true);
+            return true;
+        }
+
+        //reference the explore method: this is not strictly necessary, but it is cleaner, and prevents from
+        //accidentally capturing a variable from step's scope
+        explorer.exploreEach(current, this::explore, graph);
+        if (current.h < best.h) {
+            best = current;
         }
 
         return false;
@@ -126,7 +125,7 @@ public class BasicPathOperation implements PathOperation {
     @Override
     public void cleanup() {
         openSet.clear();
-        openSet.trim(32);
+        openSet.trim(NodeQueue.DEFAULT_INITIAL_CAPACITY);
 
         graph.clear();
 

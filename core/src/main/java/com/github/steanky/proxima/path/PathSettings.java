@@ -1,7 +1,7 @@
 package com.github.steanky.proxima.path;
 
-import com.github.steanky.proxima.explorer.Explorer;
 import com.github.steanky.proxima.Heuristic;
+import com.github.steanky.proxima.explorer.Explorer;
 import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.node.NodeProcessor;
 import com.github.steanky.vector.Vec3I2ObjectMap;

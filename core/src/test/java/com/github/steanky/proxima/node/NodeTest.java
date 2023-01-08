@@ -1,13 +1,12 @@
 package com.github.steanky.proxima.node;
 
-import com.github.steanky.proxima.node.Node;
 import com.github.steanky.vector.Vec3I;
 import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NodeTest {
     @Test

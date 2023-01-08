@@ -50,7 +50,7 @@ public class BasicNodeSnapper implements NodeSnapper {
         this.searchHeight = (int) Math.ceil(height + jumpHeight);
         this.fallSearchHeight = (int) Math.ceil(fallTolerance) + 1;
 
-        this.halfBlockWidth = blockWidth >> 1;
+        this.halfBlockWidth = blockWidth / 2;
         this.jumpHeight = jumpHeight;
         this.space = Objects.requireNonNull(space);
         this.walk = walk;

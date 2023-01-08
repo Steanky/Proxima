@@ -9,7 +9,10 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 public class NodeQueue implements PriorityQueue<Node> {
-    private static final int DEFAULT_INITIAL_CAPACITY = 32;
+    /**
+     * The default initial capacity of the internal array (32)
+     */
+    public static final int DEFAULT_INITIAL_CAPACITY = 32;
 
     private Node[] heap;
     private int size;

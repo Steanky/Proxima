@@ -6,7 +6,6 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * The result of a pathfinding operation, representing a completed (successful or failed) path.

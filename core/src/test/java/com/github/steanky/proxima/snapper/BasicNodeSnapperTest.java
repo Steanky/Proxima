@@ -11,7 +11,8 @@ import com.github.steanky.vector.Vec3I;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class BasicNodeSnapperTest {
     private static final double EPSILON = 1E-6;

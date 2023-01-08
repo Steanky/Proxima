@@ -1,21 +1,25 @@
 package com.github.steanky.proxima.path;
 
-import com.github.steanky.proxima.*;
+import com.github.steanky.proxima.Direction;
+import com.github.steanky.proxima.Heuristic;
+import com.github.steanky.proxima.PathLimiter;
 import com.github.steanky.proxima.explorer.Explorer;
 import com.github.steanky.proxima.explorer.WalkExplorer;
 import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.node.NodeProcessor;
 import com.github.steanky.proxima.snapper.BasicNodeSnapper;
 import com.github.steanky.proxima.solid.Solid;
+import com.github.steanky.proxima.space.ConcurrentCachingSpace;
 import com.github.steanky.proxima.space.HashSpace;
 import com.github.steanky.proxima.space.Space;
-import com.github.steanky.proxima.space.ConcurrentCachingSpace;
 import com.github.steanky.vector.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
