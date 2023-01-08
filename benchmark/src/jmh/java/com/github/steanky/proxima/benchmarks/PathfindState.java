@@ -69,18 +69,6 @@ public class PathfindState {
                     new HashVec3I2ObjectMap<>(searchArea.originX(), searchArea.originX(), searchArea.originZ(),
                             searchArea.lengthX(), searchArea.lengthY(), searchArea.lengthZ()));
 
-            private static final Heuristic HEURISTIC = new Heuristic() {
-                @Override
-                public float heuristic(int fromX, int fromY, int fromZ, int toX, int toY, int toZ) {
-                    return (float) Vec3I.distanceSquared(fromX, fromY, fromZ, toX, toY, toZ);
-                }
-
-                @Override
-                public float distance(int fromX, int fromY, int fromZ, int toX, int toY, int toZ) {
-                    return (float) Vec3I.distanceSquared(fromX, fromY, fromZ, toX, toY, toZ);
-                }
-            };
-
             private static final Vec3IBiPredicate SUCCESS_PREDICATE = (x1, y1, z1, x2, y2, z2) -> x1 == x2 && y1 == y2
                     && z1 == z2;
 
@@ -99,7 +87,7 @@ public class PathfindState {
 
             @Override
             public @NotNull Heuristic heuristic() {
-                return HEURISTIC;
+                return Heuristic.DISTANCE_SQUARED;
             }
 
             @Override

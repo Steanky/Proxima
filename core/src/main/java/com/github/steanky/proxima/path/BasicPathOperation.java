@@ -5,6 +5,7 @@ import com.github.steanky.proxima.explorer.Explorer;
 import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.node.NodeProcessor;
 import com.github.steanky.proxima.node.NodeQueue;
+import com.github.steanky.vector.Vec3I;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import com.github.steanky.vector.Vec3IBiPredicate;
 import org.jetbrains.annotations.NotNull;
@@ -49,8 +50,8 @@ public class BasicPathOperation implements PathOperation {
         success = false;
 
         //set the current node, g == 0
-        current = new Node(startX, startY, startZ, 0, heuristic.distance(startX, startY, startZ, destX, destY,
-                destZ), null, yOffset);
+        current = new Node(startX, startY, startZ, 0, (float)Vec3I.distanceSquared(startX, startY, startZ, destX,
+                destY, destZ), null, yOffset);
         openSet.enqueue(current);
         graph.put(startX, startY, startZ, current);
         best = current;
@@ -104,7 +105,7 @@ public class BasicPathOperation implements PathOperation {
             graph.put(x, y, z, target);
         }
 
-        float g = current.g + heuristic.distance(current.x, current.y, current.z, x, y, z);
+        float g = current.g + (float) Vec3I.distanceSquared(current.x, current.y, current.z, x, y, z);
         if (g < target.g) {
             target.parent = current;
             target.g = g;
