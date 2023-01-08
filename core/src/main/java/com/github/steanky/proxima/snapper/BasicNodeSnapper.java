@@ -218,8 +218,8 @@ public class BasicNodeSnapper implements NodeSnapper {
                         break;
                     }
 
-                    long res = solid.minMaxCollision(x, y, z, ax, exactY, az, adjustedWidth, adjustedHeight,
-                            adjustedWidth, direction, 1);
+                    long res = solid.minMaxCollision(x, y, z, ax, exactY, az, adjustedWidth,
+                            adjustedHeight, adjustedWidth, direction, 1);
                     float low = Solid.lowest(res);
                     float high = Solid.highest(res);
 
@@ -325,6 +325,9 @@ public class BasicNodeSnapper implements NodeSnapper {
 
             double highestY = Double.NEGATIVE_INFINITY;
 
+            double nax = ax + dx;
+            double naz = az + dz;
+
             outer:
             for (int dex = -halfBlockWidth; dex <= halfBlockWidth; dex++) {
                 for (int dez = -halfBlockWidth; dez <= halfBlockWidth; dez++) {
@@ -342,7 +345,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                         break outer;
                     }
 
-                    Bounds3D bounds = solid.closestCollision(x, y, z, ax, exactY, az, adjustedWidth, adjustedHeight,
+                    Bounds3D bounds = solid.closestCollision(x, y, z, nax, exactY, naz, adjustedWidth, adjustedHeight,
                             adjustedWidth, Direction.DOWN, 1);
 
                     if (bounds != null) {
