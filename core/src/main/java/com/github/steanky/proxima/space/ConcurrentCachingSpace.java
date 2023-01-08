@@ -98,7 +98,9 @@ public abstract class ConcurrentCachingSpace implements Space {
         }
 
         private static long key(int x, int z) {
-            return (((long) x << 4) << 32) | ((long) z << 4);
+            int hi = x >> 4;
+            int lo = z >> 4;
+            return (((long) hi) << 32) | (lo & 0xFFFF_FFFFL);
         }
 
         private static int relative(int x, int y, int z) {

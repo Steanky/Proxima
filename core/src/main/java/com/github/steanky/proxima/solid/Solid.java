@@ -42,9 +42,9 @@ public interface Solid {
     @NotNull @Unmodifiable List<Bounds3D> children();
 
     static long result(float lowest, float highest) {
-        int lo = Float.floatToRawIntBits(highest);
         int hi = Float.floatToRawIntBits(lowest);
-        return (((long) hi) << 32) | (lo & 0xffffffffL);
+        int lo = Float.floatToRawIntBits(highest);
+        return (((long) hi) << 32) | (lo & 0xFFFF_FFFFL);
     }
 
     static float lowest(long collisionResult) {
