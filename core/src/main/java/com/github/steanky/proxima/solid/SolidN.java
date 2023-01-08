@@ -10,7 +10,6 @@ import java.util.List;
 final class SolidN implements Solid {
     private final List<Bounds3D> bounds;
     private final Bounds3D enclosing;
-    private final boolean hasChildren;
 
     SolidN(@NotNull Bounds3D @NotNull [] bounds) {
         if (bounds.length == 0) {
@@ -24,7 +23,6 @@ final class SolidN implements Solid {
 
         this.bounds = Containers.arrayView(newArray);
         this.enclosing = Bounds3D.enclosingImmutable(newArray);
-        this.hasChildren = newArray.length > 1;
     }
 
     @Override

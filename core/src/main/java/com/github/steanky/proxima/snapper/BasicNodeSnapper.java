@@ -286,23 +286,13 @@ public class BasicNodeSnapper implements NodeSnapper {
                         Solid solid = space.solidAt(x, y, z);
 
                         //no collision with empty solids
-                        if (solid.isEmpty()) {
+                        if (solid.isEmpty() || (solid.isFull() && i == -1)) {
                             continue;
                         }
 
-                        //simpler check for full solids
+                        //any full solids encountered will block our jump
                         if (solid.isFull()) {
-                            //if full height: any block we run into makes this jump impossible
-                            if (fullHeight) {
-                                return FAIL;
-                            }
-
-                            //return if this solid prevents us from jumping high enough, and we aren't intersecting
-                            if (y - height < newY && y > exactY + height) {
-                                return FAIL;
-                            }
-
-                            continue;
+                            return FAIL;
                         }
 
                         Bounds3D closest = solid.closestCollision(x, y, z, ax, exactY, az, adjustedWidth,
