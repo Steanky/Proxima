@@ -123,7 +123,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                         int z = nz + dez;
 
                         Solid solid = space.solidAt(x, y, z);
-                        if (solid.isEmpty() || (solid.isFull() && i == -1)) {
+                        if (solid.isEmpty() || (i == -1 && solid.isFull())) {
                             continue;
                         }
 
@@ -147,7 +147,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     int z = nz + dez;
 
                     Solid solid = space.solidAt(x, y, z);
-                    if (solid.isEmpty() || (solid.isFull() && i == -1)) {
+                    if (solid.isEmpty() || (i == -1 && solid.isFull())) {
                         continue;
                     }
 
@@ -219,7 +219,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     }
 
                     long res = solid.minMaxCollision(x, y, z, ax, exactY, az, adjustedWidth,
-                            adjustedHeight, adjustedWidth, direction, 1);
+                            adjustedHeight + jumpHeight, adjustedWidth, direction, 1);
                     float low = Solid.lowest(res);
                     float high = Solid.highest(res);
 

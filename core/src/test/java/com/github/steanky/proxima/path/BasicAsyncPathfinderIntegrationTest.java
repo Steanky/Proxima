@@ -185,7 +185,7 @@ class BasicAsyncPathfinderIntegrationTest {
         PathSettings settings = hugeEnvironment();
         Pathfinder pathfinder = pathfinder();
 
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1000; i++) {
             pathfinder.pathfind(0, 1, 0, 0, 900, 1, 900, settings);
         }
 

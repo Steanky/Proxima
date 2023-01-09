@@ -1,6 +1,7 @@
 package com.github.steanky.proxima.space;
 
 import com.github.steanky.proxima.solid.Solid;
+import com.github.steanky.vector.Bounds3I;
 import com.github.steanky.vector.HashVec3I2ObjectMap;
 import com.github.steanky.vector.Vec3I;
 import com.github.steanky.vector.Vec3I2ObjectMap;
@@ -17,6 +18,10 @@ public class HashSpace implements Space {
         solidMap = new HashVec3I2ObjectMap<>(x, y, z, lX, lY, lZ);
     }
 
+    public HashSpace(@NotNull Bounds3I bounds) {
+        solidMap = new HashVec3I2ObjectMap<>(bounds);
+    }
+
     @Override
     public @NotNull Solid solidAt(int x, int y, int z) {
         Solid mapped = solidMap.get(x, y, z);
@@ -25,6 +30,10 @@ public class HashSpace implements Space {
         }
 
         return mapped;
+    }
+
+    public void remove(int x, int y, int z) {
+        solidMap.remove(x, y, z);
     }
 
     public void put(int x, int y, int z, @NotNull Solid solid) {
