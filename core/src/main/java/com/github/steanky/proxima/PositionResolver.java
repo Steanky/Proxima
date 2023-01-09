@@ -11,13 +11,16 @@ import java.util.Objects;
 
 @FunctionalInterface
 public interface PositionResolver {
-    @NotNull Vec3I resolve(double x, double y, double z);
+    record OffsetPosition(@NotNull Vec3I vector, float offset) {}
 
-    default @NotNull Vec3I resolve(@NotNull Vec3D vec) {
+    @NotNull OffsetPosition resolve(double x, double y, double z);
+
+    default @NotNull OffsetPosition resolve(@NotNull Vec3D vec) {
         return resolve(vec.x(), vec.y(), vec.z());
     }
 
-    PositionResolver FLOORED = Vec3I::immutableFloored;
+    PositionResolver FLOORED =
+            (x, y, z) -> new OffsetPosition(Vec3I.immutableFloored(x, y, z), (float) (y - Math.floor(y)));
 
     static @NotNull PositionResolver gravitating(@NotNull Space space, int seekHeight, double width, double epsilon) {
         Objects.requireNonNull(space);
@@ -69,7 +72,7 @@ public interface PositionResolver {
                         }
 
                         if (solid.isFull()) {
-                            return Vec3I.immutable(bx, by + 1, bz);
+                            return new OffsetPosition(Vec3I.immutable(bx, by + 1, bz), 0);
                         }
 
                         Bounds3D bounds = solid.closestCollision(bx, by, bz, ox, y, oz, adjustedWidth, 1,
@@ -90,10 +93,12 @@ public interface PositionResolver {
                 }
 
                 if (highestBounds != null) {
-                    return Vec3I.immutable(highestX, highestBounds.maxY() == 1 ? highestY + 1 : by, highestZ);
+                    Vec3I vector = Vec3I.immutable(highestX, highestBounds.maxY() == 1 ? highestY + 1 : by, highestZ);
+                    return new OffsetPosition(vector, (float) highestBounds.maxY());
                 }
             }
 
+            //default to FLOORED if we can't find a position by searching down
             return FLOORED.resolve(x, y, z);
         };
     }

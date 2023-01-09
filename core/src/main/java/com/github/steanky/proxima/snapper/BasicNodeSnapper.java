@@ -128,7 +128,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                         }
 
                         if (solid.hasCollision(x, y, z, ax, exactY, az, adjustedWidth, adjustedHeight, adjustedWidth,
-                                Direction.UP, 2)) {
+                                Direction.UP, 1)) {
                             return FAIL;
                         }
                     }
@@ -152,7 +152,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     }
 
                     if (solid.hasCollision(x, y, z, ax, exactY, az, adjustedWidth, adjustedHeight, adjustedWidth,
-                            Direction.DOWN, 2)) {
+                            Direction.DOWN, 1)) {
                         return FAIL;
                     }
                 }
