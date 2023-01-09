@@ -48,7 +48,7 @@ public interface PositionResolver {
             int endZ = (int) Math.floor(z + adjustedWidth);
 
             //if !evenHeight, we need to check the block region intersecting our feet
-            boolean evenHeight = y == Math.rint(y);
+            boolean evenHeight = y == Math.floor(y);
 
             double ox = x - halfWidth;
             double oz = z - halfWidth;

@@ -10,122 +10,47 @@ final class Util {
             return null;
         }
 
-        int c1;
-        int c2;
+        ox -= x;
+        oy -= y;
+        oz -= z;
 
-        double ao1;
-        double am1;
+        //fast directional expansion algorithm
+        double adx = Math.abs(d.x);
+        double ady = Math.abs(d.y);
+        double adz = Math.abs(d.z);
 
-        double ao2;
-        double am2;
+        double dx = d.x * l;
+        double dy = d.y * l;
+        double dz = d.z * l;
 
-        double direction;
-        int coordinate;
-        double agentOrigin;
-        double agentMax;
+        double aox = ox + Math.min(0, dx);
+        double aoy = oy + Math.min(0, dy);
+        double aoz = oz + Math.min(0, dz);
 
-        switch (d) {
-            case EAST, WEST -> {
-                c1 = y;
-                c2 = z;
+        double alx = lx + Math.abs(dx);
+        double aly = ly + Math.abs(dy);
+        double alz = lz + Math.abs(dz);
 
-                ao1 = oy;
-                am1 = oy + ly;
+        double amx = aox + alx;
+        double amy = aoy + aly;
+        double amz = aoz + alz;
 
-                ao2 = oz;
-                am2 = oz + lz;
+        double mx = ox + lx;
+        double my = oy + ly;
+        double mz = oz + lz;
 
-                direction = d.x * l;
-                coordinate = x;
-                agentOrigin = ox;
-                agentMax = ox + lx;
-            }
-            case UP, DOWN -> {
-                c1 = x;
-                c2 = z;
-
-                ao1 = ox;
-                am1 = ox + lx;
-
-                ao2 = oz;
-                am2 = oz + lz;
-
-                direction = d.y * l;
-                coordinate = y;
-                agentOrigin = oy;
-                agentMax = oy + ly;
-            }
-            case NORTH, SOUTH -> {
-                c1 = x;
-                c2 = y;
-
-                ao1 = ox;
-                am1 = ox + lx;
-
-                ao2 = oy;
-                am2 = oy + ly;
-
-                direction = d.z * l;
-                coordinate = z;
-                agentOrigin = oz;
-                agentMax = oz + lz;
-            }
-            default -> throw new IllegalStateException("Unexpected direction: " + d);
-        }
-
+        double closestDiff = Double.POSITIVE_INFINITY;
         Bounds3D closest = null;
-        double lastDiff = Double.POSITIVE_INFINITY;
 
         for (Bounds3D child : solid.children()) {
-            double solidOrigin;
-            double solidMax;
-
-            double so1;
-            double sm1;
-
-            double so2;
-            double sm2;
-
-            switch (d) {
-                case EAST, WEST -> {
-                    solidOrigin = child.originX();
-                    solidMax = child.maxX();
-
-                    so1 = child.originY();
-                    sm1 = child.maxY();
-
-                    so2 = child.originZ();
-                    sm2 = child.maxZ();
-                }
-                case UP, DOWN -> {
-                    solidOrigin = child.originY();
-                    solidMax = child.maxY();
-
-                    so1 = child.originX();
-                    sm1 = child.maxX();
-
-                    so2 = child.originZ();
-                    sm2 = child.maxZ();
-                }
-                case NORTH, SOUTH -> {
-                    solidOrigin = child.originZ();
-                    solidMax = child.maxZ();
-
-                    so1 = child.originX();
-                    sm1 = child.maxX();
-
-                    so2 = child.originY();
-                    sm2 = child.maxY();
-                }
-                default -> throw new IllegalStateException("Unexpected direction: " + d);
+            if (!overlaps(child, aox, aoy, aoz, amx, amy, amz) || overlaps(child, ox, oy, oz, mx, my, mz)) {
+                continue;
             }
 
-            if (Util.doubleAxisIntersect(c1, c2, so1, sm1, so2, sm2, ao1, am1, ao2, am2)) {
-                double diff = Util.checkDirection(direction, coordinate, solidOrigin, solidMax, agentOrigin, agentMax);
-                if (diff < lastDiff) {
-                    closest = child;
-                    lastDiff = diff;
-                }
+            double diff = computeDiff(d, child, ox, oy, oz, mx, my, mz, adx, ady, adz);
+            if (diff < closestDiff) {
+                closestDiff = diff;
+                closest = child;
             }
         }
 
@@ -138,130 +63,47 @@ final class Util {
             return Solid.NO_COLLISION;
         }
 
-        int c1;
-        int c2;
+        ox -= x;
+        oy -= y;
+        oz -= z;
 
-        double ao1;
-        double am1;
+        double dx = d.x * l;
+        double dy = d.y * l;
+        double dz = d.z * l;
 
-        double ao2;
-        double am2;
+        double aox = ox + Math.min(0, dx);
+        double aoy = oy + Math.min(0, dy);
+        double aoz = oz + Math.min(0, dz);
 
-        double direction;
-        int coordinate;
-        double agentOrigin;
-        double agentMax;
+        double alx = lx + Math.abs(dx);
+        double aly = ly + Math.abs(dy);
+        double alz = lz + Math.abs(dz);
 
-        switch (d) {
-            case EAST, WEST -> {
-                c1 = y;
-                c2 = z;
+        double amx = aox + alx;
+        double amy = aoy + aly;
+        double amz = aoz + alz;
 
-                ao1 = oy;
-                am1 = oy + ly;
-
-                ao2 = oz;
-                am2 = oz + lz;
-
-                direction = d.x * l;
-                coordinate = x;
-                agentOrigin = ox;
-                agentMax = ox + lx;
-            }
-            case UP, DOWN -> {
-                c1 = x;
-                c2 = z;
-
-                ao1 = ox;
-                am1 = ox + lx;
-
-                ao2 = oz;
-                am2 = oz + lz;
-
-                direction = d.y * l;
-                coordinate = y;
-                agentOrigin = oy;
-                agentMax = oy + ly;
-            }
-            case NORTH, SOUTH -> {
-                c1 = x;
-                c2 = y;
-
-                ao1 = ox;
-                am1 = ox + lx;
-
-                ao2 = oy;
-                am2 = oy + ly;
-
-                direction = d.z * l;
-                coordinate = z;
-                agentOrigin = oz;
-                agentMax = oz + lz;
-            }
-            default -> throw new IllegalStateException("Unexpected direction: " + d);
-        }
+        double mx = ox + lx;
+        double my = oy + ly;
+        double mz = oz + lz;
 
         float lowest = Float.POSITIVE_INFINITY;
         float highest = Float.NEGATIVE_INFINITY;
 
         for (Bounds3D child : solid.children()) {
-            double solidOrigin;
-            double solidMax;
-
-            double so1;
-            double sm1;
-
-            double so2;
-            double sm2;
-
-            switch (d) {
-                case EAST, WEST -> {
-                    solidOrigin = child.originX();
-                    solidMax = child.maxX();
-
-                    so1 = child.originY();
-                    sm1 = child.maxY();
-
-                    so2 = child.originZ();
-                    sm2 = child.maxZ();
-                }
-                case UP, DOWN -> {
-                    solidOrigin = child.originY();
-                    solidMax = child.maxY();
-
-                    so1 = child.originX();
-                    sm1 = child.maxX();
-
-                    so2 = child.originZ();
-                    sm2 = child.maxZ();
-                }
-                case NORTH, SOUTH -> {
-                    solidOrigin = child.originZ();
-                    solidMax = child.maxZ();
-
-                    so1 = child.originX();
-                    sm1 = child.maxX();
-
-                    so2 = child.originY();
-                    sm2 = child.maxY();
-                }
-                default -> throw new IllegalStateException("Unexpected direction: " + d);
+            if (!overlaps(child, aox, aoy, aoz, amx, amy, amz) || overlaps(child, ox, oy, oz, mx, my, mz)) {
+                continue;
             }
 
-            if (Util.doubleAxisIntersect(c1, c2, so1, sm1, so2, sm2, ao1, am1, ao2, am2)) {
-                double diff = Util.checkDirection(direction, coordinate, solidOrigin, solidMax, agentOrigin, agentMax);
-                if (!Double.isNaN(diff)) {
-                    float low = (float) child.originY();
-                    float high = (float) child.maxY();
+            float low = (float) child.originY();
+            float high = (float) child.maxY();
 
-                    if (low < lowest) {
-                        lowest = low;
-                    }
+            if (low < lowest) {
+                lowest = low;
+            }
 
-                    if (high > highest) {
-                        highest = high;
-                    }
-                }
+            if (high > highest) {
+                highest = high;
             }
         }
 
@@ -274,151 +116,51 @@ final class Util {
             return false;
         }
 
-        int c1;
-        int c2;
+        ox -= x;
+        oy -= y;
+        oz -= z;
 
-        double ao1;
-        double am1;
+        //fast directional expansion algorithm
+        double dx = d.x * l;
+        double dy = d.y * l;
+        double dz = d.z * l;
 
-        double ao2;
-        double am2;
+        double aox = ox + Math.min(0, dx);
+        double aoy = oy + Math.min(0, dy);
+        double aoz = oz + Math.min(0, dz);
 
-        double direction;
-        int coordinate;
-        double agentOrigin;
-        double agentMax;
+        double alx = lx + Math.abs(dx);
+        double aly = ly + Math.abs(dy);
+        double alz = lz + Math.abs(dz);
 
-        switch (d) {
-            case EAST, WEST -> {
-                c1 = y;
-                c2 = z;
+        double amx = aox + alx;
+        double amy = aoy + aly;
+        double amz = aoz + alz;
 
-                ao1 = oy;
-                am1 = oy + ly;
-
-                ao2 = oz;
-                am2 = oz + lz;
-
-                direction = d.x * l;
-                coordinate = x;
-                agentOrigin = ox;
-                agentMax = ox + lx;
-            }
-            case UP, DOWN -> {
-                c1 = x;
-                c2 = z;
-
-                ao1 = ox;
-                am1 = ox + lx;
-
-                ao2 = oz;
-                am2 = oz + lz;
-
-                direction = d.y * l;
-                coordinate = y;
-                agentOrigin = oy;
-                agentMax = oy + ly;
-            }
-            case NORTH, SOUTH -> {
-                c1 = x;
-                c2 = y;
-
-                ao1 = ox;
-                am1 = ox + lx;
-
-                ao2 = oy;
-                am2 = oy + ly;
-
-                direction = d.z * l;
-                coordinate = z;
-                agentOrigin = oz;
-                agentMax = oz + lz;
-            }
-            default -> throw new IllegalStateException("Unexpected direction: " + d);
-        }
+        double mx = ox + lx;
+        double my = oy + ly;
+        double mz = oz + lz;
 
         for (Bounds3D child : solid.children()) {
-            double solidOrigin;
-            double solidMax;
-
-            double so1;
-            double sm1;
-
-            double so2;
-            double sm2;
-
-            switch (d) {
-                case EAST, WEST -> {
-                    solidOrigin = child.originX();
-                    solidMax = child.maxX();
-
-                    so1 = child.originY();
-                    sm1 = child.maxY();
-
-                    so2 = child.originZ();
-                    sm2 = child.maxZ();
-                }
-                case UP, DOWN -> {
-                    solidOrigin = child.originY();
-                    solidMax = child.maxY();
-
-                    so1 = child.originX();
-                    sm1 = child.maxX();
-
-                    so2 = child.originZ();
-                    sm2 = child.maxZ();
-                }
-                case NORTH, SOUTH -> {
-                    solidOrigin = child.originZ();
-                    solidMax = child.maxZ();
-
-                    so1 = child.originX();
-                    sm1 = child.maxX();
-
-                    so2 = child.originY();
-                    sm2 = child.maxY();
-                }
-                default -> throw new IllegalStateException("Unexpected direction: " + d);
+            if (!overlaps(child, aox, aoy, aoz, amx, amy, amz) || overlaps(child, ox, oy, oz, mx, my, mz)) {
+                continue;
             }
 
-            if (Util.doubleAxisIntersect(c1, c2, so1, sm1, so2, sm2, ao1, am1, ao2, am2)) {
-                double diff = Util.checkDirection(direction, coordinate, solidOrigin, solidMax, agentOrigin, agentMax);
-                if (!Double.isNaN(diff)) {
-                    return true;
-                }
-            }
+            return true;
         }
 
         return false;
     }
 
-    static double checkDirection(double direction, int coordinate, double solidOrigin, double solidMax,
-            double agentOrigin, double agentMax)  {
-        if (direction == 0) {
-            return Double.NaN;
-        }
-
-        double diff;
-        if (direction < 0) {
-            diff = (coordinate + solidMax) - agentOrigin;
-            if (diff < direction || diff > 0) {
-                return Double.NaN;
-            }
-        }
-        else {
-            diff = (coordinate + solidOrigin) - agentMax;
-            if (diff > direction || diff < 0) {
-                return Double.NaN;
-            }
-        }
-
-        return Math.abs(diff);
+    private static double computeDiff(Direction d, Bounds3D child, double ox, double oy, double oz,
+            double mx, double my, double mz, double adx, double ady, double adz) {
+        return ((d.x < 0 ? ox - child.maxX() : child.maxX() - mx) * adx) +
+                ((d.y < 0 ? oy - child.maxY() : child.maxY() - my) * ady) +
+                ((d.z < 0 ? oz - child.maxZ() : child.maxZ() - mz) * adz);
     }
 
-    public static boolean doubleAxisIntersect(
-            int c1, int c2,
-            double so1, double sm1, double so2, double sm2,
-            double ao1, double am1, double ao2, double am2) {
-        return c1 + so1 < am1 && c1 + sm1 > ao1 && c2 + so2 < am2 && c2 + sm2 > ao2;
+    private static boolean overlaps(Bounds3D bounds, double ox, double oy, double oz, double mx, double my, double mz) {
+        return bounds.originX() < mx && bounds.originY() < my && bounds.originZ() < mz &&
+                ox < bounds.maxX() && oy < bounds.maxY() && oz < bounds.maxZ();
     }
 }
