@@ -128,7 +128,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                         }
 
                         if (solid.hasCollision(x, y, z, ax, exactY, az, adjustedWidth, adjustedHeight, adjustedWidth,
-                                Direction.UP, 1)) {
+                                Direction.UP, 2)) {
                             return FAIL;
                         }
                     }
@@ -152,7 +152,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     }
 
                     if (solid.hasCollision(x, y, z, ax, exactY, az, adjustedWidth, adjustedHeight, adjustedWidth,
-                            Direction.DOWN, 1)) {
+                            Direction.DOWN, 2)) {
                         return FAIL;
                     }
                 }
@@ -206,7 +206,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                     Solid solid = space.solidAt(x, y, z);
 
-                    if (solid.isEmpty() || j == 0 && solid.isFull()) {
+                    if (solid.isEmpty() || (j == 0 && solid.isFull())) {
                         continue;
                     }
 
@@ -286,7 +286,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                         Solid solid = space.solidAt(x, y, z);
 
                         //no collision with empty solids
-                        if (solid.isEmpty() || (solid.isFull() && i == -1)) {
+                        if (solid.isEmpty() || (i == -1 && solid.isFull())) {
                             continue;
                         }
 
@@ -325,7 +325,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     int z = nz + dez;
 
                     Solid solid = space.solidAt(x, y, z);
-                    if (solid.isEmpty() || (solid.isFull() && i == -1)) {
+                    if (solid.isEmpty() || (i == -1 && solid.isFull())) {
                         continue;
                     }
 
@@ -336,7 +336,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     }
 
                     Bounds3D bounds = solid.closestCollision(x, y, z, nax, exactY, naz, adjustedWidth, adjustedHeight,
-                            adjustedWidth, Direction.DOWN, 1);
+                            adjustedWidth, Direction.DOWN, fallSearchHeight);
 
                     if (bounds != null) {
                         double height = bounds.maxY();
