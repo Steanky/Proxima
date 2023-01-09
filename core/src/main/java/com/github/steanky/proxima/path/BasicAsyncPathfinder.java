@@ -37,7 +37,7 @@ public class BasicAsyncPathfinder implements Pathfinder {
                 while (!localOperation.step()) {
                     if (Thread.interrupted()) {
                         //exit if interrupted, this can occur if the pathfinder is shut down unexpectedly
-                        throw new IllegalStateException("Interrupted during path computation");
+                        throw new InterruptedException("Interrupted during path computation");
                     }
                 }
 

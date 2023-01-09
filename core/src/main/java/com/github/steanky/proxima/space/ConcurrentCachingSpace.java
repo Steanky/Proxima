@@ -42,6 +42,13 @@ public abstract class ConcurrentCachingSpace implements Space {
                 //retries are limited to BLOCK_READ_ATTEMPTS, after which a proper read lock is used
                 read = lock.tryOptimisticRead();
 
+                //if we were write-locked when trying to attain the optimistic read, we will never have a valid stamp
+                if (!lock.validate(read)) {
+                    valid = false;
+                    solid = null;
+                    continue;
+                }
+
                 try {
                     solid = map.get(key);
                     valid = lock.validate(read);
@@ -119,6 +126,11 @@ public abstract class ConcurrentCachingSpace implements Space {
         int i = 0;
         do {
             read = lock.tryOptimisticRead();
+            if (!lock.validate(read)) {
+                valid = false;
+                chunk = null;
+                continue;
+            }
 
             try {
                 chunk = cache.get(chunkKey);
