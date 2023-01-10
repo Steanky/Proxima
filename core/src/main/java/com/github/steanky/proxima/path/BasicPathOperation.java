@@ -36,8 +36,8 @@ public class BasicPathOperation implements PathOperation {
     }
 
     @Override
-    public void init(int startX, int startY, int startZ, int destX, int destY, int destZ,
-            @NotNull PathSettings settings, float yOffset) {
+    public void init(double startX, double startY, double startZ, int destX, int destY, int destZ,
+            @NotNull PathSettings settings) {
         this.graph = settings.graph();
 
         this.successPredicate = settings.successPredicate();
@@ -45,20 +45,31 @@ public class BasicPathOperation implements PathOperation {
         this.heuristic = settings.heuristic();
         this.nodeProcessor = settings.nodeProcessor();
 
-        //indicate that we can start stepping
-        state = State.INITIALIZED;
-        success = false;
+        //find the starting node(s)
+        //this may populate openSet and graph with a few values to start
+        this.explorer.exploreInitial(startX, startY, startZ, openSet, graph);
 
         //set the current node, g == 0
-        current = new Node(startX, startY, startZ, 0, (float)Vec3I.distanceSquared(startX, startY, startZ, destX,
-                destY, destZ), null, yOffset);
-        openSet.enqueue(current);
-        graph.put(startX, startY, startZ, current);
-        best = current;
+        if (!openSet.isEmpty()) {
+            best = current = openSet.first();
+        }
+        else {
+            int bx = (int) Math.floor(startX);
+            int by = (int) Math.floor(startY);
+            int bz = (int) Math.floor(startZ);
+
+            best = current = new Node(bx, by, bz, 0, (float)Vec3I.distanceSquared(bx, by, bz,
+                    destX, destY, destZ), null, (float)startY - by);
+            openSet.enqueue(best);
+        }
 
         this.destinationX = destX;
         this.destinationY = destY;
         this.destinationZ = destZ;
+
+        //indicate that we can start stepping
+        state = State.INITIALIZED;
+        success = false;
     }
 
     @Override

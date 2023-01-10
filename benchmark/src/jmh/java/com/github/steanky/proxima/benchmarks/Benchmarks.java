@@ -12,6 +12,6 @@ public class Benchmarks {
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
     public void run(PathfindState state) throws ExecutionException, InterruptedException {
-        state.pathfinder.pathfind(0, 1, 0, 0, 100, 1, 100, state.settings).get();
+        state.pathfinder.pathfind(0, 1, 0, 100, 1, 100, state.settings).get();
     }
 }

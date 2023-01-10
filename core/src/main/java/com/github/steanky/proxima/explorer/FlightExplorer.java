@@ -4,6 +4,7 @@ import com.github.steanky.proxima.Direction;
 import com.github.steanky.proxima.NodeHandler;
 import com.github.steanky.proxima.PathLimiter;
 import com.github.steanky.proxima.node.Node;
+import com.github.steanky.proxima.node.NodeQueue;
 import com.github.steanky.proxima.snapper.NodeSnapper;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
@@ -45,5 +46,11 @@ public class FlightExplorer extends DirectionalExplorer {
             float offset = NodeSnapper.offset(result);
             handler.handle(currentNode, neighborNode, tx, ty, tz, offset);
         }
+    }
+
+    @Override
+    public void exploreInitial(double startX, double startY, double startZ, @NotNull NodeQueue queue,
+            @NotNull Vec3I2ObjectMap<Node> graph) {
+
     }
 }

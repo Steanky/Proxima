@@ -25,13 +25,13 @@ public class BasicAsyncPathfinder implements Pathfinder {
     }
 
     @Override
-    public @NotNull Future<PathResult> pathfind(int x, int y, int z, float yOffset, int destX, int destY, int destZ,
+    public @NotNull Future<PathResult> pathfind(double x, double y, double z, int destX, int destY, int destZ,
             @NotNull PathSettings settings) {
         Callable<PathResult> callable = () -> {
             PathOperation localOperation = pathOperationLocal.get();
 
             try {
-                localOperation.init(x, y, z, destX, destY, destZ, settings, yOffset);
+                localOperation.init(x, y, z, destX, destY, destZ, settings);
 
                 //step the path until the method reports completion by returning false
                 while (!localOperation.step()) {

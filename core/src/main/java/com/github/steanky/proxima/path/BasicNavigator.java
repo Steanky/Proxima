@@ -1,7 +1,7 @@
 package com.github.steanky.proxima.path;
 
 import com.github.steanky.proxima.Navigator;
-import com.github.steanky.proxima.PositionResolver;
+import com.github.steanky.proxima.resolver.PositionResolver;
 import com.github.steanky.vector.Vec3I;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,14 +28,15 @@ public class BasicNavigator implements Navigator {
 
     @Override
     public void navigate(double x, double y, double z, double toX, double toY, double toZ) {
-        PositionResolver.OffsetPosition origin = originResolver.resolve(x, y, z);
         PositionResolver.OffsetPosition destination = destinationResolver.resolve(toX, toY, toZ);
         if (result != null && !result.isDone()) {
             result.cancel(true);
             result = null;
         }
 
-        result = pathfinder.pathfind(origin.vector(), origin.offset(), destination.vector(), pathSettings);
+        Vec3I destinationVector = destination.vector();
+        result = pathfinder.pathfind(x, y, z, destinationVector.x(), destinationVector.y(), destinationVector.z(),
+                pathSettings);
     }
 
     @Override

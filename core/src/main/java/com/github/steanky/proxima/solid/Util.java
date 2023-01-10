@@ -3,6 +3,9 @@ package com.github.steanky.proxima.solid;
 import com.github.steanky.proxima.Direction;
 import com.github.steanky.vector.Bounds3D;
 
+/**
+ * Collision checking utilities. Not part of the public API.
+ */
 final class Util {
     static Bounds3D closestCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz,
             double lx, double ly, double lz, Direction d, double l) {
@@ -120,7 +123,6 @@ final class Util {
         oy -= y;
         oz -= z;
 
-        //fast directional expansion algorithm
         double dx = d.x * l;
         double dy = d.y * l;
         double dz = d.z * l;
