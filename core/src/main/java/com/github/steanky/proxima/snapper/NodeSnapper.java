@@ -8,6 +8,8 @@ public interface NodeSnapper {
 
     long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, float nodeOffset);
 
+    float checkInitial(double x, double y, double z, double dx, double dy, double dz);
+
     /**
      * Encodes a double-precision height value into a single long whose most significant 32 bits represent the integer
      * height of a successful node, and whose lower 32 bits represent a single-precision floating point value

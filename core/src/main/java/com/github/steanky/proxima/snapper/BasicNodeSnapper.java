@@ -368,4 +368,9 @@ public class BasicNodeSnapper implements NodeSnapper {
 
         return FAIL;
     }
+
+    @Override
+    public float checkInitial(double x, double y, double z, double dx, double dy, double dz) {
+        return Float.NaN;
+    }
 }

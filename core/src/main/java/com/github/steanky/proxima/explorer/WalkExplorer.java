@@ -20,11 +20,8 @@ public class WalkExplorer extends DirectionalExplorer {
             Direction.WEST
     };
 
-    private final NodeSnapper nodeSnapper;
-
-    public WalkExplorer(@NotNull NodeSnapper nodeSnapper, @NotNull PathLimiter limiter) {
-        super(DIRECTIONS, limiter);
-        this.nodeSnapper = Objects.requireNonNull(nodeSnapper);
+    public WalkExplorer(@NotNull NodeSnapper snapper, @NotNull PathLimiter limiter) {
+        super(DIRECTIONS, limiter, snapper);
     }
 
     @Override
@@ -39,7 +36,7 @@ public class WalkExplorer extends DirectionalExplorer {
         int ny = currentNode.y;
         int nz = currentNode.z;
 
-        long value = nodeSnapper.snap(direction, nx, ny, nz, currentNode.yOffset);
+        long value = snapper.snap(direction, nx, ny, nz, currentNode.yOffset);
         if (value != NodeSnapper.FAIL) {
             int height = NodeSnapper.height(value);
             float offset = NodeSnapper.offset(value);
@@ -59,11 +56,5 @@ public class WalkExplorer extends DirectionalExplorer {
 
             handler.handle(currentNode, neighborNode, tx, height, tz, offset);
         }
-    }
-
-    @Override
-    public void exploreInitial(double startX, double startY, double startZ, @NotNull NodeQueue queue,
-            @NotNull Vec3I2ObjectMap<Node> graph) {
-
     }
 }

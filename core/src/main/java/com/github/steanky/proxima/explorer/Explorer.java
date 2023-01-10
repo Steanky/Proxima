@@ -9,6 +9,5 @@ import org.jetbrains.annotations.NotNull;
 public interface Explorer {
     void exploreEach(@NotNull Node currentNode, @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph);
 
-    void exploreInitial(double startX, double startY, double startZ, @NotNull NodeQueue queue,
-            @NotNull Vec3I2ObjectMap<Node> graph);
+    void exploreInitial(double startX, double startY, double startZ, @NotNull NodeInitializer initializer);
 }

@@ -47,21 +47,19 @@ public class BasicPathOperation implements PathOperation {
 
         //find the starting node(s)
         //this may populate openSet and graph with a few values to start
-        this.explorer.exploreInitial(startX, startY, startZ, openSet, graph);
+        this.explorer.exploreInitial(startX, startY, startZ, this::initialize);
 
         //set the current node, g == 0
-        if (!openSet.isEmpty()) {
-            best = current = openSet.first();
-        }
-        else {
+        if (openSet.isEmpty()) {
+            //naive initialization since our initializer didn't add anything
             int bx = (int) Math.floor(startX);
             int by = (int) Math.floor(startY);
             int bz = (int) Math.floor(startZ);
 
-            best = current = new Node(bx, by, bz, 0, (float)Vec3I.distanceSquared(bx, by, bz,
-                    destX, destY, destZ), null, (float)startY - by);
-            openSet.enqueue(best);
+            initialize(bx, by, bz, (float) (startY - by));
         }
+
+        best = current = openSet.first();
 
         this.destinationX = destX;
         this.destinationY = destY;
@@ -107,6 +105,13 @@ public class BasicPathOperation implements PathOperation {
 
         state = State.COMPLETE;
         this.success = success;
+    }
+
+    private void initialize(int x, int y, int z, float offset) {
+        Node node = new Node(x, y, z, 0, (float)Vec3I.distanceSquared(x, y, z,
+                destinationX, destinationY, destinationZ), null, offset);
+        graph.put(x, y, z, node);
+        openSet.enqueue(node);
     }
 
     private void explore(Node current, Node target, int x, int y, int z, float yOffset) {

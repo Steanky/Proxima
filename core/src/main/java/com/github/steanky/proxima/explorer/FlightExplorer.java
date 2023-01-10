@@ -22,11 +22,8 @@ public class FlightExplorer extends DirectionalExplorer {
             Direction.DOWN
     };
 
-    private final NodeSnapper snapper;
-
     public FlightExplorer(@NotNull PathLimiter limiter, @NotNull NodeSnapper snapper) {
-        super(DIRECTIONS, limiter);
-        this.snapper = Objects.requireNonNull(snapper);
+        super(DIRECTIONS, limiter, snapper);
     }
 
     @Override
@@ -46,11 +43,5 @@ public class FlightExplorer extends DirectionalExplorer {
             float offset = NodeSnapper.offset(result);
             handler.handle(currentNode, neighborNode, tx, ty, tz, offset);
         }
-    }
-
-    @Override
-    public void exploreInitial(double startX, double startY, double startZ, @NotNull NodeQueue queue,
-            @NotNull Vec3I2ObjectMap<Node> graph) {
-
     }
 }
