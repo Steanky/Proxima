@@ -45,26 +45,4 @@ final class SolidN implements Solid {
     public @NotNull @Unmodifiable List<Bounds3D> children() {
         return bounds;
     }
-
-    @Override
-    public int hashCode() {
-        return bounds.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-
-        if (obj == this) {
-            return true;
-        }
-
-        if (obj instanceof Solid other) {
-            return bounds.equals(other.children());
-        }
-
-        return false;
-    }
 }

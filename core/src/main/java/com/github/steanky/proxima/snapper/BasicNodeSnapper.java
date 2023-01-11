@@ -376,7 +376,6 @@ public class BasicNodeSnapper implements NodeSnapper {
         double dz = tz - z;
 
         double aox = x - halfWidth;
-        double aoy = y;
         double aoz = z - halfWidth;
 
         double alx = adjustedWidth;
@@ -384,7 +383,7 @@ public class BasicNodeSnapper implements NodeSnapper {
         double alz = adjustedWidth;
 
         double amx = aox + alx;
-        double amy = aoy + aly;
+        double amy = y + aly;
         double amz = aoz + alz;
 
         boolean cx = dx != 0;
@@ -394,15 +393,27 @@ public class BasicNodeSnapper implements NodeSnapper {
         int sx = (int) Math.floor(aox + Math.min(0, dx));
         int ex = (int) Math.floor(amx + Math.abs(dx));
 
-        int sy = (int) Math.floor(aoy + Math.min(0, dy));
+        int sy = (int) Math.floor(y + Math.min(0, dy));
         int ey = (int) Math.floor(amy + Math.abs(dy));
 
         int sz = (int) Math.floor(aoz + Math.min(0, dz));
         int ez = (int) Math.floor(amz + Math.abs(dz));
 
+        boolean limitMinX;
+        boolean limitMaxX;
+
         if (cx) {
-            boolean full = dx < 0 ? x == Math.rint(x) : amx == Math.rint(amx);
-            int o = dx < 0 ? (int)Math.floor(x) : (int)Math.floor(amx);
+            if (dx < 0) {
+                limitMinX = true;
+                limitMaxX = false;
+            }
+            else {
+                limitMinX = false;
+                limitMaxX = true;
+            }
+
+            boolean full = isFull(dx, x, amx);
+            int o = computeOffset(dx, x, amx);
             int sdx = (int)Math.signum(dx);
 
             for (int i = full ? 1 : 0; i < (sx == ex ? 1 : 2); i++) {
@@ -410,55 +421,29 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                 for (int by = sy; by <= ey; by++) {
                     for (int bz = sz; bz <= ez; bz++) {
-                        Solid solid = space.solidAt(bx, by, bz);
-
-                        if (solid.isEmpty() || i == 0 && solid.isFull()) {
-                            continue;
-                        }
-
-                        if (solid.hasCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, dy, dz)) {
+                        if (intersectsSolid(bx, by, bz, i, aox, y, aoz, alx, aly, alz, dx, dy, dz)) {
                             return Float.NaN;
                         }
                     }
                 }
             }
         }
+        else {
+            limitMinX = false;
+            limitMaxX = false;
+        }
 
         if (cz) {
-            boolean full = dz < 0 ? z == Math.rint(z) : amz == Math.rint(amz);
-            int o = dz < 0 ? (int)Math.floor(z) : (int)Math.floor(amz);
+            boolean full = isFull(dz, z, amz);
+            int o = computeOffset(dz, z, amz);
             int sdz = (int)Math.signum(dz);
-
-            boolean limitMinX;
-            boolean limitMaxX;
-
-            if (cx) {
-                if (dx < 0) {
-                    limitMinX = true;
-                    limitMaxX = false;
-                }
-                else {
-                    limitMinX = false;
-                    limitMaxX = true;
-                }
-            }
-            else {
-                limitMinX = false;
-                limitMaxX = false;
-            }
 
             for (int i = full ? 1 : 0; i < (sz == ez ? 1 : 2); i++) {
                 int bz = o + i * sdz;
 
                 for (int by = sy; by <= ey; by++) {
                     for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
-                        Solid solid = space.solidAt(bx, by, bz);
-
-                        if (solid.isEmpty() || i == 0 && solid.isFull()) {
-                            continue;
-                        }
-
-                        if (solid.hasCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, dy, dz)) {
+                        if (intersectsSolid(bx, by, bz, i, aox, y, aoz, alx, aly, alz, dx, dy, dz)) {
                             return Float.NaN;
                         }
                     }
@@ -467,27 +452,9 @@ public class BasicNodeSnapper implements NodeSnapper {
         }
 
         if (cy) {
-            boolean full = dy < 0 ? y == Math.rint(y) : amy == Math.rint(amy);
-            int o = dy < 0 ? (int)Math.floor(y) : (int)Math.floor(amy);
+            boolean full = isFull(dy, y, amy);
+            int o = computeOffset(dy, y, amy);
             int sdy = (int)Math.signum(dy);
-
-            boolean limitMinX;
-            boolean limitMaxX;
-
-            if (cx) {
-                if (dx < 0) {
-                    limitMinX = true;
-                    limitMaxX = false;
-                }
-                else {
-                    limitMinX = false;
-                    limitMaxX = true;
-                }
-            }
-            else {
-                limitMinX = false;
-                limitMaxX = false;
-            }
 
             boolean limitMinZ;
             boolean limitMaxZ;
@@ -512,13 +479,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                 for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
                     for (int bz = limitMinZ ? sz + 1 : sz; bz <= (limitMaxZ ? ez - 1 : ez); bz++) {
-                        Solid solid = space.solidAt(bx, by, bz);
-
-                        if (solid.isEmpty() || i == 0 && solid.isFull()) {
-                            continue;
-                        }
-
-                        if (solid.hasCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, dy, dz)) {
+                        if (intersectsSolid(bx, by, bz, i, aox, y, aoz, alx, aly, alz, dx, dy, dz)) {
                             return Float.NaN;
                         }
                     }
@@ -533,5 +494,24 @@ public class BasicNodeSnapper implements NodeSnapper {
         else {
             return (float) solid.bounds().maxY();
         }
+    }
+
+    private boolean intersectsSolid(int bx, int by, int bz, int i, double aox, double aoy, double aoz, double alx,
+            double aly, double alz, double dx, double dy, double dz) {
+        Solid solid = space.solidAt(bx, by, bz);
+
+        if (solid.isEmpty() || i == 0 && solid.isFull()) {
+            return false;
+        }
+
+        return solid.hasCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, dy, dz);
+    }
+
+    private static int computeOffset(double d, double oc, double mc) {
+        return d < 0 ? (int)Math.floor(oc) : (int)Math.floor(mc);
+    }
+
+    private static boolean isFull(double d, double oc, double mc) {
+        return d < 0 ? oc == Math.rint(oc) : mc == Math.rint(mc);
     }
 }

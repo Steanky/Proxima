@@ -4,7 +4,7 @@ import com.github.steanky.proxima.Direction;
 import com.github.steanky.vector.Bounds3D;
 
 /**
- * Collision checking utilities. Not part of the public API.
+ * Default collision checking utilities. Not part of the public API.
  */
 final class Util {
     static Bounds3D closestCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz,
@@ -152,6 +152,73 @@ final class Util {
         }
 
         return false;
+    }
+
+    static boolean hasCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz,
+            double lx, double ly, double lz, double dx, double dy, double dz) {
+        if (solid.isEmpty()) {
+            return false;
+        }
+
+        double adx = Math.abs(dx);
+        double ady = Math.abs(dy);
+        double adz = Math.abs(dz);
+
+        double adjustedXY = (ly * adx + lx * ady) / 2;
+        double adjustedXZ = (lz * adx + lx * adz) / 2;
+        double adjustedYZ = (lz * ady + ly * adz) / 2;
+
+        double cx = ox + (lx / 2);
+        double cy = oy + (ly / 2);
+        double cz = oz + (lz / 2);
+
+        for (Bounds3D child : solid.children()) {
+            if (checkBounds(x, y, z, child, cx, cy, cz, adjustedXZ, adjustedXY, adjustedYZ, dx, dy, dz)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean checkBounds(int x, int y, int z, Bounds3D component, double cx, double cy,
+            double cz, double adjustedXZ, double adjustedXY, double adjustedYZ, double dX, double dY, double dZ) {
+        double minX = x + component.originX() - cx;
+        double minY = y + component.originY() - cy;
+        double minZ = z + component.originZ() - cz;
+
+        double maxX = x + component.maxX() - cx;
+        double maxY = y + component.maxY() - cy;
+        double maxZ = z + component.maxZ() - cz;
+
+        return checkAxis(adjustedXZ, dX, dZ, minX, minZ, maxX, maxZ) &&
+                checkAxis(adjustedXY, dX, dY, minX, minY, maxX, maxY) &&
+                checkAxis(adjustedYZ, dZ, dY, minZ, minY, maxZ, maxY);
+    }
+
+    private static boolean checkAxis(double size, double dA, double dB, double minA, double minB, double maxA,
+            double maxB) {
+        if (dA == 0 && dB == 0) {
+            return true;
+        }
+
+        return dA * dB <= 0 ? checkPlanes(size, dA, dB, minA, minB, maxA, maxB) :
+                checkPlanes(size, dA, dB, maxA, minB, minA, maxB);
+    }
+
+    private static boolean checkPlanes(double size, double dA, double dB, double minA, double minB, double maxA,
+            double maxB) {
+        double bMinusAMin = (minB * dA) - (minA * dB);
+        if (bMinusAMin >= size) { //!minInFirst
+            return (maxB * dA) - (maxA * dB) < size;  //... && maxInFirst
+        }
+
+        //we know minInFirst is true
+        if (bMinusAMin > -size) { //... && minInSecond
+            return true;
+        }
+
+        return (maxB * dA) - (maxA * dB) > -size; // ... && !minInSecond
     }
 
     private static double computeDiff(Direction d, Bounds3D child, double ox, double oy, double oz,

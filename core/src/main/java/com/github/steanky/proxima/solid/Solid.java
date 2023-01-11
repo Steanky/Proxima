@@ -8,7 +8,24 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
 
+/**
+ * Represents an object in 3D voxel space. Conceptually, solids consist of zero or more three-dimensional bounding
+ * boxes. If a solid has no bounds, it will not be collided with (see {@link Solid#EMPTY}).
+ * <p>
+ * None of the bounds of a solid may exceed a 1x1x1 cube. Using implementations that allow this may result in
+ * undefined pathfinding behavior.
+ * <p>
+ * This class provides several default methods for performing various kinds of collision checking. These are, among
+ * other things, used during pathfinding to determine navigability of candidate nodes. By default, these methods
+ * delegate to those in {@link Util}, which relies on the {@link Solid#children()} method to iterate the individual
+ * bounding boxes. Implementations may override these in order to use native collision checking functionality, if
+ * appropriate.
+ */
 public interface Solid {
+    /**
+     * The shared, empty Solid. It is encouraged to call {@link Solid#isEmpty()}, rather than doing an equality
+     * comparison with this field, as it is not guaranteed to be singleton.
+     */
     Solid EMPTY = new Solid() {
         @Override
         public @NotNull Bounds3D bounds() {
@@ -31,6 +48,10 @@ public interface Solid {
         }
     };
 
+    /**
+     * The shared, full Solid. It is encouraged to call {@link Solid#isFull()}, rather than doing an equality
+     * comparison with this field, as it is not guaranteed to be singleton.
+     */
     Solid FULL = new Solid12(Bounds3D.immutable(0, 0, 0, 1, 1, 1));
 
     @NotNull Bounds3D bounds();
@@ -79,7 +100,7 @@ public interface Solid {
 
     default boolean hasCollision(int x, int y, int z, double ox, double oy, double oz,
             double lx, double ly, double lz, double dx, double dy, double dz) {
-        return false;
+        return Util.hasCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, dx, dy, dz);
     }
 
     static @NotNull Solid of(@NotNull Bounds3D bounds) {
