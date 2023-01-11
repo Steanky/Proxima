@@ -919,4 +919,26 @@ class BasicNodeSnapperTest {
             }
         }
     }
+
+    @Nested
+    class CheckInitial {
+        private SolidPos[] noCollisionBelow(int x, int y, int z) {
+            return new SolidPos[] {
+                    full(x, y, z),
+                    full(x + 1, y, z),
+                    full(x - 1, y, z),
+                    full(x, y, z + 1),
+                    full(x, y, z - 1)
+            };
+        }
+
+        @Test
+        void smallBoundsNoCollision() {
+            BasicNodeSnapper snapper = make(0.3, 2, 0, 0, EPSILON,
+                    noCollisionBelow(0, 0, 0));
+
+            float res = snapper.checkInitial(0.6, 1, 0.6, 0.5, 1, 0.5);
+            assertEquals(0, res);
+        }
+    }
 }

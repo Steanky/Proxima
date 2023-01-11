@@ -44,7 +44,7 @@ public class BasicNodeSnapper implements NodeSnapper {
         //silly, totally unnecessary way to add 1 to a number only if it is even
         int blockWidth = ((int) Math.ceil(width)) | 1;
 
-        this.halfWidth = width / 2;
+        this.halfWidth = (width / 2) - (epsilon / 2);
         this.height = height;
 
         this.searchHeight = (int) Math.ceil(height + jumpHeight);
@@ -370,7 +370,168 @@ public class BasicNodeSnapper implements NodeSnapper {
     }
 
     @Override
-    public float checkInitial(double x, double y, double z, double dx, double dy, double dz) {
-        return Float.NaN;
+    public float checkInitial(double x, double y, double z, double tx, double ty, double tz) {
+        double dx = tx - x;
+        double dy = ty - y;
+        double dz = tz - z;
+
+        double aox = x - halfWidth;
+        double aoy = y;
+        double aoz = z - halfWidth;
+
+        double alx = adjustedWidth;
+        double aly = adjustedHeight;
+        double alz = adjustedWidth;
+
+        double amx = aox + alx;
+        double amy = aoy + aly;
+        double amz = aoz + alz;
+
+        boolean cx = dx != 0;
+        boolean cy = dy != 0;
+        boolean cz = dz != 0;
+
+        int sx = (int) Math.floor(aox + Math.min(0, dx));
+        int ex = (int) Math.floor(amx + Math.abs(dx));
+
+        int sy = (int) Math.floor(aoy + Math.min(0, dy));
+        int ey = (int) Math.floor(amy + Math.abs(dy));
+
+        int sz = (int) Math.floor(aoz + Math.min(0, dz));
+        int ez = (int) Math.floor(amz + Math.abs(dz));
+
+        if (cx) {
+            boolean full = dx < 0 ? x == Math.rint(x) : amx == Math.rint(amx);
+            int o = dx < 0 ? (int)Math.floor(x) : (int)Math.floor(amx);
+            int sdx = (int)Math.signum(dx);
+
+            for (int i = full ? 1 : 0; i < (sx == ex ? 1 : 2); i++) {
+                int bx = o + i * sdx;
+
+                for (int by = sy; by <= ey; by++) {
+                    for (int bz = sz; bz <= ez; bz++) {
+                        Solid solid = space.solidAt(bx, by, bz);
+
+                        if (solid.isEmpty() || i == 0 && solid.isFull()) {
+                            continue;
+                        }
+
+                        if (solid.hasCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, dy, dz)) {
+                            return Float.NaN;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (cz) {
+            boolean full = dz < 0 ? z == Math.rint(z) : amz == Math.rint(amz);
+            int o = dz < 0 ? (int)Math.floor(z) : (int)Math.floor(amz);
+            int sdz = (int)Math.signum(dz);
+
+            boolean limitMinX;
+            boolean limitMaxX;
+
+            if (cx) {
+                if (dx < 0) {
+                    limitMinX = true;
+                    limitMaxX = false;
+                }
+                else {
+                    limitMinX = false;
+                    limitMaxX = true;
+                }
+            }
+            else {
+                limitMinX = false;
+                limitMaxX = false;
+            }
+
+            for (int i = full ? 1 : 0; i < (sz == ez ? 1 : 2); i++) {
+                int bz = o + i * sdz;
+
+                for (int by = sy; by <= ey; by++) {
+                    for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
+                        Solid solid = space.solidAt(bx, by, bz);
+
+                        if (solid.isEmpty() || i == 0 && solid.isFull()) {
+                            continue;
+                        }
+
+                        if (solid.hasCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, dy, dz)) {
+                            return Float.NaN;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (cy) {
+            boolean full = dy < 0 ? y == Math.rint(y) : amy == Math.rint(amy);
+            int o = dy < 0 ? (int)Math.floor(y) : (int)Math.floor(amy);
+            int sdy = (int)Math.signum(dy);
+
+            boolean limitMinX;
+            boolean limitMaxX;
+
+            if (cx) {
+                if (dx < 0) {
+                    limitMinX = true;
+                    limitMaxX = false;
+                }
+                else {
+                    limitMinX = false;
+                    limitMaxX = true;
+                }
+            }
+            else {
+                limitMinX = false;
+                limitMaxX = false;
+            }
+
+            boolean limitMinZ;
+            boolean limitMaxZ;
+
+            if (cz) {
+                if (dz < 0) {
+                    limitMinZ = true;
+                    limitMaxZ = false;
+                }
+                else {
+                    limitMinZ = false;
+                    limitMaxZ = true;
+                }
+            }
+            else {
+                limitMinZ = false;
+                limitMaxZ = false;
+            }
+
+            for (int i = full ? 1 : 0; i < (sy == ey ? 1 : 2); i++) {
+                int by = o + i * sdy;
+
+                for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
+                    for (int bz = limitMinZ ? sz + 1 : sz; bz <= (limitMaxZ ? ez - 1 : ez); bz++) {
+                        Solid solid = space.solidAt(bx, by, bz);
+
+                        if (solid.isEmpty() || i == 0 && solid.isFull()) {
+                            continue;
+                        }
+
+                        if (solid.hasCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, dy, dz)) {
+                            return Float.NaN;
+                        }
+                    }
+                }
+            }
+        }
+
+        Solid solid = space.solidAt((int) Math.floor(tx), (int) Math.floor(ty), (int) Math.floor(tz));
+        if (solid.isEmpty() || solid.isFull()) {
+            return 0;
+        }
+        else {
+            return (float) solid.bounds().maxY();
+        }
     }
 }

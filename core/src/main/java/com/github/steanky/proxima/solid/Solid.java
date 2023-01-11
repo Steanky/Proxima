@@ -57,9 +57,10 @@ public interface Solid {
 
     /**
      * Returned by {@link Solid#minMaxCollision(int, int, int, double, double, double, double, double, double,
-     * Direction, double)} to indicate no collision was found.
+     * Direction, double)} to indicate no collision was found. The higher 32 bits represent single-precision positive
+     * infinity, whereas the lower 32 bits represent single-precision negative infinity.
      */
-    long NO_COLLISION = 0x7F800000_FF800000L;
+    long NO_COLLISION = 0x7F80_0000_FF80_0000L;
 
     default long minMaxCollision(int x, int y, int z, double ox, double oy, double oz,
             double lx, double ly, double lz, @NotNull Direction d, double l) {
@@ -74,6 +75,11 @@ public interface Solid {
     default boolean hasCollision(int x, int y, int z, double ox, double oy, double oz,
             double lx, double ly, double lz, @NotNull Direction d, double l) {
         return Util.hasCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l);
+    }
+
+    default boolean hasCollision(int x, int y, int z, double ox, double oy, double oz,
+            double lx, double ly, double lz, double dx, double dy, double dz) {
+        return false;
     }
 
     static @NotNull Solid of(@NotNull Bounds3D bounds) {

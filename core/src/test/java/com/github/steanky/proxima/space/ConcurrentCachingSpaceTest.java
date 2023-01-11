@@ -39,7 +39,6 @@ class ConcurrentCachingSpaceTest {
                 assertEquals(Solid.FULL, solid2);
             }
 
-
             backing.remove(0, 0, 0);
 
             //solid should exist in cache but not in the backing map
