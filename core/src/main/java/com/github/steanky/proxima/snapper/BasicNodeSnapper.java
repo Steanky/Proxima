@@ -421,7 +421,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                 for (int by = sy; by <= ey; by++) {
                     for (int bz = sz; bz <= ez; bz++) {
-                        if (intersectsSolid(bx, by, bz, i, aox, y, aoz, alx, aly, alz, dx, dy, dz)) {
+                        if (hitsSolid(bx, by, bz, i, aox, y, aoz, alx, aly, alz, dx, dy, dz)) {
                             return Float.NaN;
                         }
                     }
@@ -441,9 +441,9 @@ public class BasicNodeSnapper implements NodeSnapper {
             for (int i = full ? 1 : 0; i < (sz == ez ? 1 : 2); i++) {
                 int bz = o + i * sdz;
 
-                for (int by = sy; by <= ey; by++) {
-                    for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
-                        if (intersectsSolid(bx, by, bz, i, aox, y, aoz, alx, aly, alz, dx, dy, dz)) {
+                for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
+                    for (int by = sy; by <= ey; by++) {
+                        if (hitsSolid(bx, by, bz, i, aox, y, aoz, alx, aly, alz, dx, dy, dz)) {
                             return Float.NaN;
                         }
                     }
@@ -479,7 +479,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                 for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
                     for (int bz = limitMinZ ? sz + 1 : sz; bz <= (limitMaxZ ? ez - 1 : ez); bz++) {
-                        if (intersectsSolid(bx, by, bz, i, aox, y, aoz, alx, aly, alz, dx, dy, dz)) {
+                        if (hitsSolid(bx, by, bz, i, aox, y, aoz, alx, aly, alz, dx, dy, dz)) {
                             return Float.NaN;
                         }
                     }
@@ -496,11 +496,11 @@ public class BasicNodeSnapper implements NodeSnapper {
         }
     }
 
-    private boolean intersectsSolid(int bx, int by, int bz, int i, double aox, double aoy, double aoz, double alx,
+    private boolean hitsSolid(int bx, int by, int bz, int i, double aox, double aoy, double aoz, double alx,
             double aly, double alz, double dx, double dy, double dz) {
         Solid solid = space.solidAt(bx, by, bz);
 
-        if (solid.isEmpty() || i == 0 && solid.isFull()) {
+        if (solid.isEmpty() || (i == 0 && solid.isFull())) {
             return false;
         }
 

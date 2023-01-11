@@ -9,10 +9,6 @@ import com.github.steanky.vector.Bounds3D;
 final class Util {
     static Bounds3D closestCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz,
             double lx, double ly, double lz, Direction d, double l) {
-        if (solid.isEmpty()) {
-            return null;
-        }
-
         ox -= x;
         oy -= y;
         oz -= z;
@@ -62,10 +58,6 @@ final class Util {
 
     static long minMaxCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz,
             double lx, double ly, double lz, Direction d, double l) {
-        if (solid.isEmpty()) {
-            return Solid.NO_COLLISION;
-        }
-
         ox -= x;
         oy -= y;
         oz -= z;
@@ -115,10 +107,6 @@ final class Util {
 
     static boolean hasCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz,
             double lx, double ly, double lz, Direction d, double l) {
-        if (solid.isEmpty()) {
-            return false;
-        }
-
         ox -= x;
         oy -= y;
         oz -= z;
@@ -156,23 +144,31 @@ final class Util {
 
     static boolean hasCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz,
             double lx, double ly, double lz, double dx, double dy, double dz) {
-        if (solid.isEmpty()) {
-            return false;
-        }
-
         double adx = Math.abs(dx);
         double ady = Math.abs(dy);
         double adz = Math.abs(dz);
 
-        double adjustedXY = (ly * adx + lx * ady) / 2;
         double adjustedXZ = (lz * adx + lx * adz) / 2;
+        double adjustedXY = (ly * adx + lx * ady) / 2;
         double adjustedYZ = (lz * ady + ly * adz) / 2;
 
         double cx = ox + (lx / 2);
         double cy = oy + (ly / 2);
         double cz = oz + (lz / 2);
 
+        ox -= x;
+        oy -= y;
+        oz -= z;
+
+        double mx = ox + lx;
+        double my = oy + ly;
+        double mz = oz + lz;
+
         for (Bounds3D child : solid.children()) {
+            if (overlaps(child, ox, oy, oz, mx, my, mz)) {
+                continue;
+            }
+
             if (checkBounds(x, y, z, child, cx, cy, cz, adjustedXZ, adjustedXY, adjustedYZ, dx, dy, dz)) {
                 return true;
             }
