@@ -18,15 +18,22 @@ public interface NodeSnapper {
      * @param height the height to encode
      * @return the encoded height
      */
-    static long encode(double height) {
+    static long encode(double height, boolean intermediateJump) {
         int blockY = (int)Math.floor(height);
         float offset = (float) (height - blockY);
 
         //mask off sign bit, upcast to long
         long offsetBits = (Float.floatToRawIntBits(offset) & 0x7FFF_FFFF);
 
+        //if the node requires an intermediate jump to get to
+        long jumpBits = intermediateJump ? 0x8000_0000L : 0;
+
         //first 32 bits are block Y, last 32 encode offset information
-        return ((long) blockY) << 32L | offsetBits;
+        return (((long) blockY) << 32L) | jumpBits | offsetBits;
+    }
+
+    static long encode(double height) {
+        return encode(height, false);
     }
 
     static int height(long value) {
@@ -36,5 +43,9 @@ public interface NodeSnapper {
     static float offset(long value) {
         int valueInt = (int) (value & 0x7FFF_FFFFL);
         return Float.intBitsToFloat(valueInt);
+    }
+
+    static boolean intermediateJump(long value) {
+        return (value & 0x8000_0000L) != 0;
     }
 }

@@ -11,8 +11,7 @@ import com.github.steanky.vector.Vec3I;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 class BasicNodeSnapperTest {
     private static final double EPSILON = 1E-6;
@@ -71,11 +70,19 @@ class BasicNodeSnapperTest {
         return new BasicNodeSnapper(width, height, fallTolerance, jumpHeight, space, true, epsilon);
     }
 
-    private static void assertSnap(BasicNodeSnapper snapper, Direction direction, Node node, NodeHandler handler) {
+    private static void assertSnap(BasicNodeSnapper snapper, Direction direction, Node node, NodeHandler handler,
+            boolean isIntermediateJump) {
         long val = snapper.snap(direction, node.x, node.y, node.z, node.yOffset);
         if (val != NodeSnapper.FAIL) {
             int y = NodeSnapper.height(val);
             float offset = NodeSnapper.offset(val);
+            boolean intermediate = NodeSnapper.intermediateJump(val);
+            if (isIntermediateJump) {
+                assertTrue(intermediate,  "expected an intermediate jump");
+            }
+            else {
+                assertFalse(intermediate, "expected a non-intermediate jump");
+            }
 
             handler.handle(node, null, node.x + direction.x, y, node.z + direction.z, offset);
         }
@@ -95,7 +102,7 @@ class BasicNodeSnapperTest {
     }
 
     private static void walk(Direction direction, double width, double height, int x, int y, int z, float yo,
-            int ex, int ey, int ez, double eOffset, SolidPos... pos) {
+            int ex, int ey, int ez, double eOffset, boolean intermediate, SolidPos... pos) {
         BasicNodeSnapper snapper = make(width, height, 1, 1, EPSILON, pos);
 
         assertSnap(snapper, direction, node(x, y, z, yo), (node, other, x1, y1, z1, yOffset) -> {
@@ -103,7 +110,7 @@ class BasicNodeSnapperTest {
             assertEquals(ey, y1, "y-coord");
             assertEquals(ez, z1, "z-coord");
             assertEquals(eOffset, yOffset, "yOffset");
-        });
+        }, intermediate);
     }
 
     private static void noWalk(Direction direction, double width, double height, int x, int y, int z, float yo,
@@ -120,7 +127,14 @@ class BasicNodeSnapperTest {
             class FullHeight {
                 private static void walk(Direction direction, int x, int y, int z, float yo, int ex, int ey, int ez,
                         double eOffset, SolidPos... pos) {
-                    BasicNodeSnapperTest.walk(direction, 1, 1, x, y, z, yo, ex, ey, ez, eOffset, pos);
+                    BasicNodeSnapperTest.walk(direction, 1, 1, x, y, z, yo, ex, ey, ez, eOffset,
+                            false, pos);
+                }
+
+                private static void walk(Direction direction, int x, int y, int z, float yo, int ex, int ey, int ez,
+                        double eOffset, boolean intermediate, SolidPos... pos) {
+                    BasicNodeSnapperTest.walk(direction, 1, 1, x, y, z, yo, ex, ey, ez, eOffset,
+                            intermediate, pos);
                 }
 
                 @Nested
@@ -446,7 +460,14 @@ class BasicNodeSnapperTest {
             class PartialHeight {
                 private static void walk(Direction direction, int x, int y, int z, float yo, int ex, int ey, int ez,
                         double eOffset, SolidPos... pos) {
-                    BasicNodeSnapperTest.walk(direction, 0.6, 1.95, x, y, z, yo, ex, ey, ez, eOffset, pos);
+                    BasicNodeSnapperTest.walk(direction, 0.6, 1.95, x, y, z, yo, ex, ey, ez, eOffset,
+                            false, pos);
+                }
+
+                private static void walk(Direction direction, int x, int y, int z, float yo, int ex, int ey, int ez,
+                        double eOffset, boolean intermediate, SolidPos... pos) {
+                    BasicNodeSnapperTest.walk(direction, 0.6, 1.95, x, y, z, yo, ex, ey, ez, eOffset,
+                            intermediate, pos);
                 }
 
                 @Nested
@@ -762,26 +783,26 @@ class BasicNodeSnapperTest {
 
                     @Test
                     void walkNorthIntersectPartialBlock() {
-                        walk(Direction.NORTH, 0, 1, 0, 0, 0, 2, -1, 0,
-                                intersectPartial(0, 0, 0, PARTIAL_BLOCK_NORTH));
+                        walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0,
+                                true, intersectPartial(0, 0, 0, PARTIAL_BLOCK_NORTH));
                     }
 
                     @Test
                     void walkEastIntersectPartialBlock() {
-                        walk(Direction.EAST, 0, 1, 0, 0, 1, 2, 0, 0,
-                                intersectPartial(0, 0, 0, PARTIAL_BLOCK_EAST));
+                        walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0,
+                                true, intersectPartial(0, 0, 0, PARTIAL_BLOCK_EAST));
                     }
 
                     @Test
                     void walkSouthIntersectPartialBlock() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0, 0, 2, 1, 0,
-                                intersectPartial(0, 0, 0, PARTIAL_BLOCK_SOUTH));
+                        walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0,
+                                true, intersectPartial(0, 0, 0, PARTIAL_BLOCK_SOUTH));
                     }
 
                     @Test
                     void walkWestIntersectPartialBlock() {
-                        walk(Direction.WEST, 0, 1, 0, 0, -1, 2, 0, 0,
-                                intersectPartial(0, 0, 0, PARTIAL_BLOCK_WEST));
+                        walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0,
+                                true, intersectPartial(0, 0, 0, PARTIAL_BLOCK_WEST));
                     }
 
                     @Test
@@ -841,7 +862,13 @@ class BasicNodeSnapperTest {
             class FullHeight {
                 private static void walk(Direction direction, int x, int y, int z, float yo, int ex, int ey, int ez,
                         double eOffset, SolidPos... pos) {
-                    BasicNodeSnapperTest.walk(direction, 2, 2, x, y, z, yo, ex, ey, ez, eOffset, pos);
+                    BasicNodeSnapperTest.walk(direction, 2, 2, x, y, z, yo, ex, ey, ez, eOffset, false, pos);
+                }
+
+                private static void walk(Direction direction, int x, int y, int z, float yo, int ex, int ey, int ez,
+                        double eOffset, boolean intermediate, SolidPos... pos) {
+                    BasicNodeSnapperTest.walk(direction, 2, 2, x, y, z, yo, ex, ey, ez, eOffset,
+                            intermediate, pos);
                 }
 
                 private static void noWalk(Direction direction, int x, int y, int z, float yo, SolidPos... pos) {

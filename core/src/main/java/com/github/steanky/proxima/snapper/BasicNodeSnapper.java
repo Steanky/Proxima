@@ -26,6 +26,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
     private final double adjustedWidth;
     private final double adjustedHeight;
+    private final double epsilon;
 
     public BasicNodeSnapper(double width, double height, double fallTolerance, double jumpHeight,
             @NotNull Space space, boolean walk, double epsilon) {
@@ -57,6 +58,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
         this.adjustedWidth = width - epsilon;
         this.adjustedHeight = height - epsilon;
+        this.epsilon = epsilon;
     }
 
     private static void validate(double width, double height, double fallTolerance, double jumpHeight, double epsilon) {
@@ -135,7 +137,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                 }
             }
 
-            return NodeSnapper.encode(nodeY + 1);
+            return NodeSnapper.encode(nodeY + 1, false);
         }
 
         for (int i = nodeOffset == 0 ? 0 : -1; i < 1; i++) {
@@ -159,7 +161,7 @@ public class BasicNodeSnapper implements NodeSnapper {
             }
         }
 
-        return NodeSnapper.encode(nodeY - 1);
+        return NodeSnapper.encode(nodeY - 1, false);
     }
 
     @Override
@@ -191,6 +193,9 @@ public class BasicNodeSnapper implements NodeSnapper {
         double ax = nodeX + 0.5 - halfWidth;
         double az = nodeZ + 0.5 - halfWidth;
 
+        //we may need to jump over a block to get to the next node
+        boolean highestIsIntermediate = false;
+
         for (int i = 0; i < actualSearchHeight; i++) {
             int y = nodeY + i;
 
@@ -214,6 +219,8 @@ public class BasicNodeSnapper implements NodeSnapper {
                         highest = 1;
                         lowest = 0;
 
+                        highestIsIntermediate = false;
+
                         //we know the tallest bounds here is this solid
                         break;
                     }
@@ -229,6 +236,9 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                     if (high > highest) {
                         highest = high;
+
+                        //update flag to keep track of what we're actually jumping over
+                        highestIsIntermediate = j == 0;
                     }
 
                     if (low == 0 && high == 1) {
@@ -304,14 +314,14 @@ public class BasicNodeSnapper implements NodeSnapper {
                     }
                 }
             }
-
-            //nothing was found preventing our jump
-            return NodeSnapper.encode(newY);
         }
 
+        boolean full = newY == Math.rint(newY);
+        double adjustedNewY = newY + epsilon;
+
         //search below us, possibly including the block we're in if it's partial
-        for (int i = nodeOffset == 0 ? 0 : -1; i < fallSearchHeight; i++) {
-            int y = nodeY - (i + 1);
+        for (int i = full ? 0 : -1; i < fallSearchHeight; i++) {
+            int y = ((int)Math.floor(newY)) - (i + 1);
 
             double highestY = Double.NEGATIVE_INFINITY;
 
@@ -335,8 +345,8 @@ public class BasicNodeSnapper implements NodeSnapper {
                         break outer;
                     }
 
-                    Bounds3D bounds = solid.closestCollision(x, y, z, nax, exactY, naz, adjustedWidth, adjustedHeight,
-                            adjustedWidth, Direction.DOWN, fallSearchHeight);
+                    Bounds3D bounds = solid.closestCollision(x, y, z, nax, adjustedNewY, naz, adjustedWidth,
+                            adjustedHeight, adjustedWidth, Direction.DOWN, fallSearchHeight);
 
                     if (bounds != null) {
                         double height = bounds.maxY();
@@ -352,7 +362,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
             //only search 1 layer if flying, just so we adjust our offset if necessary
             if (!walk) {
-                return NodeSnapper.encode(y + (Double.isFinite(highestY) ? highestY : 0));
+                return NodeSnapper.encode(y + (Double.isFinite(highestY) ? highestY : 0), false);
             }
 
             //finite if we found a block
@@ -361,7 +371,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                 double fall = exactY - ty;
 
                 if (fall <= fallTolerance) {
-                    return NodeSnapper.encode(ty);
+                    return NodeSnapper.encode(ty, ty != newY && highestIsIntermediate);
                 }
             }
         }

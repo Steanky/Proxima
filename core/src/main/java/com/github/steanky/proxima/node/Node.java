@@ -16,12 +16,13 @@ public final class Node implements Comparable<Node> {
     public float g;
     public final float h;
     public final float yOffset;
+    public final boolean jumpRequired;
 
     public Node parent;
 
     int heapIndex;
 
-    public Node(int x, int y, int z, float g, float h, @Nullable Node parent, float yOffset) {
+    public Node(int x, int y, int z, float g, float h, @Nullable Node parent, float yOffset, boolean jumpRequired) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -33,6 +34,12 @@ public final class Node implements Comparable<Node> {
 
         this.parent = parent;
         this.heapIndex = -1;
+
+        this.jumpRequired = jumpRequired;
+    }
+
+    public Node(int x, int y, int z, float g, float h, @Nullable Node parent, float yOffset) {
+        this(x, y, z, g, h, parent, yOffset, false);
     }
 
     public @NotNull @Unmodifiable List<Node> reverseToNavigationList() {
@@ -90,6 +97,6 @@ public final class Node implements Comparable<Node> {
     @Override
     public String toString() {
         return "Node{x=" + x + ", y=" + y + ", z=" + z + ", g=" + g + ", h=" + h + ", yOffset=" + yOffset +
-                ", heapIndex=" + heapIndex + "}";
+                ", postJump=" + jumpRequired + ", heapIndex=" + heapIndex + "}";
     }
 }

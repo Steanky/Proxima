@@ -40,6 +40,7 @@ public class WalkExplorer extends DirectionalExplorer {
         if (value != NodeSnapper.FAIL) {
             int height = NodeSnapper.height(value);
             float offset = NodeSnapper.offset(value);
+            boolean intermediate = NodeSnapper.intermediateJump(value);
 
             int tx = nx + direction.x;
             int tz = nz + direction.z;
