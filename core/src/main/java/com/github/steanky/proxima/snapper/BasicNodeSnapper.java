@@ -281,7 +281,7 @@ public class BasicNodeSnapper implements NodeSnapper {
             int obz = nodeZ - halfBlockWidth;
             int mbz = nodeZ + halfBlockWidth;
 
-            if (!checkJump(obx, mbx, obz, mbz, ax, exactY, az, newY)) {
+            if (checkJump(obx, mbx, obz, mbz, ax, exactY, az, newY)) {
                 return FAIL;
             }
 
@@ -303,7 +303,6 @@ public class BasicNodeSnapper implements NodeSnapper {
 
         int obz = nz - halfBlockWidth;
         int mbz = nz + halfBlockWidth;
-
 
         double nax = ax + dx;
         double naz = az + dz;
@@ -369,6 +368,8 @@ public class BasicNodeSnapper implements NodeSnapper {
         double newY = Double.NaN;
         double lastTargetY = adjustedY;
 
+        boolean highestIsIntermediate = false;
+
         for (int i = 0; i < actualSearchHeight; i++) {
             int by = adjustedBlockY + i;
 
@@ -382,7 +383,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                     for (int bz = sz; bz <= ez; bz++) {
                         long res = hitSolid(bx, by, bz, j, aox, adjustedY, aoz, adjustedWidth, adjustedHeight,
-                                adjustedWidth, dx, 0, dz);
+                                adjustedWidth, dx, dz);
                         float low = Solid.lowest(res);
                         float high = Solid.highest(res);
 
@@ -392,6 +393,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                         if (high > highest) {
                             highest = high;
+                            highestIsIntermediate = j == 0;
                         }
 
                         if (low == 0 && high == 1) {
@@ -408,7 +410,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                     for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
                         long res = hitSolid(bx, by, bz, j, aox, adjustedY, aoz, adjustedWidth, adjustedHeight,
-                                adjustedWidth, dx, 0, dz);
+                                adjustedWidth, dx, dz);
                         float low = Solid.lowest(res);
                         float high = Solid.highest(res);
 
@@ -418,6 +420,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                         if (high > highest) {
                             highest = high;
+                            highestIsIntermediate = j == 0;
                         }
 
                         if (low == 0 && high == 1) {
@@ -446,11 +449,17 @@ public class BasicNodeSnapper implements NodeSnapper {
             }
         }
 
-        if (newY > adjustedY && !checkJump(obx, mbx, obz, mbz, aox, adjustedY, aoz, newY)) {
-            return Float.NaN;
+        if (newY > adjustedY) {
+            if (checkJump(obx, mbx, obz, mbz, aox, adjustedY, aoz, newY)) {
+                return Float.NaN;
+            }
+
+            if (!highestIsIntermediate) {
+                return (float) (newY - Math.floor(newY));
+            }
         }
 
-        double finalY = checkFall(obx, mbx, obz, mbz, oby, aox, y, aoz);
+        double finalY = checkFall(obx, mbx, obz, mbz, oby, aox, adjustedY, aoz);
         if (Double.isNaN(finalY)) {
             return Float.NaN;
         }
@@ -475,19 +484,19 @@ public class BasicNodeSnapper implements NodeSnapper {
                     }
 
                     if (solid.isFull()) {
-                        return false;
+                        return true;
                     }
 
                     Bounds3D closest = solid.closestCollision(bx, by, bz, aox, aoy, aoz, adjustedWidth,
                             adjustedHeight, adjustedWidth, Direction.UP, jumpHeight);
                     if (closest != null && by + closest.originY() - targetHeight < height) {
-                        return false;
+                        return true;
                     }
                 }
             }
         }
 
-        return true;
+        return false;
     }
 
     private double checkFall(int obx, int mbx, int obz, int mbz, int oby, double aox, double aoy,
@@ -555,7 +564,7 @@ public class BasicNodeSnapper implements NodeSnapper {
     }
 
     private long hitSolid(int bx, int by, int bz, int i, double aox, double aoy, double aoz, double alx,
-            double aly, double alz, double dx, double dy, double dz) {
+            double aly, double alz, double dx, double dz) {
         Solid solid = space.solidAt(bx, by, bz);
 
         if (solid.isEmpty() || (i == 0 && solid.isFull())) {
@@ -566,7 +575,7 @@ public class BasicNodeSnapper implements NodeSnapper {
             return Solid.result(0, 1);
         }
 
-        return solid.minMaxCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, dy, dz);
+        return solid.minMaxCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, 0, dz);
     }
 
     private static int computeOffset(double d, double oc, double mc) {
