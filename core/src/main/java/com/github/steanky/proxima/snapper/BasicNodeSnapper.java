@@ -291,57 +291,34 @@ public class BasicNodeSnapper implements NodeSnapper {
             }
         }
 
-        boolean full = newY == Math.rint(newY);
+        int oby = (int)Math.floor(newY);
+        boolean full = newY == oby;
+
         if (full && !walk) {
             return NodeSnapper.encode(newY, false, 0);
         }
 
-        double adjustedNewY = newY + epsilon;
-        int newBlockY = (int)Math.floor(newY);
+        int obx = nx - halfBlockWidth;
+        int mbx = nx + halfBlockWidth;
 
-        //search below us, possibly including the block we're in if it's partial
-        for (int i = full ? 0 : -1; i < fallSearchHeight; i++) {
-            int y = newBlockY - (i + 1);
+        int obz = nz - halfBlockWidth;
+        int mbz = nz + halfBlockWidth;
 
-            double nax = ax + dx;
-            double naz = az + dz;
 
-            int sx = nx - halfBlockWidth;
-            int ex = nx + halfBlockWidth;
+        double nax = ax + dx;
+        double naz = az + dz;
 
-            int sz = nz - halfBlockWidth;
-            int ez = nz + halfBlockWidth;
-
-            double highestY = checkDownwardLayer(sx, ex, sz, ez, y, i, nax, adjustedNewY, naz);
-
-            //only search 1 layer if flying, just so we adjust our offset if necessary
-            if (!walk) {
-                return NodeSnapper.encode(y + (Double.isFinite(highestY) ? highestY : 0), false,
-                        0);
-            }
-
-            //finite if we found a block
-            if (!Double.isFinite(highestY)) {
-                continue;
-            }
-
-            double ty = y + highestY;
-            double fall = exactY - ty;
-
-            if (fall <= fallTolerance) {
-                boolean intermediate = ty != newY && highestIsIntermediate;
-                return NodeSnapper.encode(ty, intermediate, intermediate ? (float) (newY - ty) : 0F);
-            }
+        double finalY = checkFall(obx, mbx, obz, mbz, oby, nax, newY, naz);
+        if (Double.isNaN(finalY)) {
+            return FAIL;
         }
 
-        return FAIL;
+        boolean intermediate = finalY != newY && highestIsIntermediate;
+        return NodeSnapper.encode(finalY, intermediate, intermediate ? (float) (newY - finalY) : 0F);
     }
 
     @Override
     public float checkInitial(double x, double y, double z, double tx, double ty, double tz) {
-        double dx = tx - x;
-        double dz = tz - z;
-
         double aox = x - halfWidth;
         double aoz = z - halfWidth;
 
@@ -355,13 +332,14 @@ public class BasicNodeSnapper implements NodeSnapper {
         int mbx = (int)Math.floor(amx);
         int mbz = (int)Math.floor(amz);
 
-        boolean zeroOffset = oby == y;
-
-        double adjustedY = zeroOffset && !walk ? y : checkFall(zeroOffset, obx, mbx, obz, mbz, oby, aox, y, aoz);
+        double adjustedY = checkFall(obx, mbx, obz, mbz, oby, aox, y, aoz);
         if (Double.isNaN(adjustedY)) {
             //invalid start location
             return Float.NaN;
         }
+
+        double dx = tx - x;
+        double dz = tz - z;
 
         boolean cx = dx != 0;
         boolean cz = dz != 0;
@@ -403,8 +381,8 @@ public class BasicNodeSnapper implements NodeSnapper {
                     int bx = xo + j * sdx;
 
                     for (int bz = sz; bz <= ez; bz++) {
-                        long res = hitSolid(bx, by, bz, j, aox, adjustedY, aoz, adjustedWidth, adjustedHeight, adjustedWidth,
-                                dx, 0, dz);
+                        long res = hitSolid(bx, by, bz, j, aox, adjustedY, aoz, adjustedWidth, adjustedHeight,
+                                adjustedWidth, dx, 0, dz);
                         float low = Solid.lowest(res);
                         float high = Solid.highest(res);
 
@@ -429,8 +407,8 @@ public class BasicNodeSnapper implements NodeSnapper {
                     int bz = zo + j * sdz;
 
                     for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
-                        long res = hitSolid(bx, by, bz, j, aox, adjustedY, aoz, adjustedWidth, adjustedHeight, adjustedWidth,
-                                dx, 0, dz);
+                        long res = hitSolid(bx, by, bz, j, aox, adjustedY, aoz, adjustedWidth, adjustedHeight,
+                                adjustedWidth, dx, 0, dz);
                         float low = Solid.lowest(res);
                         float high = Solid.highest(res);
 
@@ -468,13 +446,16 @@ public class BasicNodeSnapper implements NodeSnapper {
             }
         }
 
-        if (newY > adjustedY) {
-            int jumpSearch = (int) Math.ceil(newY - adjustedY);
-
-
+        if (newY > adjustedY && !checkJump(obx, mbx, obz, mbz, aox, adjustedY, aoz, newY)) {
+            return Float.NaN;
         }
 
-        return 0F;
+        double finalY = checkFall(obx, mbx, obz, mbz, oby, aox, y, aoz);
+        if (Double.isNaN(finalY)) {
+            return Float.NaN;
+        }
+
+        return (float) (finalY - Math.floor(finalY));
     }
 
     private boolean checkJump(int obx, int mbx, int obz, int mbz, double aox, double aoy, double aoz,
@@ -499,7 +480,6 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                     Bounds3D closest = solid.closestCollision(bx, by, bz, aox, aoy, aoz, adjustedWidth,
                             adjustedHeight, adjustedWidth, Direction.UP, jumpHeight);
-
                     if (closest != null && by + closest.originY() - targetHeight < height) {
                         return false;
                     }
@@ -510,8 +490,13 @@ public class BasicNodeSnapper implements NodeSnapper {
         return true;
     }
 
-    private double checkFall(boolean full, int obx, int mbx, int obz, int mbz, int oby, double aox, double aoy,
+    private double checkFall(int obx, int mbx, int obz, int mbz, int oby, double aox, double aoy,
             double aoz) {
+        boolean full = oby == aoy;
+        if (full && !walk) {
+            return aoy;
+        }
+
         for (int i = full ? 0 : -1; i < fallSearchHeight; i++) {
             int by = oby - (i + 1);
 
