@@ -4,13 +4,10 @@ import com.github.steanky.proxima.Direction;
 import com.github.steanky.proxima.NodeHandler;
 import com.github.steanky.proxima.PathLimiter;
 import com.github.steanky.proxima.node.Node;
-import com.github.steanky.proxima.node.NodeQueue;
 import com.github.steanky.proxima.snapper.NodeSnapper;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
 
 public class WalkExplorer extends DirectionalExplorer {
     private static final Direction[] DIRECTIONS = new Direction[] {
@@ -36,11 +33,11 @@ public class WalkExplorer extends DirectionalExplorer {
         int ny = currentNode.y;
         int nz = currentNode.z;
 
-        long value = snapper.snap(direction, nx, ny, nz, currentNode.yOffset);
+        long value = snapper.snap(direction, nx, ny, nz, currentNode.blockOffset);
         if (value != NodeSnapper.FAIL) {
-            int height = NodeSnapper.height(value);
-            float offset = NodeSnapper.offset(value);
-            boolean intermediate = NodeSnapper.intermediateJump(value);
+            int height = NodeSnapper.blockHeight(value);
+            float blockOffset = NodeSnapper.blockOffset(value);
+            float jumpOffset = NodeSnapper.jumpOffset(value);
 
             int tx = nx + direction.x;
             int tz = nz + direction.z;
@@ -55,7 +52,7 @@ public class WalkExplorer extends DirectionalExplorer {
                 neighborNode = graph.get(tx, height, tz);
             }
 
-            handler.handle(currentNode, neighborNode, tx, height, tz, offset);
+            handler.handle(currentNode, neighborNode, tx, height, tz, blockOffset, jumpOffset);
         }
     }
 }

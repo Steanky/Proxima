@@ -137,7 +137,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                 }
             }
 
-            return NodeSnapper.encode(nodeY + 1, false);
+            return NodeSnapper.encode(nodeY + 1, false, 0);
         }
 
         for (int i = nodeOffset == 0 ? 0 : -1; i < 1; i++) {
@@ -161,7 +161,7 @@ public class BasicNodeSnapper implements NodeSnapper {
             }
         }
 
-        return NodeSnapper.encode(nodeY - 1, false);
+        return NodeSnapper.encode(nodeY - 1, false, 0);
     }
 
     @Override
@@ -275,104 +275,62 @@ public class BasicNodeSnapper implements NodeSnapper {
 
         //jumping is necessary, so we need to check above us
         if (newY > exactY) {
-            //only search as high as we need to in order to reach the target elevation
-            int jumpSearch = (int) Math.ceil(newY - exactY);
+            int obx = nodeX - halfBlockWidth;
+            int mbx = nodeX + halfBlockWidth;
 
-            double exactHeight = height + nodeOffset;
-            int ceilHeight = (int)Math.ceil(exactHeight);
-            int offset = ceilHeight + nodeY;
+            int obz = nodeZ - halfBlockWidth;
+            int mbz = nodeZ + halfBlockWidth;
 
-            boolean fullHeight = exactHeight == ceilHeight;
+            if (!checkJump(obx, mbx, obz, mbz, ax, exactY, az, newY)) {
+                return FAIL;
+            }
 
-            //check for blocks above the agent, possibly including the block intersected by the agent's head
-            for (int i = fullHeight ? 0 : -1; i < jumpSearch; i++) {
-                int y = i + offset;
-
-                for (int dex = -halfBlockWidth; dex <= halfBlockWidth; dex++) {
-                    for (int dez = -halfBlockWidth; dez <= halfBlockWidth; dez++) {
-                        int x = nodeX + dex;
-                        int z = nodeZ + dez;
-
-                        Solid solid = space.solidAt(x, y, z);
-
-                        //no collision with empty solids
-                        if (solid.isEmpty() || (i == -1 && solid.isFull())) {
-                            continue;
-                        }
-
-                        //any full solids encountered will block our jump
-                        if (solid.isFull()) {
-                            return FAIL;
-                        }
-
-                        Bounds3D closest = solid.closestCollision(x, y, z, ax, exactY, az, adjustedWidth,
-                                adjustedHeight, adjustedWidth, Direction.UP, jumpHeight);
-
-                        if (closest != null && y + closest.originY() - newY < height) {
-                            return FAIL;
-                        }
-                    }
-                }
+            if (!highestIsIntermediate) {
+                //if non-intermediate, we don't have to check below us to determine our actual height
+                return NodeSnapper.encode(newY, false, 0);
             }
         }
 
         boolean full = newY == Math.rint(newY);
+        if (full && !walk) {
+            return NodeSnapper.encode(newY, false, 0);
+        }
+
         double adjustedNewY = newY + epsilon;
+        int newBlockY = (int)Math.floor(newY);
 
         //search below us, possibly including the block we're in if it's partial
         for (int i = full ? 0 : -1; i < fallSearchHeight; i++) {
-            int y = ((int)Math.floor(newY)) - (i + 1);
-
-            double highestY = Double.NEGATIVE_INFINITY;
+            int y = newBlockY - (i + 1);
 
             double nax = ax + dx;
             double naz = az + dz;
 
-            outer:
-            for (int dex = -halfBlockWidth; dex <= halfBlockWidth; dex++) {
-                for (int dez = -halfBlockWidth; dez <= halfBlockWidth; dez++) {
-                    int x = nx + dex;
-                    int z = nz + dez;
+            int sx = nx - halfBlockWidth;
+            int ex = nx + halfBlockWidth;
 
-                    Solid solid = space.solidAt(x, y, z);
-                    if (solid.isEmpty() || (i == -1 && solid.isFull())) {
-                        continue;
-                    }
+            int sz = nz - halfBlockWidth;
+            int ez = nz + halfBlockWidth;
 
-                    //we automatically know this is the highest solid
-                    if (solid.isFull()) {
-                        highestY = 1;
-                        break outer;
-                    }
-
-                    Bounds3D bounds = solid.closestCollision(x, y, z, nax, adjustedNewY, naz, adjustedWidth,
-                            adjustedHeight, adjustedWidth, Direction.DOWN, fallSearchHeight);
-
-                    if (bounds != null) {
-                        double height = bounds.maxY();
-                        if (height > highestY) {
-                            highestY = height;
-                            if (height == 1) {
-                                break outer;
-                            }
-                        }
-                    }
-                }
-            }
+            double highestY = checkDownwardLayer(sx, ex, sz, ez, y, i, nax, adjustedNewY, naz);
 
             //only search 1 layer if flying, just so we adjust our offset if necessary
             if (!walk) {
-                return NodeSnapper.encode(y + (Double.isFinite(highestY) ? highestY : 0), false);
+                return NodeSnapper.encode(y + (Double.isFinite(highestY) ? highestY : 0), false,
+                        0);
             }
 
             //finite if we found a block
-            if (Double.isFinite(highestY)) {
-                double ty = y + highestY;
-                double fall = exactY - ty;
+            if (!Double.isFinite(highestY)) {
+                continue;
+            }
 
-                if (fall <= fallTolerance) {
-                    return NodeSnapper.encode(ty, ty != newY && highestIsIntermediate);
-                }
+            double ty = y + highestY;
+            double fall = exactY - ty;
+
+            if (fall <= fallTolerance) {
+                boolean intermediate = ty != newY && highestIsIntermediate;
+                return NodeSnapper.encode(ty, intermediate, intermediate ? (float) (newY - ty) : 0F);
             }
         }
 
@@ -382,139 +340,248 @@ public class BasicNodeSnapper implements NodeSnapper {
     @Override
     public float checkInitial(double x, double y, double z, double tx, double ty, double tz) {
         double dx = tx - x;
-        double dy = ty - y;
         double dz = tz - z;
 
         double aox = x - halfWidth;
         double aoz = z - halfWidth;
 
-        double alx = adjustedWidth;
-        double aly = adjustedHeight;
-        double alz = adjustedWidth;
+        double amx = aox + adjustedWidth;
+        double amz = aoz + adjustedWidth;
 
-        double amx = aox + alx;
-        double amy = y + aly;
-        double amz = aoz + alz;
+        int obx = (int)Math.floor(aox);
+        int oby = (int)Math.floor(y);
+        int obz = (int)Math.floor(aoz);
+
+        int mbx = (int)Math.floor(amx);
+        int mbz = (int)Math.floor(amz);
+
+        boolean zeroOffset = oby == y;
+
+        double adjustedY = zeroOffset && !walk ? y : checkFall(zeroOffset, obx, mbx, obz, mbz, oby, aox, y, aoz);
+        if (Double.isNaN(adjustedY)) {
+            //invalid start location
+            return Float.NaN;
+        }
 
         boolean cx = dx != 0;
-        boolean cy = dy != 0;
         boolean cz = dz != 0;
 
         int sx = (int) Math.floor(aox + Math.min(0, dx));
         int ex = (int) Math.floor(amx + Math.abs(dx));
 
-        int sy = (int) Math.floor(y + Math.min(0, dy));
-        int ey = (int) Math.floor(amy + Math.abs(dy));
-
         int sz = (int) Math.floor(aoz + Math.min(0, dz));
         int ez = (int) Math.floor(amz + Math.abs(dz));
 
-        boolean limitMinX;
-        boolean limitMaxX;
+        int adjustedBlockY = (int)Math.floor(adjustedY);
 
-        if (cx) {
-            if (dx < 0) {
-                limitMinX = true;
-                limitMaxX = false;
-            }
-            else {
-                limitMinX = false;
-                limitMaxX = true;
-            }
+        int actualSearchHeight = adjustedBlockY == adjustedY ? searchHeight :
+                ((int)Math.ceil(adjustedBlockY + height + jumpHeight) - adjustedBlockY) + 1;
 
-            boolean full = isFull(dx, x, amx);
-            int o = computeOffset(dx, x, amx);
-            int sdx = (int)Math.signum(dx);
+        boolean limitMinX = cx && dx < 0;
+        boolean limitMaxX = cx && dx > 0;
 
-            for (int i = full ? 1 : 0; i < (sx == ex ? 1 : 2); i++) {
-                int bx = o + i * sdx;
+        boolean xf = isFull(dx, x, amx);
+        int xo = computeOffset(dx, x, amx);
+        int sdx = (int)Math.signum(dx);
 
-                for (int by = sy; by <= ey; by++) {
+        boolean zf = isFull(dz, z, amz);
+        int zo = computeOffset(dz, z, amz);
+        int sdz = (int)Math.signum(dz);
+
+        double newY = Double.NaN;
+        double lastTargetY = adjustedY;
+
+        for (int i = 0; i < actualSearchHeight; i++) {
+            int by = adjustedBlockY + i;
+
+            float lowest = Float.POSITIVE_INFINITY;
+            float highest = Float.NEGATIVE_INFINITY;
+
+            if (cx) {
+                outer:
+                for (int j = xf ? 1 : 0; j < (sx == ex ? 1 : 2); j++) {
+                    int bx = xo + j * sdx;
+
                     for (int bz = sz; bz <= ez; bz++) {
-                        if (hitsSolid(bx, by, bz, i, aox, y, aoz, alx, aly, alz, dx, dy, dz)) {
-                            return Float.NaN;
+                        long res = hitSolid(bx, by, bz, j, aox, adjustedY, aoz, adjustedWidth, adjustedHeight, adjustedWidth,
+                                dx, 0, dz);
+                        float low = Solid.lowest(res);
+                        float high = Solid.highest(res);
+
+                        if (low < lowest) {
+                            lowest = low;
+                        }
+
+                        if (high > highest) {
+                            highest = high;
+                        }
+
+                        if (low == 0 && high == 1) {
+                            break outer;
                         }
                     }
                 }
             }
-        }
-        else {
-            limitMinX = false;
-            limitMaxX = false;
-        }
-
-        if (cz) {
-            boolean full = isFull(dz, z, amz);
-            int o = computeOffset(dz, z, amz);
-            int sdz = (int)Math.signum(dz);
-
-            for (int i = full ? 1 : 0; i < (sz == ez ? 1 : 2); i++) {
-                int bz = o + i * sdz;
-
-                for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
-                    for (int by = sy; by <= ey; by++) {
-                        if (hitsSolid(bx, by, bz, i, aox, y, aoz, alx, aly, alz, dx, dy, dz)) {
-                            return Float.NaN;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (cy) {
-            boolean full = isFull(dy, y, amy);
-            int o = computeOffset(dy, y, amy);
-            int sdy = (int)Math.signum(dy);
-
-            boolean limitMinZ;
-            boolean limitMaxZ;
 
             if (cz) {
-                if (dz < 0) {
-                    limitMinZ = true;
-                    limitMaxZ = false;
-                }
-                else {
-                    limitMinZ = false;
-                    limitMaxZ = true;
-                }
-            }
-            else {
-                limitMinZ = false;
-                limitMaxZ = false;
-            }
+                outer:
+                for (int j = zf ? 1 : 0; j < (sz == ez ? 1 : 2); j++) {
+                    int bz = zo + j * sdz;
 
-            for (int i = full ? 1 : 0; i < (sy == ey ? 1 : 2); i++) {
-                int by = o + i * sdy;
+                    for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
+                        long res = hitSolid(bx, by, bz, j, aox, adjustedY, aoz, adjustedWidth, adjustedHeight, adjustedWidth,
+                                dx, 0, dz);
+                        float low = Solid.lowest(res);
+                        float high = Solid.highest(res);
 
-                for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
-                    for (int bz = limitMinZ ? sz + 1 : sz; bz <= (limitMaxZ ? ez - 1 : ez); bz++) {
-                        if (hitsSolid(bx, by, bz, i, aox, y, aoz, alx, aly, alz, dx, dy, dz)) {
-                            return Float.NaN;
+                        if (low < lowest) {
+                            lowest = low;
                         }
+
+                        if (high > highest) {
+                            highest = high;
+                        }
+
+                        if (low == 0 && high == 1) {
+                            break outer;
+                        }
+                    }
+                }
+            }
+
+            if (Float.isFinite(highest)) {
+                double ceiling = adjustedY + lowest;
+
+                if (ceiling - lastTargetY > adjustedHeight) {
+                    newY = lastTargetY;
+                    break;
+                }
+
+                lastTargetY = adjustedY + highest;
+
+                if (lastTargetY - adjustedY > jumpHeight) {
+                    return Float.NaN;
+                }
+            } else if ((adjustedY + 1) - lastTargetY > adjustedHeight) {
+                newY = lastTargetY;
+                break;
+            }
+        }
+
+        if (newY > adjustedY) {
+            int jumpSearch = (int) Math.ceil(newY - adjustedY);
+
+
+        }
+
+        return 0F;
+    }
+
+    private boolean checkJump(int obx, int mbx, int obz, int mbz, double aox, double aoy, double aoz,
+            double targetHeight) {
+        double exactHeight = aoy + height;
+        int ceilHeight = (int)Math.ceil(exactHeight);
+        int jumpSearch = (int)Math.ceil(targetHeight - aoy);
+
+        for (int i = exactHeight == ceilHeight ? 0 : -1; i < jumpSearch; i++) {
+            int by = ceilHeight + i;
+
+            for (int bx = obx; bx <= mbx; bx++) {
+                for (int bz = obz; bz <= mbz; bz++) {
+                    Solid solid = space.solidAt(bx, by, bz);
+                    if (solid.isEmpty() || (i == -1 && solid.isFull())) {
+                        continue;
+                    }
+
+                    if (solid.isFull()) {
+                        return false;
+                    }
+
+                    Bounds3D closest = solid.closestCollision(bx, by, bz, aox, aoy, aoz, adjustedWidth,
+                            adjustedHeight, adjustedWidth, Direction.UP, jumpHeight);
+
+                    if (closest != null && by + closest.originY() - targetHeight < height) {
+                        return false;
                     }
                 }
             }
         }
 
-        Solid solid = space.solidAt((int) Math.floor(tx), (int) Math.floor(ty), (int) Math.floor(tz));
-        if (solid.isEmpty() || solid.isFull()) {
-            return 0;
-        }
-        else {
-            return (float) solid.bounds().maxY();
-        }
+        return true;
     }
 
-    private boolean hitsSolid(int bx, int by, int bz, int i, double aox, double aoy, double aoz, double alx,
+    private double checkFall(boolean full, int obx, int mbx, int obz, int mbz, int oby, double aox, double aoy,
+            double aoz) {
+        for (int i = full ? 0 : -1; i < fallSearchHeight; i++) {
+            int by = oby - (i + 1);
+
+            double highestY = checkDownwardLayer(obx, mbx, obz, mbz, by, i, aox, aoy, aoz);
+            if (!walk) {
+                return Double.isFinite(highestY) ? by + highestY : by;
+            }
+
+            if (!Double.isFinite(highestY)) {
+                continue;
+            }
+
+            double target = by + highestY;
+            double fall = aoy - target;
+            if (fall > fallTolerance) {
+                return Double.NaN;
+            }
+
+            return target;
+        }
+
+        return Double.NaN;
+    }
+
+    private double checkDownwardLayer(int startX, int endX, int startZ, int endZ, int by, int i,
+            double ox, double oy, double oz) {
+        double highestY = Double.NEGATIVE_INFINITY;
+
+        for (int bx = startX; bx <= endX; bx++) {
+            for (int bz = startZ; bz <= endZ; bz++) {
+                Solid solid = space.solidAt(bx, by, bz);
+                if (solid.isEmpty() || (i == -1 && solid.isFull())) {
+                    continue;
+                }
+
+                if (solid.isFull()) {
+                    return 1;
+                }
+
+                Bounds3D bounds = solid.closestCollision(bx, by, bz, ox, oy, oz, adjustedWidth, adjustedHeight,
+                        adjustedWidth, Direction.DOWN, fallSearchHeight);
+                if (bounds != null) {
+                    double height = bounds.maxY();
+                    if (height == 1) {
+                        return 1;
+                    }
+
+                    if (height > highestY) {
+                        highestY = height;
+                    }
+                }
+            }
+        }
+
+        return highestY;
+    }
+
+    private long hitSolid(int bx, int by, int bz, int i, double aox, double aoy, double aoz, double alx,
             double aly, double alz, double dx, double dy, double dz) {
         Solid solid = space.solidAt(bx, by, bz);
 
         if (solid.isEmpty() || (i == 0 && solid.isFull())) {
-            return false;
+            return Solid.NO_COLLISION;
         }
 
-        return solid.hasCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, dy, dz);
+        if (solid.isFull()) {
+            return Solid.result(0, 1);
+        }
+
+        return solid.minMaxCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, dy, dz);
     }
 
     private static int computeOffset(double d, double oc, double mc) {

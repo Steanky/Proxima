@@ -15,14 +15,14 @@ public final class Node implements Comparable<Node> {
 
     public float g;
     public final float h;
-    public final float yOffset;
-    public final boolean jumpRequired;
+    public final float blockOffset;
+    public final float jumpOffset;
 
     public Node parent;
 
     int heapIndex;
 
-    public Node(int x, int y, int z, float g, float h, @Nullable Node parent, float yOffset, boolean jumpRequired) {
+    public Node(int x, int y, int z, float g, float h, @Nullable Node parent, float blockOffset, float jumpOffset) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -30,16 +30,16 @@ public final class Node implements Comparable<Node> {
         this.g = g;
         this.h = h;
 
-        this.yOffset = yOffset;
+        this.blockOffset = blockOffset;
 
         this.parent = parent;
         this.heapIndex = -1;
 
-        this.jumpRequired = jumpRequired;
+        this.jumpOffset = jumpOffset;
     }
 
-    public Node(int x, int y, int z, float g, float h, @Nullable Node parent, float yOffset) {
-        this(x, y, z, g, h, parent, yOffset, false);
+    public Node(int x, int y, int z, float g, float h, @Nullable Node parent, float blockOffset) {
+        this(x, y, z, g, h, parent, blockOffset, 0F);
     }
 
     public @NotNull @Unmodifiable List<Node> reverseToNavigationList() {
@@ -96,7 +96,7 @@ public final class Node implements Comparable<Node> {
 
     @Override
     public String toString() {
-        return "Node{x=" + x + ", y=" + y + ", z=" + z + ", g=" + g + ", h=" + h + ", yOffset=" + yOffset +
-                ", postJump=" + jumpRequired + ", heapIndex=" + heapIndex + "}";
+        return "Node{x=" + x + ", y=" + y + ", z=" + z + ", g=" + g + ", h=" + h + ", yOffset=" + blockOffset +
+                ", jumpOffset=" + jumpOffset + ", heapIndex=" + heapIndex + "}";
     }
 }

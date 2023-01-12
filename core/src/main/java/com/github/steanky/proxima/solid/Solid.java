@@ -18,8 +18,8 @@ import java.util.List;
  * This class provides several default methods for performing various kinds of collision checking. These are, among
  * other things, used during pathfinding to determine navigability of candidate nodes. By default, these methods
  * delegate to those in {@link Util}, which relies on the {@link Solid#children()} method to iterate the individual
- * bounding boxes. Implementations may override these in order to use native collision checking functionality, if
- * appropriate.
+ * bounding boxes. Implementations may override these in order to use platform-native collision checking functionality,
+ * if appropriate.
  */
 public interface Solid {
     /**
@@ -101,6 +101,15 @@ public interface Solid {
     default boolean hasCollision(int x, int y, int z, double ox, double oy, double oz,
             double lx, double ly, double lz, double dx, double dy, double dz) {
         return Util.hasCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, dx, dy, dz);
+    }
+
+    default long minMaxCollision(int x, int y, int z, double ox, double oy, double oz,
+            double lx, double ly, double lz, double dx, double dy, double dz) {
+        return Util.minMaxCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, dx, dy, dz);
+    }
+
+    static @NotNull Solid of() {
+        return EMPTY;
     }
 
     static @NotNull Solid of(@NotNull Bounds3D bounds) {

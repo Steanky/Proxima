@@ -59,7 +59,7 @@ class BasicNodeSnapperTest {
 
     private static BasicNodeSnapper make(double width, double height, double fallTolerance, double jumpHeight,
             double epsilon, SolidPos... solids) {
-        Bounds3I bounds = Bounds3I.immutable(-10, -10, -10, 20, 20, 20);
+        Bounds3I bounds = Bounds3I.immutable(-100, -100, -100, 200, 200, 200);
         HashSpace space = new HashSpace(bounds.originX(), bounds.originY(), bounds.originZ(), bounds.lengthX(),
                 bounds.lengthY(), bounds.lengthZ());
 
@@ -72,19 +72,22 @@ class BasicNodeSnapperTest {
 
     private static void assertSnap(BasicNodeSnapper snapper, Direction direction, Node node, NodeHandler handler,
             boolean isIntermediateJump) {
-        long val = snapper.snap(direction, node.x, node.y, node.z, node.yOffset);
+        long val = snapper.snap(direction, node.x, node.y, node.z, node.blockOffset);
         if (val != NodeSnapper.FAIL) {
-            int y = NodeSnapper.height(val);
-            float offset = NodeSnapper.offset(val);
-            boolean intermediate = NodeSnapper.intermediateJump(val);
+            int blockHeight = NodeSnapper.blockHeight(val);
+            float blockOffset = NodeSnapper.blockOffset(val);
+            float jumpOffset = NodeSnapper.jumpOffset(val);
+            boolean intermediateJump = NodeSnapper.intermediateJump(val);
+
             if (isIntermediateJump) {
-                assertTrue(intermediate,  "expected an intermediate jump");
+                assertTrue(intermediateJump,  "expected an intermediate jump");
             }
             else {
-                assertFalse(intermediate, "expected a non-intermediate jump");
+                assertFalse(intermediateJump, "expected a non-intermediate jump");
             }
 
-            handler.handle(node, null, node.x + direction.x, y, node.z + direction.z, offset);
+            handler.handle(node, null, node.x + direction.x, blockHeight, node.z + direction.z, blockOffset,
+                    jumpOffset);
         }
         else {
             fail("snapper returned FAIL");
@@ -92,12 +95,12 @@ class BasicNodeSnapperTest {
     }
 
     private static String decodeToString(long snapResult) {
-        return "height=" + NodeSnapper.height(snapResult) + ", offset=" + NodeSnapper.offset(snapResult);
+        return "height=" + NodeSnapper.height(snapResult) + ", offset=" + NodeSnapper.jumpOffset(snapResult);
     }
 
     private static void assertNoSnap(BasicNodeSnapper snapper, Direction direction, Node node) {
         long result;
-        assertEquals(NodeSnapper.FAIL, result = snapper.snap(direction, node.x, node.y, node.z, node.yOffset),
+        assertEquals(NodeSnapper.FAIL, result = snapper.snap(direction, node.x, node.y, node.z, node.blockOffset),
                 "node did not fail: " + decodeToString(result));
     }
 
@@ -105,11 +108,11 @@ class BasicNodeSnapperTest {
             int ex, int ey, int ez, double eOffset, boolean intermediate, SolidPos... pos) {
         BasicNodeSnapper snapper = make(width, height, 1, 1, EPSILON, pos);
 
-        assertSnap(snapper, direction, node(x, y, z, yo), (node, other, x1, y1, z1, yOffset) -> {
+        assertSnap(snapper, direction, node(x, y, z, yo), (node, other, x1, y1, z1, blockOffset, jumpOffset) -> {
             assertEquals(ex, x1, "x-coord");
             assertEquals(ey, y1, "y-coord");
             assertEquals(ez, z1, "z-coord");
-            assertEquals(eOffset, yOffset, "yOffset");
+            assertEquals(eOffset, blockOffset, "blockOffset");
         }, intermediate);
     }
 
@@ -949,7 +952,21 @@ class BasicNodeSnapperTest {
 
     @Nested
     class CheckInitial {
-        private SolidPos[] noCollisionBelow(int x, int y, int z) {
+        public static final Solid SMALL_CENTRAL_SOLID = Solid.of(Bounds3D.immutable(0.45, 0, 0.45,
+                0.1, 1, 0.1));
+
+        public static final Solid SMALL_UPPER_LEFT_SOLID = Solid.of(Bounds3D.immutable(0, 0, 0.7,
+                0.1, 1, 0.1));
+
+        public static void checkInitial(double x, double y, double z, double tx, double ty, double tz, double width,
+                double height, float eHeight,
+                SolidPos... solids) {
+            BasicNodeSnapper snapper = make(width, height, 0, 0, EPSILON, solids);
+            float res = snapper.checkInitial(x, y, z, tx, ty, tz);
+            assertEquals(eHeight, res, "unexpected target height");
+        }
+
+        public static SolidPos[] noCollisionBelow(int x, int y, int z) {
             return new SolidPos[] {
                     full(x, y, z),
                     full(x + 1, y, z),
@@ -959,13 +976,36 @@ class BasicNodeSnapperTest {
             };
         }
 
+        public static SolidPos[] smallCentralSolid(int x, int y, int z) {
+            return new SolidPos[] {
+                    full(x, y, z),
+                    solid(SMALL_CENTRAL_SOLID, x, y + 1, z)
+            };
+        }
+
+        public static SolidPos[] smallUpperLeftSolid(int x, int y, int z) {
+            return new SolidPos[] {
+                    full(x, y, z),
+                    solid(SMALL_UPPER_LEFT_SOLID, x, y + 1, z)
+            };
+        }
+
         @Test
         void smallBoundsNoCollision() {
-            BasicNodeSnapper snapper = make(0.3, 2, 0, 0, EPSILON,
+            checkInitial(0.6, 1, 0.6, 0.5, 1, 0.5, 0.3, 2, 0,
                     noCollisionBelow(0, 0, 0));
+        }
 
-            float res = snapper.checkInitial(0.6, 1, 0.6, 0.5, 1, 0.5);
-            assertEquals(0, res);
+        @Test
+        void sameBoundsDiagonalCollision() {
+            checkInitial(0.2, 1, 0.2, 0.5, 1, 0.5, 0.2, 2, Float.NaN,
+                    smallCentralSolid(0, 0, 0));
+        }
+
+        @Test
+        void sameBoundsMissDiagonal() {
+            checkInitial(0.2, 1, 0.2, 0.5, 1, 0.5, 0.2, 2, 0,
+                    smallUpperLeftSolid(0, 0, 0));
         }
     }
 }

@@ -4,13 +4,10 @@ import com.github.steanky.proxima.Direction;
 import com.github.steanky.proxima.NodeHandler;
 import com.github.steanky.proxima.PathLimiter;
 import com.github.steanky.proxima.node.Node;
-import com.github.steanky.proxima.node.NodeQueue;
 import com.github.steanky.proxima.snapper.NodeSnapper;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Objects;
 
 public class FlightExplorer extends DirectionalExplorer {
     private static final Direction[] DIRECTIONS = new Direction[] {
@@ -38,10 +35,10 @@ public class FlightExplorer extends DirectionalExplorer {
         int ty = currentNode.y + direction.y;
         int tz = currentNode.z + direction.z;
 
-        long result = snapper.snap(direction, currentNode.x, currentNode.y, currentNode.z, currentNode.yOffset);
+        long result = snapper.snap(direction, currentNode.x, currentNode.y, currentNode.z, currentNode.blockOffset);
         if (result != NodeSnapper.FAIL) {
-            float offset = NodeSnapper.offset(result);
-            handler.handle(currentNode, neighborNode, tx, ty, tz, offset);
+            float offset = NodeSnapper.blockOffset(result);
+            handler.handle(currentNode, neighborNode, tx, ty, tz, offset, 0);
         }
     }
 }
