@@ -187,7 +187,7 @@ public class BasicNodeSnapper implements NodeSnapper {
         double lastTargetY = exactY;
 
         //the actual number of blocks we need to check vertically may vary depending on the nodeOffset
-        int actualSearchHeight = computeSearchHeight(nodeY, exactY);
+        int actualSearchHeight = computeJumpSearchHeight(nodeY, exactY);
 
         double ax = nodeX + 0.5 - halfWidth;
         double az = nodeZ + 0.5 - halfWidth;
@@ -351,7 +351,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
         int adjustedBlockY = (int)Math.floor(adjustedY);
 
-        int actualSearchHeight = computeSearchHeight(adjustedBlockY, adjustedY);
+        int actualSearchHeight = computeJumpSearchHeight(adjustedBlockY, adjustedY);
 
         boolean limitMinX = cx && dx < 0;
         boolean limitMaxX = cx && dx > 0;
@@ -381,7 +381,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     int bx = xo + j * sdx;
 
                     for (int bz = sz; bz <= ez; bz++) {
-                        long res = diagonalCollision(bx, by, bz, j, aox, adjustedY, aoz, adjustedWidth, adjustedHeight,
+                        long res = diagonalMinMax(bx, by, bz, j, aox, adjustedY, aoz, adjustedWidth, adjustedHeight,
                                 adjustedWidth, dx, dz);
                         float low = Solid.lowest(res);
                         float high = Solid.highest(res);
@@ -408,7 +408,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     int bz = zo + j * sdz;
 
                     for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
-                        long res = diagonalCollision(bx, by, bz, j, aox, adjustedY, aoz, adjustedWidth, adjustedHeight,
+                        long res = diagonalMinMax(bx, by, bz, j, aox, adjustedY, aoz, adjustedWidth, adjustedHeight,
                                 adjustedWidth, dx, dz);
                         float low = Solid.lowest(res);
                         float high = Solid.highest(res);
@@ -467,8 +467,63 @@ public class BasicNodeSnapper implements NodeSnapper {
     }
 
     @Override
-    public boolean checkDiagonal(int x, int y, int z, int tx, int ty, int tz) {
-        return false;
+    public boolean checkDiagonal(int x, int y, int z, int tx, int tz, float nodeOffset) {
+        int dx = tx - x;
+        int dz = tz - z;
+
+        double aox = x + 0.5 - halfWidth;
+        double aoz = z + 0.5 - halfWidth;
+
+        double amx = aox + adjustedWidth;
+        double amz = aoz + adjustedWidth;
+
+        int sx = (int) Math.floor(aox + Math.min(0, dx));
+        int ex = (int) Math.floor(amx + Math.abs(dx));
+
+        int sz = (int) Math.floor(aoz + Math.min(0, dz));
+        int ez = (int) Math.floor(amz + Math.abs(dz));
+
+        boolean xf = isFull(dx, x, amx);
+        int xo = computeOffset(dx, x, amx);
+        int sdx = (int)Math.signum(dx);
+
+        boolean zf = isFull(dz, z, amz);
+        int zo = computeOffset(dz, z, amz);
+        int sdz = (int)Math.signum(dz);
+
+        double adjustedY = y + nodeOffset;
+        int requiredHeight = ((int)Math.floor(adjustedY + height)) - y + 1;
+
+        boolean limitMinX = dx < 0;
+        boolean limitMaxX = dx > 0;
+
+        for (int i = 0; i < requiredHeight; i++) {
+            int by = y + i;
+
+            for (int j = xf ? 1 : 0; j < (sx == ex ? 1 : 2); j++) {
+                int bx = xo + j * sdx;
+
+                for (int bz = sz; bz <= ez; bz++) {
+                    if (hasDiagonal(bx, by, bz, j, aox, adjustedY, aoz, adjustedWidth, adjustedHeight,
+                            adjustedWidth, dx, dz)) {
+                        return false;
+                    }
+                }
+            }
+
+            for (int j = zf ? 1 : 0; j < (sz == ez ? 1 : 2); j++) {
+                int bz = zo + j * sdz;
+
+                for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
+                    if (hasDiagonal(bx, by, bz, j, aox, adjustedY, aoz, adjustedWidth, adjustedHeight,
+                            adjustedWidth, dx, dz)) {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
     }
 
     private boolean checkJump(int obx, int mbx, int obz, int mbz, double aox, double aoy, double aoz,
@@ -566,7 +621,7 @@ public class BasicNodeSnapper implements NodeSnapper {
         return highestY;
     }
 
-    private long diagonalCollision(int bx, int by, int bz, int i, double aox, double aoy, double aoz, double alx,
+    private long diagonalMinMax(int bx, int by, int bz, int i, double aox, double aoy, double aoz, double alx,
             double aly, double alz, double dx, double dz) {
         Solid solid = space.solidAt(bx, by, bz);
 
@@ -581,7 +636,22 @@ public class BasicNodeSnapper implements NodeSnapper {
         return solid.minMaxCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, 0, dz);
     }
 
-    private int computeSearchHeight(int blockY, double actualY) {
+    private boolean hasDiagonal(int bx, int by, int bz, int i, double aox, double aoy, double aoz, double alx,
+            double aly, double alz, double dx, double dz) {
+        Solid solid = space.solidAt(bx, by, bz);
+
+        if (solid.isEmpty() || (i == 0 && solid.isFull())) {
+            return false;
+        }
+
+        if (solid.isFull()) {
+            return true;
+        }
+
+        return solid.hasCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, 0, dz);
+    }
+
+    private int computeJumpSearchHeight(int blockY, double actualY) {
         return blockY == actualY ? searchHeight :
                 ((int)Math.ceil(actualY + height + jumpHeight) - blockY) + 1;
     }

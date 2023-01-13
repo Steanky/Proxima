@@ -39,8 +39,9 @@ class DiagonalProcessor implements NodeProcessor {
             int ny = next.y;
             int nz = next.z;
 
-            if (py == ny && px != nx && pz != nz && Vec3I.distanceSquared(px, py, pz, nx, ny, nz) == 2 && nodeSnapper
-                    .checkDiagonal(px, py, pz, nx, ny, nz)) {
+            if (py == ny && px != nx && pz != nz && previous.blockOffset == next.blockOffset &&
+                    previous.jumpOffset == next.jumpOffset && Vec3I.distanceSquared(px, py, pz, nx, ny, nz) == 2 &&
+                    nodeSnapper.checkDiagonal(px, py, pz, nx, nz, previous.blockOffset)) {
                 previous.parent = next;
                 current = next.parent;
                 previous = next;
