@@ -308,7 +308,7 @@ public class BasicNodeSnapper implements NodeSnapper {
     }
 
     @Override
-    public float checkInitial(double x, double y, double z, double tx, double ty, double tz) {
+    public float checkInitial(double x, double y, double z, int tx, int ty, int tz) {
         double aox = x - halfWidth;
         double aoz = z - halfWidth;
 
@@ -328,17 +328,20 @@ public class BasicNodeSnapper implements NodeSnapper {
             return Float.NaN;
         }
 
-        double dx = tx - x;
-        double dz = tz - z;
+        double dx = (tx + 0.5) - x;
+        double dz = (tz + 0.5) - z;
 
         boolean cx = dx != 0;
         boolean cz = dz != 0;
 
-        int sx = (int) Math.floor(aox + Math.min(0, dx));
-        int ex = (int) Math.floor(amx + Math.abs(dx));
+        double eox = aox + Math.min(0, dx);
+        double eoz = aoz + Math.min(0, dz);
 
-        int sz = (int) Math.floor(aoz + Math.min(0, dz));
-        int ez = (int) Math.floor(amz + Math.abs(dz));
+        int sx = (int) Math.floor(eox);
+        int ex = (int) Math.floor(eox + adjustedWidth + Math.abs(dx));
+
+        int sz = (int) Math.floor(eoz);
+        int ez = (int) Math.floor(eoz + adjustedWidth + Math.abs(dz));
 
         int adjustedBlockY = (int)Math.floor(adjustedY);
 
@@ -468,11 +471,14 @@ public class BasicNodeSnapper implements NodeSnapper {
         double amx = aox + adjustedWidth;
         double amz = aoz + adjustedWidth;
 
-        int sx = (int) Math.floor(aox + Math.min(0, dx));
-        int ex = (int) Math.floor(amx + Math.abs(dx));
+        double eox = aox + Math.min(0, dx);
+        double eoz = aoz + Math.min(0, dz);
 
-        int sz = (int) Math.floor(aoz + Math.min(0, dz));
-        int ez = (int) Math.floor(amz + Math.abs(dz));
+        int sx = (int) Math.floor(eox);
+        int ex = (int) Math.floor(eox + adjustedWidth + Math.abs(dx));
+
+        int sz = (int) Math.floor(eoz);
+        int ez = (int) Math.floor(eoz + adjustedWidth + Math.abs(dz));
 
         boolean xf = isFull(dx, x, amx);
         int xo = computeOffset(dx, x, amx);

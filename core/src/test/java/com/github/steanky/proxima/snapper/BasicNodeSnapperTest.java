@@ -7,6 +7,7 @@ import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.proxima.space.HashSpace;
 import com.github.steanky.vector.Bounds3D;
 import com.github.steanky.vector.Bounds3I;
+import com.github.steanky.vector.Vec3D;
 import com.github.steanky.vector.Vec3I;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -1213,7 +1214,7 @@ class BasicNodeSnapperTest {
 
     @Nested
     class CheckInitial {
-        public static void checkInitial(double x, double y, double z, double tx, double ty, double tz, double width,
+        public static void checkInitial(double x, double y, double z, int tx, int ty, int tz, double width,
                 double height, float eHeight,
                 SolidPos... solids) {
             BasicNodeSnapper snapper = make(width, height, 16, 0, EPSILON, solids);
@@ -1247,26 +1248,107 @@ class BasicNodeSnapperTest {
 
         @Test
         void smallBoundsNoCollision() {
-            checkInitial(0.6, 1, 0.6, 0.5, 1, 0.5, 0.3, 2, 0,
+            checkInitial(0.6, 1, 0.6, 0, 1, 0, 0.3, 2, 0,
                     noCollisionBelow(0, 0, 0));
         }
 
         @Test
         void sameBoundsDiagonalCollision() {
-            checkInitial(0.2, 1, 0.2, 0.5, 1, 0.5, 0.2, 2, Float.NaN,
+            checkInitial(0.2, 1, 0.2, 0, 1, 0, 0.2, 2, Float.NaN,
                     smallCentralSolid(0, 0, 0));
         }
 
         @Test
         void sameBoundsMissDiagonal() {
-            checkInitial(0.2, 1, 0.2, 0.5, 1, 0.5, 0.2, 2, 0,
+            checkInitial(0.2, 1, 0.2, 0, 1, 0, 0.2, 2, 0,
                     smallUpperLeftSolid(0, 0, 0));
         }
 
         @Test
         void sameBoundsFallCenterSolid() {
-            checkInitial(0.2, 10, 0.2, 0.5, 1, 0.5, 0.2, 2, Float.NaN,
+            checkInitial(0.2, 10, 0.2, 0, 1, 0, 0.2, 2, Float.NaN,
                     smallCentralSolid(0, 0, 0));
+        }
+    }
+
+    @Nested
+    class Ranges {
+        public static SolidPos[] fullBlockSqueeze(int x, int y, int z) {
+            return new SolidPos[] {
+                    full(x, y, z),
+                    full(x + 1, y, z),
+                    full(x - 1, y, z),
+                    full(x, y, z + 1),
+                    full(x, y, z - 1),
+                    full(x + 1, y + 1, z + 1),
+                    full(x - 1, y + 1, z + 1),
+                    full(x + 1, y + 1, z - 1),
+                    full(x - 1, y + 1, z - 1)
+            };
+        }
+
+        public interface Vec3DConsumer {
+            void consume(double x, double y, double z);
+        }
+
+        public static void genSubBlockPositions(int x, int y, int z, double width, double inc, Vec3DConsumer consumer) {
+            double hWidth = width / 2;
+
+            double startX = x + hWidth + EPSILON;
+            double startZ = z + hWidth + EPSILON;
+
+            double endX = (x + 1) - hWidth - EPSILON;
+            double endZ = (z + 1) - hWidth - EPSILON;
+
+            for (double sx = startX; sx <= endX; sx += inc) {
+                for (double sz = startZ; sz <= endZ; sz += inc) {
+                    consumer.consume(sx, y, sz);
+                }
+            }
+        }
+
+        public static void checkManyInitial(int x, int y, int z, Direction direction, double width,
+                double height, float eHeight, SolidPos... solids) {
+            BasicNodeSnapper snapper = make(width, height, 16, 0, EPSILON, solids);
+
+            int tx = x + direction.x;
+            int ty = y + direction.y;
+            int tz = z + direction.z;
+
+            genSubBlockPositions(x, y, z, width, 0.01, (cx, cy, cz) -> {
+                double distance = Vec3D.distanceSquared(cx, cy, cz, tx + 0.5, cy, cz + 0.5);
+                if (distance > 1) {
+                    return;
+                }
+
+                float res = snapper.checkInitial(cx, cy, cz, tx, ty, tz);
+                assertEquals(eHeight, res, () -> "target height: starting from " +
+                        Vec3D.immutable(cx, cy, cz) + " and going to " + Vec3I.immutable(tx, ty, tz));
+            });
+        }
+
+        @Test
+        void initialBlockNorth() {
+            checkManyInitial(0, 1, 0, Direction.NORTH, 0.5, 1, 0,
+                    fullBlockSqueeze(0, 0, 0));
+        }
+
+        @Test
+        void initialBlockEast() {
+            checkManyInitial(0, 1, 0, Direction.EAST, 0.5, 1, 0,
+                    fullBlockSqueeze(0, 0, 0));
+        }
+
+        @Test
+        void initialBlockSouth() {
+            checkManyInitial(0, 1, 0, Direction.SOUTH, 0.5, 1, 0,
+                    fullBlockSqueeze(0, 0, 0));
+        }
+
+        @Test
+        void initialBlockWest() {
+            checkManyInitial(0, 1, 0, Direction.WEST, 0.5, 1, 0,
+                    fullBlockSqueeze(0, 0, 0));
         }
     }
 }

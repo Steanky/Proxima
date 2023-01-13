@@ -80,11 +80,7 @@ public abstract class DirectionalExplorer implements Explorer {
         int isy = (int) Math.floor(startY);
         int isz = (int) Math.floor(startZ);
 
-        double fsx = isx + 0.5;
-        double fsy = isy + 0.5;
-        double fsz = isz + 0.5;
-
-        float i = snapper.checkInitial(startX, startY, startZ, fsx, fsy, fsz);
+        float i = snapper.checkInitial(startX, startY, startZ, isx, isy, isz);
         if (!Float.isNaN(i)) {
             initializer.initialize(isx, isy, isz, i);
             return;
@@ -99,16 +95,12 @@ public abstract class DirectionalExplorer implements Explorer {
             int iny = (int) Math.floor(ny);
             int inz = (int) Math.floor(nz);
 
-            double nmx = inx + 0.5;
-            double nmy = iny + 0.5;
-            double nmz = inz + 0.5;
-
-            double distance = Vec3D.distanceSquared(startX, startY, startZ, nmx, nmy, nmz);
+            double distance = Vec3D.distanceSquared(startX, startY, startZ, inx, iny, inz);
             if (distance > 1) {
                 continue;
             }
 
-            i = snapper.checkInitial(startX, startY, startZ, nmx, nmy, nmz);
+            i = snapper.checkInitial(startX, startY, startZ, inx, iny, inz);
             if (!Float.isNaN(i)) {
                 initializer.initialize(inx, iny, inz, i);
             }

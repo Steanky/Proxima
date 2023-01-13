@@ -8,7 +8,7 @@ public interface NodeSnapper {
 
     long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, float nodeOffset);
 
-    float checkInitial(double x, double y, double z, double dx, double dy, double dz);
+    float checkInitial(double x, double y, double z, int tx, int ty, int tz);
 
     boolean checkDiagonal(int x, int y, int z, int tx, int tz, float nodeOffset);
 
