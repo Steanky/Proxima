@@ -10,6 +10,8 @@ public interface NodeSnapper {
 
     float checkInitial(double x, double y, double z, double dx, double dy, double dz);
 
+    boolean checkDiagonal(int x, int y, int z, int tx, int ty, int tz);
+
     static long encode(double height, boolean intermediateJump, float offset) {
         int heightBits = Float.floatToRawIntBits((float) height);
 

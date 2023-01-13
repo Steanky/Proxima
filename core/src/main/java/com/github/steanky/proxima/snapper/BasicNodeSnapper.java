@@ -466,6 +466,11 @@ public class BasicNodeSnapper implements NodeSnapper {
         return (float) (finalY - Math.floor(finalY));
     }
 
+    @Override
+    public boolean checkDiagonal(int x, int y, int z, int tx, int ty, int tz) {
+        return false;
+    }
+
     private boolean checkJump(int obx, int mbx, int obz, int mbz, double aox, double aoy, double aoz,
             double targetHeight) {
         double exactHeight = aoy + height;

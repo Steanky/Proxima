@@ -136,8 +136,8 @@ public class BasicPathOperation implements PathOperation {
             throw new IllegalStateException("Can't compile a result while incomplete");
         }
 
-        Node target = nodeProcessor.processPath(best, graph);
-        return new PathResult(target.reverseToNavigationList(), graph.size(), success);
+        nodeProcessor.processPath(best, graph);
+        return new PathResult(best.reverseToNavigationList(), graph.size(), success);
     }
 
     @Override
