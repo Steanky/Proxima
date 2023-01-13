@@ -26,8 +26,6 @@ public class BasicNodeSnapper implements NodeSnapper {
 
     private final double adjustedWidth;
     private final double adjustedHeight;
-    private final double epsilon;
-
     public BasicNodeSnapper(double width, double height, double fallTolerance, double jumpHeight,
             @NotNull Space space, boolean walk, double epsilon) {
         validate(width, height, fallTolerance, jumpHeight, epsilon);
@@ -58,7 +56,6 @@ public class BasicNodeSnapper implements NodeSnapper {
 
         this.adjustedWidth = width - epsilon;
         this.adjustedHeight = height - epsilon;
-        this.epsilon = epsilon;
     }
 
     private static void validate(double width, double height, double fallTolerance, double jumpHeight, double epsilon) {
@@ -99,12 +96,6 @@ public class BasicNodeSnapper implements NodeSnapper {
     }
 
     private long snapVertical(Direction direction, int nodeX, int nodeY, int nodeZ, float nodeOffset) {
-        int dx = direction.x;
-        int dz = direction.z;
-
-        int nx = nodeX + dx;
-        int nz = nodeZ + dz;
-
         double exactY = nodeY + nodeOffset;
 
         double ax = nodeX + 0.5 - halfWidth;
@@ -121,8 +112,8 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                 for (int dex = -halfBlockWidth; dex <= halfBlockWidth; dex++) {
                     for (int dez = -halfBlockWidth; dez <= halfBlockWidth; dez++) {
-                        int x = nx + dex;
-                        int z = nz + dez;
+                        int x = nodeX + dex;
+                        int z = nodeZ + dez;
 
                         Solid solid = space.solidAt(x, y, z);
                         if (solid.isEmpty() || (i == -1 && solid.isFull())) {
@@ -145,8 +136,8 @@ public class BasicNodeSnapper implements NodeSnapper {
 
             for (int dex = -halfBlockWidth; dex <= halfBlockWidth; dex++) {
                 for (int dez = -halfBlockWidth; dez <= halfBlockWidth; dez++) {
-                    int x = nx + dex;
-                    int z = nz + dez;
+                    int x = nodeX + dex;
+                    int z = nodeZ + dez;
 
                     Solid solid = space.solidAt(x, y, z);
                     if (solid.isEmpty() || (i == -1 && solid.isFull())) {

@@ -14,25 +14,31 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BasicNodeSnapperTest {
-    private static final double EPSILON = 1E-6;
+    public static final double EPSILON = 1E-6;
 
-    private static final Solid LOWER_HALF_BLOCK = Solid.of(Bounds3D.immutable(0, 0, 0,
+    public static final Solid LOWER_HALF_BLOCK = Solid.of(Bounds3D.immutable(0, 0, 0,
             1, 0.5, 1));
 
-    private static final Solid UPPER_HALF_BLOCK = Solid.of(Bounds3D.immutable(0, 0.5, 0,
+    public static final Solid UPPER_HALF_BLOCK = Solid.of(Bounds3D.immutable(0, 0.5, 0,
             1, 0.5, 1));
 
-    private static final Solid PARTIAL_BLOCK_NORTH = Solid.of(Bounds3D.immutable(0, 0, 0,
+    public static final Solid PARTIAL_BLOCK_NORTH = Solid.of(Bounds3D.immutable(0, 0, 0,
             1, 1, 0.0625));
 
-    private static final Solid PARTIAL_BLOCK_SOUTH = Solid.of(Bounds3D.immutable(0, 0,
+    public static final Solid PARTIAL_BLOCK_SOUTH = Solid.of(Bounds3D.immutable(0, 0,
             0.9375, 1, 1, 0.0625));
 
-    private static final Solid PARTIAL_BLOCK_EAST = Solid.of(Bounds3D.immutable(0.9375, 0,
+    public static final Solid PARTIAL_BLOCK_EAST = Solid.of(Bounds3D.immutable(0.9375, 0,
             0, 0.0625, 1, 1));
 
-    private static final Solid PARTIAL_BLOCK_WEST = Solid.of(Bounds3D.immutable(0, 0,
+    public static final Solid PARTIAL_BLOCK_WEST = Solid.of(Bounds3D.immutable(0, 0,
             0, 0.0625, 1, 1));
+
+    public static final Solid SMALL_CENTRAL_SOLID = Solid.of(Bounds3D.immutable(0.45, 0, 0.45,
+            0.1, 1, 0.1));
+
+    public static final Solid SMALL_UPPER_LEFT_SOLID = Solid.of(Bounds3D.immutable(0, 0, 0.7,
+            0.1, 1, 0.1));
 
     private record SolidPos(Solid solid, Vec3I pos) { }
 
@@ -982,13 +988,231 @@ class BasicNodeSnapperTest {
     }
 
     @Nested
+    class CheckDiagonal {
+        public static final Solid PARTIAL_SOLID = Solid.of(Bounds3D.immutable(0.2, 0, 0.2, 0.6, 1, 0.6));
+
+        public static void checkDiagonal(double width, double height, int x, int y, int z, Direction first,
+                Direction second,
+                float nodeOffset, boolean shouldMiss, SolidPos... solids) {
+            BasicNodeSnapper snapper = make(width, height, 0, 0, EPSILON, solids);
+            boolean miss = snapper.checkDiagonal(x, y, z, x + first.x + second.x, z + first.z + second.z, nodeOffset);
+            if (shouldMiss) {
+                assertTrue(miss, "snapper reported a diagonal hit when a miss was expected");
+            }
+            else {
+                assertFalse(miss, "snapper reported a diagonal miss when a hit was expected");
+            }
+        }
+
+        public static SolidPos[] clipFullSolids(int x, int y, int z, Direction clip) {
+            return new SolidPos[] {
+                    full(x, y, z),
+                    full(x + 1, y, z),
+                    full(x - 1, y, z),
+                    full(x, y, z + 1),
+                    full(x, y, z - 1),
+                    full(x + clip.x, y + 1, z + clip.z)
+            };
+        }
+
+        public static SolidPos[] clipPartialSolids(int x, int y, int z, Direction clip) {
+            return new SolidPos[] {
+                    full(x, y, z),
+                    full(x + 1, y, z),
+                    full(x - 1, y, z),
+                    full(x, y, z + 1),
+                    full(x, y, z - 1),
+                    solid(PARTIAL_SOLID, x + clip.x, y + 1, z + clip.z)
+            };
+        }
+
+        public static SolidPos[] clipTinySolids(int x, int y, int z, Direction clip) {
+            return new SolidPos[] {
+                    full(x, y, z),
+                    full(x + 1, y, z),
+                    full(x - 1, y, z),
+                    full(x, y, z + 1),
+                    full(x, y, z - 1),
+                    solid(SMALL_CENTRAL_SOLID, x + clip.x, y + 1, z + clip.z)
+            };
+        }
+
+        @Test
+        void noSolidsNorthEast() {
+            checkDiagonal(1, 1, 0, 0, 0, Direction.NORTH, Direction.EAST, 0, true);
+        }
+
+        @Test
+        void noSolidsSouthEast() {
+            checkDiagonal(1, 1, 0, 0, 0, Direction.SOUTH, Direction.EAST, 0, true);
+        }
+
+        @Test
+        void noSolidsSouthWest() {
+            checkDiagonal(1, 1, 0, 0, 0, Direction.SOUTH, Direction.WEST, 0, true);
+        }
+
+        @Test
+        void noSolidsNorthWest() {
+            checkDiagonal(1, 1, 0, 0, 0, Direction.NORTH, Direction.WEST, 0, true);
+        }
+
+        @Nested
+        class Full {
+            @Test
+            void clipNorthNorthEast() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.EAST, 0,
+                        false, clipFullSolids(0, 0, 0, Direction.NORTH));
+            }
+
+            @Test
+            void clipEastNorthEast() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.EAST, 0,
+                        false, clipFullSolids(0, 0, 0, Direction.EAST));
+            }
+
+            @Test
+            void clipSouthSouthEast() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.EAST, 0,
+                        false, clipFullSolids(0, 0, 0, Direction.SOUTH));
+            }
+
+            @Test
+            void clipEastSouthEast() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.EAST, 0,
+                        false, clipFullSolids(0, 0, 0, Direction.EAST));
+            }
+
+            @Test
+            void clipSouthSouthWest() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.WEST, 0,
+                        false, clipFullSolids(0, 0, 0, Direction.SOUTH));
+            }
+
+            @Test
+            void clipWestSouthWest() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.WEST, 0,
+                        false, clipFullSolids(0, 0, 0, Direction.WEST));
+            }
+
+            @Test
+            void clipNorthNorthWest() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.WEST, 0,
+                        false, clipFullSolids(0, 0, 0, Direction.NORTH));
+            }
+
+            @Test
+            void clipWestNorthWest() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.WEST, 0,
+                        false, clipFullSolids(0, 0, 0, Direction.WEST));
+            }
+        }
+
+        @Nested
+        class Partial {
+            @Test
+            void clipNorthNorthEast() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.EAST, 0,
+                        false, clipPartialSolids(0, 0, 0, Direction.NORTH));
+            }
+
+            @Test
+            void clipEastNorthEast() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.EAST, 0,
+                        false, clipPartialSolids(0, 0, 0, Direction.EAST));
+            }
+
+            @Test
+            void clipSouthSouthEast() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.EAST, 0,
+                        false, clipPartialSolids(0, 0, 0, Direction.SOUTH));
+            }
+
+            @Test
+            void clipEastSouthEast() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.EAST, 0,
+                        false, clipPartialSolids(0, 0, 0, Direction.EAST));
+            }
+
+            @Test
+            void clipSouthSouthWest() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.WEST, 0,
+                        false, clipPartialSolids(0, 0, 0, Direction.SOUTH));
+            }
+
+            @Test
+            void clipWestSouthWest() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.WEST, 0,
+                        false, clipPartialSolids(0, 0, 0, Direction.WEST));
+            }
+
+            @Test
+            void clipNorthNorthWest() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.WEST, 0,
+                        false, clipPartialSolids(0, 0, 0, Direction.NORTH));
+            }
+
+            @Test
+            void clipWestNorthWest() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.WEST, 0,
+                        false, clipPartialSolids(0, 0, 0, Direction.WEST));
+            }
+        }
+
+        @Nested
+        class Tiny {
+            @Test
+            void clipNorthNorthEast() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.EAST, 0,
+                        true, clipTinySolids(0, 0, 0, Direction.NORTH));
+            }
+
+            @Test
+            void clipEastNorthEast() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.EAST, 0,
+                        true, clipTinySolids(0, 0, 0, Direction.EAST));
+            }
+
+            @Test
+            void clipSouthSouthEast() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.EAST, 0,
+                        true, clipTinySolids(0, 0, 0, Direction.SOUTH));
+            }
+
+            @Test
+            void clipEastSouthEast() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.EAST, 0,
+                        true, clipTinySolids(0, 0, 0, Direction.EAST));
+            }
+
+            @Test
+            void clipSouthSouthWest() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.WEST, 0,
+                        true, clipTinySolids(0, 0, 0, Direction.SOUTH));
+            }
+
+            @Test
+            void clipWestSouthWest() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.WEST, 0,
+                        true, clipTinySolids(0, 0, 0, Direction.WEST));
+            }
+
+            @Test
+            void clipNorthNorthWest() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.WEST, 0,
+                        true, clipTinySolids(0, 0, 0, Direction.NORTH));
+            }
+
+            @Test
+            void clipWestNorthWest() {
+                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.WEST, 0,
+                        true, clipTinySolids(0, 0, 0, Direction.WEST));
+            }
+        }
+    }
+
+    @Nested
     class CheckInitial {
-        public static final Solid SMALL_CENTRAL_SOLID = Solid.of(Bounds3D.immutable(0.45, 0, 0.45,
-                0.1, 1, 0.1));
-
-        public static final Solid SMALL_UPPER_LEFT_SOLID = Solid.of(Bounds3D.immutable(0, 0, 0.7,
-                0.1, 1, 0.1));
-
         public static void checkInitial(double x, double y, double z, double tx, double ty, double tz, double width,
                 double height, float eHeight,
                 SolidPos... solids) {
