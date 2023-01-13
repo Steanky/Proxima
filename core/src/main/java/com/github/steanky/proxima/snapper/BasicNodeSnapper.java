@@ -626,10 +626,6 @@ public class BasicNodeSnapper implements NodeSnapper {
             return Solid.NO_COLLISION;
         }
 
-        if (solid.isFull()) {
-            return Solid.result(0, 1);
-        }
-
         return solid.minMaxCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, 0, dz);
     }
 
@@ -639,10 +635,6 @@ public class BasicNodeSnapper implements NodeSnapper {
 
         if (solid.isEmpty() || (i == 0 && solid.isFull())) {
             return false;
-        }
-
-        if (solid.isFull()) {
-            return true;
         }
 
         return solid.hasCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, 0, dz);
