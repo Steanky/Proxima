@@ -260,6 +260,37 @@ class BasicNodeSnapperTest {
                         };
                     }
 
+                    private static SolidPos[] intermediateJumpThenFall(int x, int y, int z, Solid solid) {
+                        return new SolidPos[] {
+                                full(x, y, z),
+                                solid(solid, x, y + 1, z)
+                        };
+                    }
+
+                    @Test
+                    void jumpNorthThenFall() {
+                        noWalk(Direction.NORTH, 0.5, 1, 0, 1, 0, 0,
+                                intermediateJumpThenFall(0, 0, 0, PARTIAL_BLOCK_NORTH));
+                    }
+
+                    @Test
+                    void jumpSouthThenFall() {
+                        noWalk(Direction.SOUTH, 0.5, 1, 0, 1, 0, 0,
+                                intermediateJumpThenFall(0, 0, 0, PARTIAL_BLOCK_SOUTH));
+                    }
+
+                    @Test
+                    void jumpEastThenFall() {
+                        noWalk(Direction.EAST, 0.5, 1, 0, 1, 0, 0,
+                                intermediateJumpThenFall(0, 0, 0, PARTIAL_BLOCK_EAST));
+                    }
+
+                    @Test
+                    void jumpWestThenFall() {
+                        noWalk(Direction.WEST, 0.5, 1, 0, 1, 0, 0,
+                                intermediateJumpThenFall(0, 0, 0, PARTIAL_BLOCK_WEST));
+                    }
+
                     @Test
                     void fallSingleWalkNorth() {
                         walk(Direction.NORTH, 0, 1, 0, 0, 0, 0, -1, 0,
@@ -961,7 +992,7 @@ class BasicNodeSnapperTest {
         public static void checkInitial(double x, double y, double z, double tx, double ty, double tz, double width,
                 double height, float eHeight,
                 SolidPos... solids) {
-            BasicNodeSnapper snapper = make(width, height, 0, 0, EPSILON, solids);
+            BasicNodeSnapper snapper = make(width, height, 16, 0, EPSILON, solids);
             float res = snapper.checkInitial(x, y, z, tx, ty, tz);
             assertEquals(eHeight, res, "unexpected target height");
         }
@@ -1006,6 +1037,12 @@ class BasicNodeSnapperTest {
         void sameBoundsMissDiagonal() {
             checkInitial(0.2, 1, 0.2, 0.5, 1, 0.5, 0.2, 2, 0,
                     smallUpperLeftSolid(0, 0, 0));
+        }
+
+        @Test
+        void sameBoundsFallCenterSolid() {
+            checkInitial(0.2, 10, 0.2, 0.5, 1, 0.5, 0.2, 2, Float.NaN,
+                    smallCentralSolid(0, 0, 0));
         }
     }
 }

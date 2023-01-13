@@ -92,8 +92,8 @@ public abstract class DirectionalExplorer implements Explorer {
 
         for (Direction direction : directions) {
             double nx = startX + direction.x;
-            double ny = startX + direction.x;
-            double nz = startX + direction.x;
+            double ny = startY + direction.y;
+            double nz = startZ + direction.z;
 
             int inx = (int) Math.floor(nx);
             int iny = (int) Math.floor(ny);
