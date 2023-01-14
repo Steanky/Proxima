@@ -5,7 +5,6 @@ import com.github.steanky.vector.Bounds3D;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
 
-import java.util.Arrays;
 import java.util.List;
 
 final class SolidN implements Solid {

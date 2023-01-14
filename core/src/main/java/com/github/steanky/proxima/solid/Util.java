@@ -7,8 +7,7 @@ import com.github.steanky.vector.Bounds3D;
  * Default collision checking utilities. Not part of the public API.
  */
 final class Util {
-    static Bounds3D closestCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz,
-            double lx, double ly, double lz, Direction d, double l) {
+    static Bounds3D closestCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, Direction d, double l) {
         ox -= x;
         oy -= y;
         oz -= z;
@@ -56,8 +55,7 @@ final class Util {
         return closest;
     }
 
-    static long minMaxCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz,
-            double lx, double ly, double lz, Direction d, double l) {
+    static long minMaxCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, Direction d, double l) {
         ox -= x;
         oy -= y;
         oz -= z;
@@ -105,8 +103,7 @@ final class Util {
         return Solid.result(lowest, highest);
     }
 
-    static boolean hasCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz,
-            double lx, double ly, double lz, Direction d, double l) {
+    static boolean hasCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, Direction d, double l) {
         ox -= x;
         oy -= y;
         oz -= z;
@@ -142,8 +139,7 @@ final class Util {
         return false;
     }
 
-    static boolean hasCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz,
-            double lx, double ly, double lz, double dx, double dy, double dz) {
+    static boolean hasCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, double dx, double dy, double dz) {
         double adx = Math.abs(dx);
         double ady = Math.abs(dy);
         double adz = Math.abs(dz);
@@ -177,8 +173,7 @@ final class Util {
         return false;
     }
 
-    static long minMaxCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz,
-            double lx, double ly, double lz, double dx, double dy, double dz) {
+    static long minMaxCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, double dx, double dy, double dz) {
         double adx = Math.abs(dx);
         double ady = Math.abs(dy);
         double adz = Math.abs(dz);
@@ -226,8 +221,7 @@ final class Util {
         return Solid.result(lowest, highest);
     }
 
-    private static boolean checkBounds(int x, int y, int z, Bounds3D component, double cx, double cy,
-            double cz, double adjustedXZ, double adjustedXY, double adjustedYZ, double dX, double dY, double dZ) {
+    private static boolean checkBounds(int x, int y, int z, Bounds3D component, double cx, double cy, double cz, double adjustedXZ, double adjustedXY, double adjustedYZ, double dX, double dY, double dZ) {
         double minX = x + component.originX() - cx;
         double minY = y + component.originY() - cy;
         double minZ = z + component.originZ() - cz;
@@ -241,8 +235,7 @@ final class Util {
                 checkAxis(adjustedYZ, dZ, dY, minZ, minY, maxZ, maxY);
     }
 
-    private static boolean checkAxis(double size, double dA, double dB, double minA, double minB, double maxA,
-            double maxB) {
+    private static boolean checkAxis(double size, double dA, double dB, double minA, double minB, double maxA, double maxB) {
         if (dA == 0 && dB == 0) {
             return true;
         }
@@ -251,8 +244,7 @@ final class Util {
                 checkPlanes(size, dA, dB, maxA, minB, minA, maxB);
     }
 
-    private static boolean checkPlanes(double size, double dA, double dB, double minA, double minB, double maxA,
-            double maxB) {
+    private static boolean checkPlanes(double size, double dA, double dB, double minA, double minB, double maxA, double maxB) {
         double bMinusAMin = (minB * dA) - (minA * dB);
         if (bMinusAMin >= size) { //!minInFirst
             return (maxB * dA) - (maxA * dB) < size;  //... && maxInFirst
@@ -266,15 +258,14 @@ final class Util {
         return (maxB * dA) - (maxA * dB) > -size; // ... && !minInSecond
     }
 
-    private static double computeDiff(Direction d, Bounds3D child, double ox, double oy, double oz,
-            double mx, double my, double mz, double adx, double ady, double adz) {
+    private static double computeDiff(Direction d, Bounds3D child, double ox, double oy, double oz, double mx, double my, double mz, double adx, double ady, double adz) {
         return ((d.x < 0 ? ox - child.maxX() : child.maxX() - mx) * adx) +
                 ((d.y < 0 ? oy - child.maxY() : child.maxY() - my) * ady) +
                 ((d.z < 0 ? oz - child.maxZ() : child.maxZ() - mz) * adz);
     }
 
     private static boolean overlaps(Bounds3D bounds, double ox, double oy, double oz, double mx, double my, double mz) {
-        return bounds.originX() < mx && bounds.originY() < my && bounds.originZ() < mz &&
-                ox < bounds.maxX() && oy < bounds.maxY() && oz < bounds.maxZ();
+        return bounds.originX() < mx && bounds.originY() < my && bounds.originZ() < mz && ox < bounds.maxX() &&
+                oy < bounds.maxY() && oz < bounds.maxZ();
     }
 }

@@ -1,6 +1,7 @@
 package com.github.steanky.proxima.benchmarks;
 
-import com.github.steanky.proxima.*;
+import com.github.steanky.proxima.Heuristic;
+import com.github.steanky.proxima.PathLimiter;
 import com.github.steanky.proxima.explorer.Explorer;
 import com.github.steanky.proxima.explorer.WalkExplorer;
 import com.github.steanky.proxima.node.Node;
@@ -13,7 +14,10 @@ import com.github.steanky.proxima.snapper.BasicNodeSnapper;
 import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.proxima.space.ConcurrentCachingSpace;
 import com.github.steanky.proxima.space.Space;
-import com.github.steanky.vector.*;
+import com.github.steanky.vector.Bounds3I;
+import com.github.steanky.vector.HashVec3I2ObjectMap;
+import com.github.steanky.vector.Vec3I2ObjectMap;
+import com.github.steanky.vector.Vec3IBiPredicate;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.*;
 
@@ -25,22 +29,11 @@ public class PathfindState {
     public Pathfinder pathfinder;
     public PathSettings settings;
 
-    @Setup(Level.Iteration)
-    public void setUp() {
-        pathfinder = pathfinder();
-        settings = synchronizedEnvironment();
-    }
-
-    @TearDown(Level.Iteration)
-    public void tearDown() {
-        pathfinder.shutdown();
-        settings = null;
-    }
-
     private static Pathfinder pathfinder() {
         int threads = Runtime.getRuntime().availableProcessors();
-        ForkJoinPool fjp = new ForkJoinPool(threads, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null,
-                false, threads, threads, threads, forkJoinPool -> true, 2, TimeUnit.MINUTES);
+        ForkJoinPool fjp =
+                new ForkJoinPool(threads, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, false, threads,
+                        threads, threads, forkJoinPool -> true, 2, TimeUnit.MINUTES);
 
         return new BasicAsyncPathfinder(fjp, BasicPathOperation::new, 1000000);
     }
@@ -61,19 +54,17 @@ public class PathfindState {
         return settings(1, 1, 1, 1, space, bounds);
     }
 
-    private static PathSettings settings(int width, int height, int fallTolerance, int jumpHeight,
-            @NotNull Space space, Bounds3I searchArea) {
+    private static PathSettings settings(int width, int height, int fallTolerance, int jumpHeight, @NotNull Space space, Bounds3I searchArea) {
         return new PathSettings() {
+            private static final Vec3IBiPredicate SUCCESS_PREDICATE =
+                    (x1, y1, z1, x2, y2, z2) -> x1 == x2 && y1 == y2 && z1 == z2;
             //using a ThreadLocal HashVec3I2ObjectMap is a very significant performance save
-            private final ThreadLocal<Vec3I2ObjectMap<Node>> THREAD_LOCAL_GRAPH = ThreadLocal.withInitial(() ->
-                    new HashVec3I2ObjectMap<>(searchArea.originX(), searchArea.originX(), searchArea.originZ(),
+            private final ThreadLocal<Vec3I2ObjectMap<Node>> THREAD_LOCAL_GRAPH = ThreadLocal.withInitial(
+                    () -> new HashVec3I2ObjectMap<>(searchArea.originX(), searchArea.originX(), searchArea.originZ(),
                             searchArea.lengthX(), searchArea.lengthY(), searchArea.lengthZ()));
-
-            private static final Vec3IBiPredicate SUCCESS_PREDICATE = (x1, y1, z1, x2, y2, z2) -> x1 == x2 && y1 == y2
-                    && z1 == z2;
-
-            private final Explorer explorer = new WalkExplorer(new BasicNodeSnapper(space, width, height, fallTolerance,
-                    jumpHeight, 1E-6), PathLimiter.inBounds(searchArea));
+            private final Explorer explorer =
+                    new WalkExplorer(new BasicNodeSnapper(space, width, height, fallTolerance, jumpHeight, 1E-6),
+                            PathLimiter.inBounds(searchArea));
 
             @Override
             public @NotNull Vec3IBiPredicate successPredicate() {
@@ -100,5 +91,17 @@ public class PathfindState {
                 return NodeProcessor.NO_CHANGE;
             }
         };
+    }
+
+    @Setup(Level.Iteration)
+    public void setUp() {
+        pathfinder = pathfinder();
+        settings = synchronizedEnvironment();
+    }
+
+    @TearDown(Level.Iteration)
+    public void tearDown() {
+        pathfinder.shutdown();
+        settings = null;
     }
 }

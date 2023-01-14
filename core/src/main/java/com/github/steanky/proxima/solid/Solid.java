@@ -12,8 +12,8 @@ import java.util.List;
  * Represents an object in 3D voxel space. Conceptually, solids consist of zero or more three-dimensional bounding
  * boxes. If a solid has no bounds, it will not be collided with (see {@link Solid#EMPTY}).
  * <p>
- * None of the bounds of a solid may exceed a 1x1x1 cube. Using implementations that allow this may result in
- * undefined pathfinding behavior.
+ * None of the bounds of a solid may exceed a 1x1x1 cube. Using implementations that allow this may result in undefined
+ * pathfinding behavior.
  * <p>
  * This class provides several default methods for performing various kinds of collision checking. These are, among
  * other things, used during pathfinding to determine navigability of candidate nodes. By default, these methods
@@ -49,18 +49,17 @@ public interface Solid {
     };
 
     /**
-     * The shared, full Solid. It is encouraged to call {@link Solid#isFull()}, rather than doing an equality
-     * comparison with this field, as it is not guaranteed to be singleton.
+     * The shared, full Solid. It is encouraged to call {@link Solid#isFull()}, rather than doing an equality comparison
+     * with this field, as it is not guaranteed to be singleton.
      */
     Solid FULL = new Solid12(Bounds3D.immutable(0, 0, 0, 1, 1, 1));
-
-    @NotNull Bounds3D bounds();
-
-    boolean isFull();
-
-    boolean isEmpty();
-
-    @NotNull @Unmodifiable List<Bounds3D> children();
+    /**
+     * Returned by
+     * {@link Solid#minMaxCollision(int, int, int, double, double, double, double, double, double, Direction, double)}
+     * to indicate no collision was found. The higher 32 bits represent single-precision positive infinity, whereas the
+     * lower 32 bits represent single-precision negative infinity.
+     */
+    long NO_COLLISION = 0x7F80_0000_FF80_0000L;
 
     static long result(float lowest, float highest) {
         int hi = Float.floatToRawIntBits(lowest);
@@ -74,38 +73,6 @@ public interface Solid {
 
     static float highest(long collisionResult) {
         return Float.intBitsToFloat((int) collisionResult);
-    }
-
-    /**
-     * Returned by {@link Solid#minMaxCollision(int, int, int, double, double, double, double, double, double,
-     * Direction, double)} to indicate no collision was found. The higher 32 bits represent single-precision positive
-     * infinity, whereas the lower 32 bits represent single-precision negative infinity.
-     */
-    long NO_COLLISION = 0x7F80_0000_FF80_0000L;
-
-    default long minMaxCollision(int x, int y, int z, double ox, double oy, double oz,
-            double lx, double ly, double lz, @NotNull Direction d, double l) {
-        return Util.minMaxCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l);
-    }
-
-    default @Nullable Bounds3D closestCollision(int x, int y, int z, double ox, double oy, double oz,
-            double lx, double ly, double lz, @NotNull Direction d, double l) {
-        return Util.closestCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l);
-    }
-
-    default boolean hasCollision(int x, int y, int z, double ox, double oy, double oz,
-            double lx, double ly, double lz, @NotNull Direction d, double l) {
-        return Util.hasCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l);
-    }
-
-    default boolean hasCollision(int x, int y, int z, double ox, double oy, double oz,
-            double lx, double ly, double lz, double dx, double dy, double dz) {
-        return Util.hasCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, dx, dy, dz);
-    }
-
-    default long minMaxCollision(int x, int y, int z, double ox, double oy, double oz,
-            double lx, double ly, double lz, double dx, double dy, double dz) {
-        return Util.minMaxCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, dx, dy, dz);
     }
 
     static @NotNull Solid of() {
@@ -134,5 +101,33 @@ public interface Solid {
         }
 
         return new SolidN(bounds);
+    }
+
+    @NotNull Bounds3D bounds();
+
+    boolean isFull();
+
+    boolean isEmpty();
+
+    @NotNull @Unmodifiable List<Bounds3D> children();
+
+    default long minMaxCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, @NotNull Direction d, double l) {
+        return Util.minMaxCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l);
+    }
+
+    default @Nullable Bounds3D closestCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, @NotNull Direction d, double l) {
+        return Util.closestCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l);
+    }
+
+    default boolean hasCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, @NotNull Direction d, double l) {
+        return Util.hasCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l);
+    }
+
+    default boolean hasCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, double dx, double dy, double dz) {
+        return Util.hasCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, dx, dy, dz);
+    }
+
+    default long minMaxCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, double dx, double dy, double dz) {
+        return Util.minMaxCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, dx, dy, dz);
     }
 }

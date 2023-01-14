@@ -50,6 +50,7 @@ final class NodeHeaps {
      *
      * @param heap the min-heap of nodes
      * @param i    the index of the node to potentially move up
+     *
      * @return the final index of the node which was moved
      */
     static int upHeap(@NotNull Node @NotNull [] heap, int i) {

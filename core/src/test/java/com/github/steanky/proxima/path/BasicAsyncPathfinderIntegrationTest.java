@@ -27,18 +27,15 @@ import java.util.stream.IntStream;
 import static org.junit.jupiter.api.Assertions.*;
 
 class BasicAsyncPathfinderIntegrationTest {
-    private static PathSettings settings(int width, int height, int fallTolerance, int jumpHeight,
-            @NotNull Space space, Bounds3I searchArea, Function<NodeSnapper, NodeProcessor> processorFunction) {
+    private static PathSettings settings(int width, int height, int fallTolerance, int jumpHeight, @NotNull Space space, Bounds3I searchArea, Function<NodeSnapper, NodeProcessor> processorFunction) {
         return new PathSettings() {
+            private static final Vec3IBiPredicate SUCCESS_PREDICATE =
+                    (x1, y1, z1, x2, y2, z2) -> x1 == x2 && y1 == y2 && z1 == z2;
             //using a ThreadLocal HashVec3I2ObjectMap is a very significant performance save
-            private final ThreadLocal<Vec3I2ObjectMap<Node>> THREAD_LOCAL_GRAPH = ThreadLocal.withInitial(() ->
-                    new HashVec3I2ObjectMap<>(searchArea));
-
-            private static final Vec3IBiPredicate SUCCESS_PREDICATE = (x1, y1, z1, x2, y2, z2) -> x1 == x2 && y1 == y2
-                    && z1 == z2;
-
-            private final NodeSnapper snapper = new BasicNodeSnapper(space, width, height, fallTolerance,
-                    jumpHeight, 1E-6);
+            private final ThreadLocal<Vec3I2ObjectMap<Node>> THREAD_LOCAL_GRAPH =
+                    ThreadLocal.withInitial(() -> new HashVec3I2ObjectMap<>(searchArea));
+            private final NodeSnapper snapper =
+                    new BasicNodeSnapper(space, width, height, fallTolerance, jumpHeight, 1E-6);
 
             private final Explorer explorer = new WalkExplorer(snapper, PathLimiter.inBounds(searchArea));
 
@@ -73,8 +70,9 @@ class BasicAsyncPathfinderIntegrationTest {
 
     private static Pathfinder pathfinder() {
         int threads = Runtime.getRuntime().availableProcessors();
-        ForkJoinPool fjp = new ForkJoinPool(threads, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null,
-                false, threads, threads, threads, forkJoinPool -> true, 2, TimeUnit.MINUTES);
+        ForkJoinPool fjp =
+                new ForkJoinPool(threads, ForkJoinPool.defaultForkJoinWorkerThreadFactory, null, false, threads,
+                        threads, threads, forkJoinPool -> true, 2, TimeUnit.MINUTES);
 
         return new BasicAsyncPathfinder(fjp, BasicPathOperation::new, 1000000);
     }
@@ -88,8 +86,8 @@ class BasicAsyncPathfinderIntegrationTest {
             }
         }
 
-        return settings(1, 1, 1, 1, space, Bounds3I.immutable(-100, -100,
-                -100, 200, 200, 200), (ignored) -> NodeProcessor.NO_CHANGE);
+        return settings(1, 1, 1, 1, space, Bounds3I.immutable(-100, -100, -100, 200, 200, 200),
+                (ignored) -> NodeProcessor.NO_CHANGE);
     }
 
     private static PathSettings hugeEnvironment() {
@@ -101,13 +99,12 @@ class BasicAsyncPathfinderIntegrationTest {
             }
         }
 
-        return settings(1, 1, 1, 1, space, Bounds3I.immutable(0, 0,
-                0, 1000, 4, 1000), (ignored) -> NodeProcessor.NO_CHANGE);
+        return settings(1, 1, 1, 1, space, Bounds3I.immutable(0, 0, 0, 1000, 4, 1000),
+                (ignored) -> NodeProcessor.NO_CHANGE);
     }
 
     private static PathSettings hugeEnvironmentWithPartialBlocks() {
-        Solid stairs = Solid.of(Bounds3D.immutable(0, 0, 0, 1, 0.5, 1),
-                Bounds3D.immutable(0, 0.5, 0.5, 0.5, 0.5, 1));
+        Solid stairs = Solid.of(Bounds3D.immutable(0, 0, 0, 1, 0.5, 1), Bounds3D.immutable(0, 0.5, 0.5, 0.5, 0.5, 1));
 
         HashSpace space = new HashSpace(0, 0, 0, 1000, 4, 1000);
         for (int x = 0; x < 1000; x++) {
@@ -116,8 +113,8 @@ class BasicAsyncPathfinderIntegrationTest {
             }
         }
 
-        return settings(1, 1, 1, 1, space, Bounds3I.immutable(0, 0,
-                0, 1000, 4, 1000), (ignored) -> NodeProcessor.NO_CHANGE);
+        return settings(1, 1, 1, 1, space, Bounds3I.immutable(0, 0, 0, 1000, 4, 1000),
+                (ignored) -> NodeProcessor.NO_CHANGE);
     }
 
     private static PathSettings synchronizedEnvironment() {
@@ -164,14 +161,14 @@ class BasicAsyncPathfinderIntegrationTest {
         space.put(0, -1, 0, Solid.FULL);
         space.put(0, 1, 0, Solid.FULL);
 
-        PathSettings settings = settings(1, 1, 4, 1, space, Bounds3I
-                .immutable(-100, -100, -100, 200, 200, 200), (ignored) -> NodeProcessor.NO_CHANGE);
+        PathSettings settings = settings(1, 1, 4, 1, space, Bounds3I.immutable(-100, -100, -100, 200, 200, 200),
+                (ignored) -> NodeProcessor.NO_CHANGE);
         Pathfinder pathfinder = pathfinder();
 
         List<Vec3I> expected = List.of(Vec3I.immutable(0, 0, 0));
         IntStream.range(0, 1000000).parallel().forEach(ignored -> {
-            PathResult result = assertDoesNotThrow(() -> pathfinder.pathfind(0, 0, 0, PathTarget.coordinate(10, 10,
-                    10), settings).get());
+            PathResult result = assertDoesNotThrow(
+                    () -> pathfinder.pathfind(0, 0, 0, PathTarget.coordinate(10, 10, 10), settings).get());
 
             assertPathEquals(expected, false, result);
         });
@@ -190,15 +187,15 @@ class BasicAsyncPathfinderIntegrationTest {
     }
 
     @Test
-    void simplePath() throws ExecutionException, InterruptedException {
+    void simplePath()
+    throws ExecutionException, InterruptedException {
         PathSettings settings = simpleEnvironment();
         Pathfinder pathfinder = pathfinder();
 
         PathResult result = pathfinder.pathfind(5, 1, 0, PathTarget.coordinate(0, 1, 0), settings).get();
 
-        List<Vec3I> expected = List.of(Vec3I.immutable(5, 1, 0),
-                Vec3I.immutable(4, 1, 0), Vec3I.immutable(3, 1, 0), Vec3I.immutable(2, 1, 0),
-                Vec3I.immutable(1, 1, 0), Vec3I.immutable(0, 1, 0));
+        List<Vec3I> expected = List.of(Vec3I.immutable(5, 1, 0), Vec3I.immutable(4, 1, 0), Vec3I.immutable(3, 1, 0),
+                Vec3I.immutable(2, 1, 0), Vec3I.immutable(1, 1, 0), Vec3I.immutable(0, 1, 0));
 
         assertPathEquals(expected, true, result);
     }
@@ -254,8 +251,7 @@ class BasicAsyncPathfinderIntegrationTest {
     private void assertPathEquals(List<Vec3I> expected, boolean success, PathResult result) {
         if (success) {
             assertTrue(result.isSuccessful(), "expected successful result");
-        }
-        else {
+        } else {
             assertFalse(result.isSuccessful(), "expected failed result");
         }
 

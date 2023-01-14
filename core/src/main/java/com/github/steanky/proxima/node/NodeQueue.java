@@ -28,6 +28,7 @@ public class NodeQueue implements PriorityQueue<Node> {
      * Creates a new NodeQueue with the provided initial capacity.
      *
      * @param initialCapacity the initial capacity
+     *
      * @throws IllegalArgumentException if initialCapacity is negative
      */
     public NodeQueue(int initialCapacity) {
@@ -37,8 +38,7 @@ public class NodeQueue implements PriorityQueue<Node> {
 
         if (initialCapacity == 0) {
             heap = (Node[]) ObjectArrays.EMPTY_ARRAY;
-        }
-        else {
+        } else {
             heap = new Node[initialCapacity];
         }
     }
@@ -114,8 +114,7 @@ public class NodeQueue implements PriorityQueue<Node> {
         if (node.onHeap()) {
             //if we're already on the heap, call changed to update its position in-place
             changed(node);
-        }
-        else {
+        } else {
             //otherwise, add it to the heap
             enqueue(node);
         }

@@ -55,12 +55,12 @@ class ClosestBelow implements PositionResolver {
         double ox = x - halfWidth;
         double oz = z - halfWidth;
 
-        int sx = (int)Math.floor(x - halfWidth);
-        int sy = (int)Math.floor(y);
-        int sz = (int)Math.floor(z - halfWidth);
+        int sx = (int) Math.floor(x - halfWidth);
+        int sy = (int) Math.floor(y);
+        int sz = (int) Math.floor(z - halfWidth);
 
-        int ex = (int)Math.floor(x + halfWidth);
-        int ez = (int)Math.floor(z + halfWidth);
+        int ex = (int) Math.floor(x + halfWidth);
+        int ez = (int) Math.floor(z + halfWidth);
 
         for (int i = y == Math.floor(y) ? 0 : -1; i < searchHeight; i++) {
             int by = sy - (i + 1);
@@ -81,13 +81,12 @@ class ClosestBelow implements PositionResolver {
                     double thisDistance = Double.POSITIVE_INFINITY;
                     if (solid.isFull()) {
                         thisDistance = Vec3D.distanceSquared(bx + 0.5, by + 1, bz + 0.5, x, y, z);
-                    }
-                    else {
-                        Bounds3D closest = solid.closestCollision(bx, by, bz, ox, y, oz, width, 1, width,
-                                Direction.DOWN, searchHeight);
+                    } else {
+                        Bounds3D closest =
+                                solid.closestCollision(bx, by, bz, ox, y, oz, width, 1, width, Direction.DOWN,
+                                        searchHeight);
                         if (closest != null) {
-                            thisDistance = Vec3D.distanceSquared(bx + 0.5, by + closest.maxY(), bz + 0.5,
-                                    x, y, z);
+                            thisDistance = Vec3D.distanceSquared(bx + 0.5, by + closest.maxY(), bz + 0.5, x, y, z);
                         }
                     }
 

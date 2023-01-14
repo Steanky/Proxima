@@ -45,8 +45,7 @@ class DiagonalProcessor implements NodeProcessor {
                 previous.parent = next;
                 current = next.parent;
                 previous = next;
-            }
-            else {
+            } else {
                 previous = current;
                 current = next;
             }

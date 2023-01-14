@@ -11,11 +11,10 @@ public enum Direction {
     UP(0, 1, 0),
     DOWN(0, -1, 0);
 
-    private final Vec3I vec;
-
     public final int x;
     public final int y;
     public final int z;
+    private final Vec3I vec;
 
     Direction(int x, int y, int z) {
         this.vec = Vec3I.immutable(x, y, z);

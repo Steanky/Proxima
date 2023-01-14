@@ -9,8 +9,6 @@ import java.util.Objects;
 
 @FunctionalInterface
 public interface PathLimiter {
-    boolean inBounds(@NotNull Node currentNode);
-
     PathLimiter NO_LIMIT = (currentNode) -> true;
 
     static @NotNull PathLimiter pathLength(int maxLength) {
@@ -26,6 +24,8 @@ public interface PathLimiter {
         double radiusSquared = r * r;
         return n -> Vec3D.distanceSquared(origin.x(), origin.y(), origin.z(), n.x, n.y, n.z) < radiusSquared;
     }
+
+    boolean inBounds(@NotNull Node currentNode);
 
     default @NotNull PathLimiter not() {
         return currentNode -> !PathLimiter.this.inBounds(currentNode);

@@ -12,7 +12,8 @@ import java.util.concurrent.ExecutionException;
 public class Benchmarks {
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
-    public void run(PathfindState state) throws ExecutionException, InterruptedException {
+    public void run(PathfindState state)
+    throws ExecutionException, InterruptedException {
         state.pathfinder.pathfind(0, 1, 0, PathTarget.coordinate(100, 1, 100), state.settings).get();
     }
 }

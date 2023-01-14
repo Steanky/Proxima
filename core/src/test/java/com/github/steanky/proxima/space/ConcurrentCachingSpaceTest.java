@@ -9,7 +9,8 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class ConcurrentCachingSpaceTest {
     private static ConcurrentCachingSpace backed(Space other) {
@@ -67,8 +68,7 @@ class ConcurrentCachingSpaceTest {
                                 Solid solid = space.solidAt(x, y, z);
                                 if (x == 0 && y == 0 && z == 0) {
                                     assertEquals(Solid.FULL, solid);
-                                }
-                                else {
+                                } else {
                                     assertEquals(Solid.EMPTY, solid);
                                 }
                             }
@@ -83,7 +83,8 @@ class ConcurrentCachingSpaceTest {
         }
 
         @Test
-        void writeContention() throws InterruptedException {
+        void writeContention()
+        throws InterruptedException {
             HashSpace backing = new HashSpace(Bounds3I.immutable(0, 0, 0, 2048, 2048, 2048));
             backing.put(0, 0, 0, Solid.FULL);
 
@@ -97,9 +98,9 @@ class ConcurrentCachingSpaceTest {
             writer.start();
 
             Thread reader = new Thread(() -> {
-               while (!Thread.interrupted()) {
-                   assertEquals(Solid.FULL, space.solidAt(0, 0, 0));
-               }
+                while (!Thread.interrupted()) {
+                    assertEquals(Solid.FULL, space.solidAt(0, 0, 0));
+                }
             });
             reader.start();
 

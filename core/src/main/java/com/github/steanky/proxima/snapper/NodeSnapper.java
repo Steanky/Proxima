@@ -6,12 +6,6 @@ import org.jetbrains.annotations.NotNull;
 public interface NodeSnapper {
     long FAIL = 0xFFC0_0001L; //lower 32 bits represent a floating-point qNaN with a payload of all 0s
 
-    long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, float nodeOffset);
-
-    float checkInitial(double x, double y, double z, int tx, int ty, int tz);
-
-    boolean checkDiagonal(int x, int y, int z, int tx, int tz, float nodeOffset);
-
     static long encode(double height, boolean intermediateJump, float offset) {
         int heightBits = Float.floatToRawIntBits((float) height);
 
@@ -30,7 +24,7 @@ public interface NodeSnapper {
     }
 
     static int blockHeight(long value) {
-        return (int)Math.floor(height(value));
+        return (int) Math.floor(height(value));
     }
 
     static float blockOffset(long value) {
@@ -45,4 +39,10 @@ public interface NodeSnapper {
     static float jumpOffset(long value) {
         return Float.intBitsToFloat((int) (value & 0x7FFF_FFFFL));
     }
+
+    long snap(@NotNull Direction direction, int nodeX, int nodeY, int nodeZ, float nodeOffset);
+
+    float checkInitial(double x, double y, double z, int tx, int ty, int tz);
+
+    boolean checkDiagonal(int x, int y, int z, int tx, int tz, float nodeOffset);
 }

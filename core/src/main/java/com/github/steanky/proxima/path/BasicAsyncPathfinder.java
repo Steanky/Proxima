@@ -14,8 +14,7 @@ public class BasicAsyncPathfinder implements Pathfinder {
     private final int poolCapacity;
     private final AtomicInteger poolSize;
 
-    public BasicAsyncPathfinder(@NotNull ExecutorService pathExecutor,
-            @NotNull Supplier<? extends PathOperation> pathOperationSupplier, int poolCapacity) {
+    public BasicAsyncPathfinder(@NotNull ExecutorService pathExecutor, @NotNull Supplier<? extends PathOperation> pathOperationSupplier, int poolCapacity) {
         this.pathExecutor = Objects.requireNonNull(pathExecutor);
         this.pathOperationLocal = ThreadLocal.withInitial(pathOperationSupplier);
         if (poolCapacity <= 0) {
@@ -26,8 +25,7 @@ public class BasicAsyncPathfinder implements Pathfinder {
     }
 
     @Override
-    public @NotNull Future<PathResult> pathfind(double x, double y, double z, @NotNull PathTarget destination,
-            @NotNull PathSettings settings) {
+    public @NotNull Future<PathResult> pathfind(double x, double y, double z, @NotNull PathTarget destination, @NotNull PathSettings settings) {
         Callable<PathResult> callable = () -> {
             PathOperation localOperation = null;
             try {
@@ -52,8 +50,7 @@ public class BasicAsyncPathfinder implements Pathfinder {
                 }
 
                 return localOperation.makeResult();
-            }
-            finally {
+            } finally {
                 //decrement the poolSize since this operation is finishing
                 poolSize.decrementAndGet();
 
@@ -69,8 +66,7 @@ public class BasicAsyncPathfinder implements Pathfinder {
             try {
                 poolSize.incrementAndGet();
                 return pathExecutor.submit(callable);
-            }
-            catch (RejectedExecutionException ignored) {
+            } catch (RejectedExecutionException ignored) {
                 //if execution is rejected, run the callable on the caller thread
                 //decrement the poolSize again because the callable wasn't actually added
                 poolSize.decrementAndGet();
@@ -80,8 +76,7 @@ public class BasicAsyncPathfinder implements Pathfinder {
         try {
             //if the poolCapacity is exceeded, pathfind on the caller thread
             return CompletableFuture.completedFuture(callable.call());
-        }
-        catch (Throwable e) {
+        } catch (Throwable e) {
             return CompletableFuture.failedFuture(e);
         }
     }
@@ -102,8 +97,7 @@ public class BasicAsyncPathfinder implements Pathfinder {
                 //if we took longer than 10 seconds to shut down, interrupt the workers
                 pathExecutor.shutdownNow();
             }
-        }
-        catch (InterruptedException ignored) {
+        } catch (InterruptedException ignored) {
             //if interrupted, just return immediately
         }
     }

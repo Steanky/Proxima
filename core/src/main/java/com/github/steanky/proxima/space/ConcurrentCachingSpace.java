@@ -28,91 +28,9 @@ public abstract class ConcurrentCachingSpace implements Space {
     private final StampedLock lock;
     private final Long2ObjectOpenHashMap<Chunk> cache;
 
-    private record Chunk(Int2ObjectMap<Solid> map, StampedLock lock) {
-        @SuppressWarnings("DuplicatedCode")
-        private Solid read(int key) {
-            long read;
-            Solid solid;
-
-            boolean valid;
-            int i = 0;
-            do {
-                //often, we can grab a solid without ever needing to read-lock the map
-                //if a writer thread wants access, it will break our optimistic read, and we retry
-                //retries are limited to BLOCK_READ_ATTEMPTS, after which a proper read lock is used
-                read = lock.tryOptimisticRead();
-
-                //if we were write-locked when trying to attain the optimistic read, we will never have a valid stamp
-                if (!lock.validate(read)) {
-                    valid = false;
-                    solid = null;
-                    continue;
-                }
-
-                try {
-                    solid = map.get(key);
-                    valid = lock.validate(read);
-                }
-                catch (Throwable ignored) {
-                    /*
-                    theoretically, a table rehash or trim could occur in the map at exactly the wrong time, which would
-                    cause get(int) to throw an exception; this means our read was definitely broken
-                     */
-                    solid = null;
-                    valid = false;
-                }
-            }
-            while (!valid && i++ < BLOCK_READ_ATTEMPTS);
-
-            if (valid) {
-                //we were able to successfully read the solid without locking on the map
-                return solid;
-            }
-
-            read = lock.readLock();
-            try {
-                //we tried to optimistically read too many times; we need to do a full read
-                return map.get(key);
-            }
-            finally {
-                lock.unlockRead(read);
-            }
-        }
-
-        private void write(int key, Solid solid) {
-            long write = lock.writeLock();
-            try {
-                map.put(key, solid);
-            }
-            finally {
-                lock.unlockWrite(write);
-            }
-        }
-
-        private boolean remove(int key) {
-            long write = lock.writeLock();
-            try {
-                map.remove(key);
-                return map.isEmpty();
-            }
-            finally {
-                lock.unlockWrite(write);
-            }
-        }
-
-        private Chunk() {
-            this(new Int2ObjectOpenHashMap<>(), new StampedLock());
-        }
-
-        private static long key(int x, int z) {
-            int hi = x >> 4;
-            int lo = z >> 4;
-            return (((long) hi) << 32) | (lo & 0xFFFF_FFFFL);
-        }
-
-        private static int relative(int x, int y, int z) {
-            return ((x & 15) << 15) | ((y & 2047) << 4) | (z & 15);
-        }
+    public ConcurrentCachingSpace() {
+        this.lock = new StampedLock();
+        this.cache = new Long2ObjectOpenHashMap<>();
     }
 
     //works identically to Chunk#read(int), but for the chunk cache rather than individual blocks
@@ -135,13 +53,11 @@ public abstract class ConcurrentCachingSpace implements Space {
             try {
                 chunk = cache.get(chunkKey);
                 valid = lock.validate(read);
-            }
-            catch (Throwable ignored) {
+            } catch (Throwable ignored) {
                 chunk = null;
                 valid = false;
             }
-        }
-        while (!valid && i++ < CHUNK_READ_ATTEMPTS);
+        } while (!valid && i++ < CHUNK_READ_ATTEMPTS);
 
         if (valid) {
             return chunk;
@@ -150,8 +66,7 @@ public abstract class ConcurrentCachingSpace implements Space {
         read = lock.readLock();
         try {
             return cache.get(chunkKey);
-        }
-        finally {
+        } finally {
             lock.unlockRead(read);
         }
     }
@@ -173,8 +88,7 @@ public abstract class ConcurrentCachingSpace implements Space {
             if (otherChunk != null) {
                 //another thread added a chunk - use it
                 chunk = otherChunk;
-            }
-            else {
+            } else {
                 //create a new chunk, add our solid to it, and put it in the cache
                 //we don't need to write-lock on the newly-created chunk at all this way
                 chunk = new Chunk();
@@ -185,19 +99,13 @@ public abstract class ConcurrentCachingSpace implements Space {
                 //indicate that we already put the solid in the chunk
                 addedSolid = true;
             }
-        }
-        finally {
+        } finally {
             lock.unlockWrite(write);
         }
 
         if (!addedSolid) {
             chunk.write(blockKey, solidToWrite);
         }
-    }
-
-    public ConcurrentCachingSpace() {
-        this.lock = new StampedLock();
-        this.cache = new Long2ObjectOpenHashMap<>();
     }
 
     @Override
@@ -227,12 +135,12 @@ public abstract class ConcurrentCachingSpace implements Space {
     }
 
     /**
-     * Updates the solid at the given position. If the solid is null, any solid that was cached at that location will
-     * be removed, to be re-computed when needed.
+     * Updates the solid at the given position. If the solid is null, any solid that was cached at that location will be
+     * removed, to be re-computed when needed.
      *
-     * @param x the x-coordinate of the solid to update
-     * @param y the y-coordinate of the solid to update
-     * @param z the z-coordinate of the solid to update
+     * @param x     the x-coordinate of the solid to update
+     * @param y     the y-coordinate of the solid to update
+     * @param z     the z-coordinate of the solid to update
      * @param solid the new solid, or null to remove any cached solid (if present)
      */
     public void updateSolid(int x, int y, int z, @Nullable Solid solid) {
@@ -247,14 +155,12 @@ public abstract class ConcurrentCachingSpace implements Space {
                     long write = lock.writeLock();
                     try {
                         cache.remove(chunkKey);
-                    }
-                    finally {
+                    } finally {
                         lock.unlockWrite(write);
                     }
                 }
             }
-        }
-        else {
+        } else {
             //if the chunk does not exist (is null); creates it and adds the solid
             //otherwise, adds the solid to the existing chunk
             addToExistingOrNewChunk(getChunk(chunkKey), chunkKey, Chunk.relative(x, y, z), solid);
@@ -269,8 +175,7 @@ public abstract class ConcurrentCachingSpace implements Space {
         try {
             cache.clear();
             cache.trim();
-        }
-        finally {
+        } finally {
             lock.unlockWrite(write);
         }
     }
@@ -285,7 +190,90 @@ public abstract class ConcurrentCachingSpace implements Space {
      * @param x the x-coordinate of the solid to load
      * @param y the y-coordinate of the solid to load
      * @param z the z-coordinate of the solid to load
+     *
      * @return a Solid object
      */
     public abstract @NotNull Solid loadSolid(int x, int y, int z);
+
+    private record Chunk(Int2ObjectMap<Solid> map, StampedLock lock) {
+        private Chunk() {
+            this(new Int2ObjectOpenHashMap<>(), new StampedLock());
+        }
+
+        private static long key(int x, int z) {
+            int hi = x >> 4;
+            int lo = z >> 4;
+            return (((long) hi) << 32) | (lo & 0xFFFF_FFFFL);
+        }
+
+        private static int relative(int x, int y, int z) {
+            return ((x & 15) << 15) | ((y & 2047) << 4) | (z & 15);
+        }
+
+        @SuppressWarnings("DuplicatedCode")
+        private Solid read(int key) {
+            long read;
+            Solid solid;
+
+            boolean valid;
+            int i = 0;
+            do {
+                //often, we can grab a solid without ever needing to read-lock the map
+                //if a writer thread wants access, it will break our optimistic read, and we retry
+                //retries are limited to BLOCK_READ_ATTEMPTS, after which a proper read lock is used
+                read = lock.tryOptimisticRead();
+
+                //if we were write-locked when trying to attain the optimistic read, we will never have a valid stamp
+                if (!lock.validate(read)) {
+                    valid = false;
+                    solid = null;
+                    continue;
+                }
+
+                try {
+                    solid = map.get(key);
+                    valid = lock.validate(read);
+                } catch (Throwable ignored) {
+                    /*
+                    theoretically, a table rehash or trim could occur in the map at exactly the wrong time, which would
+                    cause get(int) to throw an exception; this means our read was definitely broken
+                     */
+                    solid = null;
+                    valid = false;
+                }
+            } while (!valid && i++ < BLOCK_READ_ATTEMPTS);
+
+            if (valid) {
+                //we were able to successfully read the solid without locking on the map
+                return solid;
+            }
+
+            read = lock.readLock();
+            try {
+                //we tried to optimistically read too many times; we need to do a full read
+                return map.get(key);
+            } finally {
+                lock.unlockRead(read);
+            }
+        }
+
+        private void write(int key, Solid solid) {
+            long write = lock.writeLock();
+            try {
+                map.put(key, solid);
+            } finally {
+                lock.unlockWrite(write);
+            }
+        }
+
+        private boolean remove(int key) {
+            long write = lock.writeLock();
+            try {
+                map.remove(key);
+                return map.isEmpty();
+            } finally {
+                lock.unlockWrite(write);
+            }
+        }
+    }
 }

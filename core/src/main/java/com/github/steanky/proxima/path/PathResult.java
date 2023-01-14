@@ -12,9 +12,14 @@ import java.util.Objects;
  */
 public record PathResult(@NotNull @Unmodifiable List<Node> nodes, int exploredCount, boolean isSuccessful) {
     /**
+     * The empty, unsuccessful path result.
+     */
+    public static PathResult EMPTY = new PathResult(List.of(), 0, false);
+
+    /**
      * Creates a new BasicResult.
      *
-     * @param nodes       an unmodifiable list of nodes making up the path, from start to finish
+     * @param nodes         an unmodifiable list of nodes making up the path, from start to finish
      * @param exploredCount the number of nodes that were explored for this path, can be used to judge the computational
      *                      "difficulty" of this path
      * @param isSuccessful  if the path is successful (reached its destination)
@@ -22,9 +27,4 @@ public record PathResult(@NotNull @Unmodifiable List<Node> nodes, int exploredCo
     public PathResult {
         Objects.requireNonNull(nodes);
     }
-
-    /**
-     * The empty, unsuccessful path result.
-     */
-    public static PathResult EMPTY = new PathResult(List.of(), 0, false);
 }

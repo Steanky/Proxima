@@ -4,7 +4,6 @@ import com.github.steanky.proxima.Direction;
 import com.github.steanky.proxima.NodeHandler;
 import com.github.steanky.proxima.PathLimiter;
 import com.github.steanky.proxima.node.Node;
-import com.github.steanky.proxima.node.NodeQueue;
 import com.github.steanky.proxima.snapper.NodeSnapper;
 import com.github.steanky.vector.Vec3D;
 import com.github.steanky.vector.Vec3I2ObjectMap;
@@ -15,21 +14,18 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public abstract class DirectionalExplorer implements Explorer {
+    protected final NodeSnapper snapper;
     private final Direction[] directions;
     private final PathLimiter limiter;
 
-    protected final NodeSnapper snapper;
-
-    public DirectionalExplorer(@NotNull Direction[] directions, @NotNull PathLimiter limiter,
-            @NotNull NodeSnapper snapper) {
+    public DirectionalExplorer(@NotNull Direction[] directions, @NotNull PathLimiter limiter, @NotNull NodeSnapper snapper) {
         this.directions = Arrays.copyOf(directions, directions.length);
         this.limiter = Objects.requireNonNull(limiter);
         this.snapper = Objects.requireNonNull(snapper);
     }
 
     @Override
-    public void exploreEach(@NotNull Node currentNode, @NotNull NodeHandler handler,
-            @NotNull Vec3I2ObjectMap<Node> graph) {
+    public void exploreEach(@NotNull Node currentNode, @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph) {
         if (!limiter.inBounds(currentNode)) {
             //prune nodes that are not in bounds according to the limiter
             return;
@@ -114,6 +110,5 @@ public abstract class DirectionalExplorer implements Explorer {
 
     protected abstract boolean isParent(@NotNull Node parent, int tx, int ty, int tz);
 
-    protected abstract void handleDirection(@NotNull Direction direction, @NotNull Node currentNode,
-            @Nullable Node neighborNode, @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph);
+    protected abstract void handleDirection(@NotNull Direction direction, @NotNull Node currentNode, @Nullable Node neighborNode, @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph);
 }

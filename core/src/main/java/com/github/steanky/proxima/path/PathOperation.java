@@ -3,8 +3,7 @@ package com.github.steanky.proxima.path;
 import org.jetbrains.annotations.NotNull;
 
 public interface PathOperation {
-    void init(double startX, double startY, double startZ, int destinationX, int destinationY, int destinationZ,
-            @NotNull PathSettings settings);
+    void init(double startX, double startY, double startZ, int destinationX, int destinationY, int destinationZ, @NotNull PathSettings settings);
 
     boolean step();
 
@@ -13,8 +12,6 @@ public interface PathOperation {
     void cleanup();
 
     enum State {
-        UNINITIALIZED,
-        INITIALIZED,
-        COMPLETE
+        UNINITIALIZED, INITIALIZED, COMPLETE
     }
 }

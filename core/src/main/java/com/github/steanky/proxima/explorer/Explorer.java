@@ -2,7 +2,6 @@ package com.github.steanky.proxima.explorer;
 
 import com.github.steanky.proxima.NodeHandler;
 import com.github.steanky.proxima.node.Node;
-import com.github.steanky.proxima.node.NodeQueue;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 

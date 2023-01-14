@@ -12,12 +12,10 @@ public final class Node implements Comparable<Node> {
     public final int x;
     public final int y;
     public final int z;
-
-    public float g;
     public final float h;
     public final float blockOffset;
     public final float jumpOffset;
-
+    public float g;
     public Node parent;
 
     int heapIndex;
@@ -66,8 +64,7 @@ public final class Node implements Comparable<Node> {
         do {
             nodes[i++] = prev;
             prev = prev.parent;
-        }
-        while (prev != null);
+        } while (prev != null);
 
         //Containers.arrayView instead of List.of so we don't need to copy the array
         return Containers.arrayView(nodes);

@@ -10,12 +10,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class WalkExplorer extends DirectionalExplorer {
-    private static final Direction[] DIRECTIONS = new Direction[] {
-            Direction.NORTH,
-            Direction.EAST,
-            Direction.SOUTH,
-            Direction.WEST
-    };
+    private static final Direction[] DIRECTIONS =
+            new Direction[] {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
 
     public WalkExplorer(@NotNull NodeSnapper snapper, @NotNull PathLimiter limiter) {
         super(DIRECTIONS, limiter, snapper);
@@ -27,8 +23,7 @@ public class WalkExplorer extends DirectionalExplorer {
     }
 
     @Override
-    protected void handleDirection(@NotNull Direction direction, @NotNull Node currentNode, @Nullable Node neighborNode,
-            @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph) {
+    protected void handleDirection(@NotNull Direction direction, @NotNull Node currentNode, @Nullable Node neighborNode, @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph) {
         int nx = currentNode.x;
         int ny = currentNode.y;
         int nz = currentNode.z;

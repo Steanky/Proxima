@@ -36,8 +36,7 @@ public class BasicPathOperation implements PathOperation {
     }
 
     @Override
-    public void init(double startX, double startY, double startZ, int destX, int destY, int destZ,
-            @NotNull PathSettings settings) {
+    public void init(double startX, double startY, double startZ, int destX, int destY, int destZ, @NotNull PathSettings settings) {
         this.graph = settings.graph();
 
         this.successPredicate = settings.successPredicate();
@@ -98,38 +97,6 @@ public class BasicPathOperation implements PathOperation {
         return false;
     }
 
-    private void complete(boolean success) {
-        if (state == State.COMPLETE) {
-            throw new IllegalStateException("Cannot complete already-completed path");
-        }
-
-        state = State.COMPLETE;
-        this.success = success;
-    }
-
-    private void initialize(int x, int y, int z, float offset) {
-        Node node = new Node(x, y, z, 0, heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ),
-                null, offset);
-        graph.put(x, y, z, node);
-        openSet.enqueue(node);
-    }
-
-    private void explore(Node current, Node target, int x, int y, int z, float blockOffset, float jumpOffset) {
-        if (target == null) {
-            target = new Node(x, y, z, Float.POSITIVE_INFINITY,
-                    heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ), null, blockOffset,
-                    jumpOffset);
-            graph.put(x, y, z, target);
-        }
-
-        float g = current.g + (float) Vec3I.distanceSquared(current.x, current.y, current.z, x, y, z);
-        if (g < target.g) {
-            target.parent = current;
-            target.g = g;
-            openSet.enqueueOrUpdate(target);
-        }
-    }
-
     @Override
     public @NotNull PathResult makeResult() {
         if (state != State.COMPLETE) {
@@ -150,5 +117,37 @@ public class BasicPathOperation implements PathOperation {
         current = null;
         best = null;
         state = State.UNINITIALIZED;
+    }
+
+    private void complete(boolean success) {
+        if (state == State.COMPLETE) {
+            throw new IllegalStateException("Cannot complete already-completed path");
+        }
+
+        state = State.COMPLETE;
+        this.success = success;
+    }
+
+    private void initialize(int x, int y, int z, float offset) {
+        Node node = new Node(x, y, z, 0, heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ), null,
+                offset);
+        graph.put(x, y, z, node);
+        openSet.enqueue(node);
+    }
+
+    private void explore(Node current, Node target, int x, int y, int z, float blockOffset, float jumpOffset) {
+        if (target == null) {
+            target = new Node(x, y, z, Float.POSITIVE_INFINITY,
+                    heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ), null, blockOffset,
+                    jumpOffset);
+            graph.put(x, y, z, target);
+        }
+
+        float g = current.g + (float) Vec3I.distanceSquared(current.x, current.y, current.z, x, y, z);
+        if (g < target.g) {
+            target.parent = current;
+            target.g = g;
+            openSet.enqueueOrUpdate(target);
+        }
     }
 }

@@ -1,8 +1,6 @@
 package com.github.steanky.proxima.path;
 
 import com.github.steanky.proxima.Navigator;
-import com.github.steanky.proxima.resolver.PositionResolver;
-import com.github.steanky.vector.Vec3I;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;

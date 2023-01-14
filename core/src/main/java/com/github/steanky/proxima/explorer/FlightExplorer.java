@@ -10,14 +10,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 public class FlightExplorer extends DirectionalExplorer {
-    private static final Direction[] DIRECTIONS = new Direction[] {
-            Direction.NORTH,
-            Direction.EAST,
-            Direction.SOUTH,
-            Direction.WEST,
-            Direction.UP,
-            Direction.DOWN
-    };
+    private static final Direction[] DIRECTIONS =
+            new Direction[] {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST, Direction.UP,
+                    Direction.DOWN};
 
     public FlightExplorer(@NotNull PathLimiter limiter, @NotNull NodeSnapper snapper) {
         super(DIRECTIONS, limiter, snapper);
@@ -29,8 +24,7 @@ public class FlightExplorer extends DirectionalExplorer {
     }
 
     @Override
-    protected void handleDirection(@NotNull Direction direction, @NotNull Node currentNode, @Nullable Node neighborNode,
-            @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph) {
+    protected void handleDirection(@NotNull Direction direction, @NotNull Node currentNode, @Nullable Node neighborNode, @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph) {
         int tx = currentNode.x + direction.x;
         int ty = currentNode.y + direction.y;
         int tz = currentNode.z + direction.z;

@@ -10,8 +10,6 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 public interface PathTarget {
-    @Nullable Vec3I resolve();
-
     static @NotNull PathTarget coordinate(int x, int y, int z) {
         Vec3I vector = Vec3I.immutable(x, y, z);
         return () -> vector;
@@ -35,4 +33,6 @@ public interface PathTarget {
             return null;
         };
     }
+
+    @Nullable Vec3I resolve();
 }
