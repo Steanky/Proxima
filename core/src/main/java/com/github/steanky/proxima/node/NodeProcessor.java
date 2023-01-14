@@ -19,22 +19,21 @@ public interface NodeProcessor {
 
     static @NotNull NodeProcessor combined(@NotNull NodeProcessor @NotNull ... processors) {
         Objects.requireNonNull(processors);
-
-        NodeProcessor[] copy = Arrays.copyOf(processors, processors.length);
-        if (copy.length == 0) {
+        if (processors.length == 0) {
             return NO_CHANGE;
         }
 
+        NodeProcessor[] copy = Arrays.copyOf(processors, processors.length);
         if (copy.length == 1) {
             return Objects.requireNonNull(copy[0], "processors array element");
         }
 
-        for (int i = 0; i < processors.length; i++) {
-            Objects.requireNonNull(copy[i], "processors array element");
+        for (NodeProcessor processor : copy) {
+            Objects.requireNonNull(processor, "processors array element");
         }
 
         return (head, graph) -> {
-            for (NodeProcessor component : processors) {
+            for (NodeProcessor component : copy) {
                 component.processPath(head, graph);
             }
         };

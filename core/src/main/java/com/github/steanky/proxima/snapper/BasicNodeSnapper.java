@@ -9,9 +9,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 
 public class BasicNodeSnapper implements NodeSnapper {
-    private final double halfWidth;
+    private final double adjustedHalfWidth;
     private final double fallTolerance;
-    private final double height;
 
     private final int searchHeight;
     private final int fallSearchHeight;
@@ -27,6 +26,10 @@ public class BasicNodeSnapper implements NodeSnapper {
     private final double adjustedWidth;
     private final double adjustedHeight;
 
+    private final double width;
+    private final double halfWidth;
+    private final double height;
+
     private BasicNodeSnapper(@NotNull Space space, double width, double height, double fallTolerance, double jumpHeight, boolean walk, double epsilon) {
         validate(width, height, fallTolerance, jumpHeight, epsilon);
 
@@ -38,8 +41,7 @@ public class BasicNodeSnapper implements NodeSnapper {
         //silly, totally unnecessary way to add 1 to a number only if it is even
         int blockWidth = ((int) Math.ceil(width)) | 1;
 
-        this.halfWidth = (width / 2) - (epsilon / 2);
-        this.height = height;
+        this.adjustedHalfWidth = (width / 2) - (epsilon / 2);
 
         this.searchHeight = (int) Math.ceil(height + jumpHeight);
         this.fallSearchHeight = (int) Math.ceil(fallTolerance) + 1;
@@ -51,6 +53,10 @@ public class BasicNodeSnapper implements NodeSnapper {
         this.adjustedWidth = width - epsilon;
         this.adjustedHeight = height - epsilon;
 
+        this.width = width;
+        this.halfWidth = width / 2;
+        this.height = height;
+
         this.walk = walk;
     }
 
@@ -58,7 +64,8 @@ public class BasicNodeSnapper implements NodeSnapper {
         this(space, width, height, 0, 0, false, epsilon);
     }
 
-    public BasicNodeSnapper(@NotNull Space space, double width, double height, double fallTolerance, double jumpHeight, double epsilon) {
+    public BasicNodeSnapper(@NotNull Space space, double width, double height, double fallTolerance, double jumpHeight,
+            double epsilon) {
         this(space, width, height, fallTolerance, jumpHeight, true, epsilon);
     }
 
@@ -102,8 +109,8 @@ public class BasicNodeSnapper implements NodeSnapper {
     private long snapVertical(Direction direction, int nodeX, int nodeY, int nodeZ, float nodeOffset) {
         double exactY = nodeY + nodeOffset;
 
-        double ax = nodeX + 0.5 - halfWidth;
-        double az = nodeZ + 0.5 - halfWidth;
+        double ax = nodeX + 0.5 - adjustedHalfWidth;
+        double az = nodeZ + 0.5 - adjustedHalfWidth;
 
         if (direction == Direction.UP) {
             double exactHeight = height + nodeOffset;
@@ -184,8 +191,8 @@ public class BasicNodeSnapper implements NodeSnapper {
         //the actual number of blocks we need to check vertically may vary depending on the nodeOffset
         int actualSearchHeight = computeJumpSearchHeight(nodeY, exactY);
 
-        double ax = nodeX + 0.5 - halfWidth;
-        double az = nodeZ + 0.5 - halfWidth;
+        double ax = nodeX + 0.5 - adjustedHalfWidth;
+        double az = nodeZ + 0.5 - adjustedHalfWidth;
 
         //we may need to jump over a block to get to the next node
         boolean highestIsIntermediate = false;
@@ -316,8 +323,8 @@ public class BasicNodeSnapper implements NodeSnapper {
 
     @Override
     public float checkInitial(double x, double y, double z, int tx, int ty, int tz) {
-        double aox = x - halfWidth;
-        double aoz = z - halfWidth;
+        double aox = x - adjustedHalfWidth;
+        double aoz = z - adjustedHalfWidth;
 
         double amx = aox + adjustedWidth;
         double amz = aoz + adjustedWidth;
@@ -357,11 +364,11 @@ public class BasicNodeSnapper implements NodeSnapper {
         boolean limitMinX = cx && dx < 0;
         boolean limitMaxX = cx && dx > 0;
 
-        boolean xf = isFull(dx, x, amx);
+        boolean xf = isFull(dx, x);
         int xo = computeOffset(dx, x, amx);
         int sdx = (int)Math.signum(dx);
 
-        boolean zf = isFull(dz, z, amz);
+        boolean zf = isFull(dz, z);
         int zo = computeOffset(dz, z, amz);
         int sdz = (int)Math.signum(dz);
 
@@ -472,8 +479,8 @@ public class BasicNodeSnapper implements NodeSnapper {
         int dx = tx - x;
         int dz = tz - z;
 
-        double aox = x + 0.5 - halfWidth;
-        double aoz = z + 0.5 - halfWidth;
+        double aox = x + 0.5 - adjustedHalfWidth;
+        double aoz = z + 0.5 - adjustedHalfWidth;
 
         double amx = aox + adjustedWidth;
         double amz = aoz + adjustedWidth;
@@ -487,11 +494,11 @@ public class BasicNodeSnapper implements NodeSnapper {
         int sz = (int) Math.floor(eoz);
         int ez = (int) Math.floor(eoz + adjustedWidth + Math.abs(dz));
 
-        boolean xf = isFull(dx, x, amx);
+        boolean xf = isFull(dx, x);
         int xo = computeOffset(dx, x, amx);
         int sdx = (int)Math.signum(dx);
 
-        boolean zf = isFull(dz, z, amz);
+        boolean zf = isFull(dz, z);
         int zo = computeOffset(dz, z, amz);
         int sdz = (int)Math.signum(dz);
 
@@ -659,7 +666,12 @@ public class BasicNodeSnapper implements NodeSnapper {
         return d < 0 ? (int)Math.floor(oc) : (int)Math.floor(mc);
     }
 
-    private static boolean isFull(double d, double oc, double mc) {
-        return d < 0 ? oc == Math.rint(oc) : mc == Math.rint(mc);
+    private boolean isFull(double d, double oc) {
+        if (d < 0) {
+            return oc == Math.rint(oc);
+        }
+
+        double e = oc + 0.5 + halfWidth;
+        return e == Math.rint(e);
     }
 }

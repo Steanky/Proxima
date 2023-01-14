@@ -1,8 +1,5 @@
 package com.github.steanky.proxima.resolver;
 
-import com.github.steanky.proxima.Direction;
-import com.github.steanky.proxima.snapper.BasicNodeSnapper;
-import com.github.steanky.proxima.snapper.NodeSnapper;
 import com.github.steanky.proxima.space.Space;
 import com.github.steanky.vector.Vec3D;
 import com.github.steanky.vector.Vec3I;
@@ -18,31 +15,7 @@ public interface PositionResolver {
 
     PositionResolver FLOORED = Vec3I::immutableFloored;
 
-    static @NotNull PositionResolver snapping(@NotNull Space space, double width, double height, double jumpHeight,
-            double fallTolerance, double epsilon) {
-        return new SnappingResolver(new BasicNodeSnapper(space, width, height, jumpHeight, fallTolerance, epsilon),
-                new Direction[] {
-                        Direction.NORTH,
-                        Direction.SOUTH,
-                        Direction.EAST,
-                        Direction.WEST
-                });
-    }
-
-    static @NotNull PositionResolver snapping(@NotNull Space space, double width, double height, double epsilon) {
-        return new SnappingResolver(new BasicNodeSnapper(space, width, height, epsilon),
-                new Direction[] {
-                        Direction.NORTH,
-                        Direction.SOUTH,
-                        Direction.EAST,
-                        Direction.WEST,
-                        Direction.UP,
-                        Direction.DOWN
-                });
-    }
-
-    static @NotNull PositionResolver snapping(@NotNull NodeSnapper nodeSnapper,
-            @NotNull Direction @NotNull ... directions) {
-        return new SnappingResolver(nodeSnapper, directions);
+    static @NotNull PositionResolver seekBelow(@NotNull Space space, int searchHeight, double width, double epsilon) {
+        return new ClosestBelow(space, searchHeight, width, epsilon);
     }
 }

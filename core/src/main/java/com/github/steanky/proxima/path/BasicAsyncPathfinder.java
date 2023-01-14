@@ -29,13 +29,17 @@ public class BasicAsyncPathfinder implements Pathfinder {
     public @NotNull Future<PathResult> pathfind(double x, double y, double z, @NotNull PathTarget destination,
             @NotNull PathSettings settings) {
         Callable<PathResult> callable = () -> {
-            Vec3I destinationVector = destination.resolve();
-            if (destinationVector == null) {
-                return PathResult.EMPTY;
-            }
-
-            PathOperation localOperation = pathOperationLocal.get();
+            PathOperation localOperation = null;
             try {
+                //resolving a destination might be expensive, so do it on the pathfinder thread
+                Vec3I destinationVector = destination.resolve();
+
+                if (destinationVector == null) {
+                    //invalid destination; return immediately
+                    return PathResult.EMPTY;
+                }
+
+                localOperation = pathOperationLocal.get();
                 localOperation.init(x, y, z, destinationVector.x(), destinationVector.y(), destinationVector.z(),
                         settings);
 
@@ -53,9 +57,11 @@ public class BasicAsyncPathfinder implements Pathfinder {
                 //decrement the poolSize since this operation is finishing
                 poolSize.decrementAndGet();
 
-                //immediately reduce memory pressure by cleaning up the operation; PathOperation instances hang around
-                //for a while in ThreadLocals, so we want to make sure they aren't huge
-                localOperation.cleanup();
+                if (localOperation != null) {
+                    //immediately reduce memory pressure by cleaning up the operation; PathOperation instances hang around
+                    //for a while in ThreadLocals, so we want to make sure they aren't huge
+                    localOperation.cleanup();
+                }
             }
         };
 
