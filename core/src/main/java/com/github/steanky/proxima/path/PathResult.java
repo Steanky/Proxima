@@ -20,7 +20,7 @@ public record PathResult(@NotNull @Unmodifiable List<Node> nodes, int exploredCo
      * @param isSuccessful  if the path is successful (reached its destination)
      */
     public PathResult {
-        Objects.requireNonNull(nodes, "vectors");
+        Objects.requireNonNull(nodes);
     }
 
     /**

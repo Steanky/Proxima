@@ -26,11 +26,11 @@ public class BasicNodeSnapper implements NodeSnapper {
     private final double adjustedWidth;
     private final double adjustedHeight;
 
-    private final double width;
     private final double halfWidth;
     private final double height;
 
-    private BasicNodeSnapper(@NotNull Space space, double width, double height, double fallTolerance, double jumpHeight, boolean walk, double epsilon) {
+    private BasicNodeSnapper(@NotNull Space space, double width, double height, double fallTolerance, double jumpHeight,
+            boolean walk, double epsilon) {
         validate(width, height, fallTolerance, jumpHeight, epsilon);
 
         int rWidth = (int) Math.rint(width);
@@ -53,7 +53,6 @@ public class BasicNodeSnapper implements NodeSnapper {
         this.adjustedWidth = width - epsilon;
         this.adjustedHeight = height - epsilon;
 
-        this.width = width;
         this.halfWidth = width / 2;
         this.height = height;
 
@@ -503,7 +502,7 @@ public class BasicNodeSnapper implements NodeSnapper {
         int sdz = (int)Math.signum(dz);
 
         double adjustedY = y + nodeOffset;
-        int requiredHeight = ((int)Math.floor(adjustedY + height)) - y + 1;
+        int requiredHeight = ((int)Math.floor(adjustedY + adjustedHeight)) - y + 1;
 
         boolean limitMinX = dx < 0;
         boolean limitMaxX = dx > 0;
