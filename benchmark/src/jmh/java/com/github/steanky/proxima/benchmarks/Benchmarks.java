@@ -1,5 +1,6 @@
 package com.github.steanky.proxima.benchmarks;
 
+import com.github.steanky.proxima.path.PathTarget;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -12,6 +13,6 @@ public class Benchmarks {
     @Benchmark
     @BenchmarkMode(Mode.AverageTime)
     public void run(PathfindState state) throws ExecutionException, InterruptedException {
-        state.pathfinder.pathfind(0, 1, 0, 100, 1, 100, state.settings).get();
+        state.pathfinder.pathfind(0, 1, 0, PathTarget.coordinate(100, 1, 100), state.settings).get();
     }
 }

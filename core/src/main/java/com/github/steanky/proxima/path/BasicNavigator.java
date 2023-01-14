@@ -11,30 +11,23 @@ import java.util.concurrent.Future;
 
 public class BasicNavigator implements Navigator {
     private final Pathfinder pathfinder;
-    private final PositionResolver originResolver;
-    private final PositionResolver destinationResolver;
     private final PathSettings pathSettings;
 
     private Future<PathResult> result;
 
-    public BasicNavigator(@NotNull Pathfinder pathfinder, @NotNull PositionResolver originResolver,
-            @NotNull PositionResolver destinationResolver,
-            @NotNull PathSettings pathSettings) {
+    public BasicNavigator(@NotNull Pathfinder pathfinder, @NotNull PathSettings pathSettings) {
         this.pathfinder = Objects.requireNonNull(pathfinder);
-        this.originResolver = Objects.requireNonNull(originResolver);
-        this.destinationResolver = Objects.requireNonNull(destinationResolver);
         this.pathSettings = Objects.requireNonNull(pathSettings);
     }
 
     @Override
-    public void navigate(double x, double y, double z, double toX, double toY, double toZ) {
-        Vec3I destination = destinationResolver.resolve(toX, toY, toZ);
+    public void navigate(double x, double y, double z, @NotNull PathTarget target) {
         if (result != null && !result.isDone()) {
             result.cancel(true);
             result = null;
         }
 
-        result = pathfinder.pathfind(x, y, z, destination.x(), destination.y(), destination.z(), pathSettings);
+        result = pathfinder.pathfind(x, y, z, target, pathSettings);
     }
 
     @Override

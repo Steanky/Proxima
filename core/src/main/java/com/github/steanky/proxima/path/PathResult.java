@@ -22,4 +22,9 @@ public record PathResult(@NotNull @Unmodifiable List<Node> nodes, int exploredCo
     public PathResult {
         Objects.requireNonNull(nodes, "vectors");
     }
+
+    /**
+     * The empty, unsuccessful path result.
+     */
+    public static PathResult EMPTY = new PathResult(List.of(), 0, false);
 }

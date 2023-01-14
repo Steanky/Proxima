@@ -1,5 +1,6 @@
 package com.github.steanky.proxima.path;
 
+import com.github.steanky.vector.Vec3I;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -25,13 +26,18 @@ public class BasicAsyncPathfinder implements Pathfinder {
     }
 
     @Override
-    public @NotNull Future<PathResult> pathfind(double x, double y, double z, int destX, int destY, int destZ,
+    public @NotNull Future<PathResult> pathfind(double x, double y, double z, @NotNull PathTarget destination,
             @NotNull PathSettings settings) {
         Callable<PathResult> callable = () -> {
-            PathOperation localOperation = pathOperationLocal.get();
+            Vec3I destinationVector = destination.resolve();
+            if (destinationVector == null) {
+                return PathResult.EMPTY;
+            }
 
+            PathOperation localOperation = pathOperationLocal.get();
             try {
-                localOperation.init(x, y, z, destX, destY, destZ, settings);
+                localOperation.init(x, y, z, destinationVector.x(), destinationVector.y(), destinationVector.z(),
+                        settings);
 
                 //step the path until the method reports completion by returning false
                 while (!localOperation.step()) {

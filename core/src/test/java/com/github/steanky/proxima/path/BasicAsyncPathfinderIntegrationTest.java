@@ -170,8 +170,8 @@ class BasicAsyncPathfinderIntegrationTest {
 
         List<Vec3I> expected = List.of(Vec3I.immutable(0, 0, 0));
         IntStream.range(0, 1000000).parallel().forEach(ignored -> {
-            PathResult result = assertDoesNotThrow(() -> pathfinder.pathfind(0, 0, 0, 10, 10,
-                    10, settings).get());
+            PathResult result = assertDoesNotThrow(() -> pathfinder.pathfind(0, 0, 0, PathTarget.coordinate(10, 10,
+                    10), settings).get());
 
             assertPathEquals(expected, false, result);
         });
@@ -183,7 +183,7 @@ class BasicAsyncPathfinderIntegrationTest {
         Pathfinder pathfinder = pathfinder();
 
         for (int i = 0; i < 1000000; i++) {
-            pathfinder.pathfind(30, 1, 0, 0, 1, 0, settings);
+            pathfinder.pathfind(30, 1, 0, PathTarget.coordinate(0, 1, 0), settings);
         }
 
         pathfinder.shutdown();
@@ -194,7 +194,7 @@ class BasicAsyncPathfinderIntegrationTest {
         PathSettings settings = simpleEnvironment();
         Pathfinder pathfinder = pathfinder();
 
-        PathResult result = pathfinder.pathfind(5, 1, 0, 0, 1, 0, settings).get();
+        PathResult result = pathfinder.pathfind(5, 1, 0, PathTarget.coordinate(0, 1, 0), settings).get();
 
         List<Vec3I> expected = List.of(Vec3I.immutable(5, 1, 0),
                 Vec3I.immutable(4, 1, 0), Vec3I.immutable(3, 1, 0), Vec3I.immutable(2, 1, 0),
@@ -209,7 +209,7 @@ class BasicAsyncPathfinderIntegrationTest {
         Pathfinder pathfinder = pathfinder();
 
         for (int i = 0; i < 1000; i++) {
-            pathfinder.pathfind(0, 1, 0, 900, 1, 900, settings);
+            pathfinder.pathfind(0, 1, 0, PathTarget.coordinate(0, 1, 0), settings);
         }
 
         pathfinder.shutdown();
@@ -221,7 +221,7 @@ class BasicAsyncPathfinderIntegrationTest {
         Pathfinder pathfinder = pathfinder();
 
         for (int i = 0; i < 1000; i++) {
-            pathfinder.pathfind(0, 1, 0, 900, 1, 900, settings);
+            pathfinder.pathfind(0, 1, 0, PathTarget.coordinate(900, 1, 900), settings);
         }
 
         pathfinder.shutdown();
@@ -233,7 +233,7 @@ class BasicAsyncPathfinderIntegrationTest {
         Pathfinder pathfinder = pathfinder();
 
         for (int i = 0; i < 1000; i++) {
-            pathfinder.pathfind(0, 1, 0, 900, 1, 900, settings);
+            pathfinder.pathfind(0, 1, 0, PathTarget.coordinate(900, 1, 900), settings);
         }
 
         pathfinder.shutdown();
@@ -244,8 +244,8 @@ class BasicAsyncPathfinderIntegrationTest {
         PathSettings settings = synchronizedDiagonalProcessingEnvironment();
         Pathfinder pathfinder = pathfinder();
 
-        for (int i = 0; i < 1000; i++) {
-            pathfinder.pathfind(0, 1, 0, 900, 1, 900, settings);
+        for (int i = 0; i < 10000; i++) {
+            pathfinder.pathfind(0, 1, 0, PathTarget.coordinate(900, 1, 900), settings);
         }
 
         pathfinder.shutdown();
