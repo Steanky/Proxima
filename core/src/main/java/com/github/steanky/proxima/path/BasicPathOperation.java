@@ -108,8 +108,8 @@ public class BasicPathOperation implements PathOperation {
     }
 
     private void initialize(int x, int y, int z, float offset) {
-        Node node = new Node(x, y, z, 0, (float)Vec3I.distanceSquared(x, y, z, destinationX, destinationY,
-                destinationZ), null, offset);
+        Node node = new Node(x, y, z, 0, heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ),
+                null, offset);
         graph.put(x, y, z, node);
         openSet.enqueue(node);
     }

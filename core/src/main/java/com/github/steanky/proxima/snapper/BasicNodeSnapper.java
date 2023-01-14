@@ -286,6 +286,7 @@ public class BasicNodeSnapper implements NodeSnapper {
         boolean full = newY == oby;
 
         if (full && !walk) {
+            //full, non-flying entities won't fall at all, and we don't need to compute their offset since it's known
             return NodeSnapper.encode(newY, false, 0);
         }
 
@@ -298,6 +299,8 @@ public class BasicNodeSnapper implements NodeSnapper {
         double nax = ax + dx;
         double naz = az + dz;
 
+        //for walking entities, check blocks below the target
+        //for flying entities, check the current block (which is non-full) and use its offset
         double finalY = checkFall(obx, mbx, obz, mbz, oby, nax, newY, naz);
         if (Double.isNaN(finalY)) {
             return FAIL;
@@ -566,6 +569,9 @@ public class BasicNodeSnapper implements NodeSnapper {
 
             double highestY = checkDownwardLayer(obx, mbx, obz, mbz, by, i, aox, aoy, aoz);
             if (!walk) {
+                //only ever check a single layer if flying
+                //if we find a block: use its offset
+                //if we don't find a block: offset is 0
                 return Double.isFinite(highestY) ? by + highestY : by;
             }
 

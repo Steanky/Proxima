@@ -82,10 +82,12 @@ public abstract class DirectionalExplorer implements Explorer {
 
         float i = snapper.checkInitial(startX, startY, startZ, isx, isy, isz);
         if (!Float.isNaN(i)) {
+            //if we can reach the starting node, don't explore any other options
             initializer.initialize(isx, isy, isz, i);
             return;
         }
 
+        //we can't reach our starting node - try other directions
         for (Direction direction : directions) {
             double nx = startX + direction.x;
             double ny = startY + direction.y;
@@ -96,12 +98,15 @@ public abstract class DirectionalExplorer implements Explorer {
             int inz = (int) Math.floor(nz);
 
             double distance = Vec3D.distanceSquared(startX, startY, startZ, inx, iny, inz);
+
+            //checkInitial won't expect distances greater than 1
             if (distance > 1) {
                 continue;
             }
 
             i = snapper.checkInitial(startX, startY, startZ, inx, iny, inz);
             if (!Float.isNaN(i)) {
+                //valid, reachable, alternate starting node, initialize it
                 initializer.initialize(inx, iny, inz, i);
             }
         }
