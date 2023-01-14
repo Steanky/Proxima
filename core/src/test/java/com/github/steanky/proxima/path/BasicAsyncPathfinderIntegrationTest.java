@@ -8,6 +8,7 @@ import com.github.steanky.proxima.explorer.WalkExplorer;
 import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.node.NodeProcessor;
 import com.github.steanky.proxima.snapper.BasicNodeSnapper;
+import com.github.steanky.proxima.snapper.NodeSnapper;
 import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.proxima.space.ConcurrentCachingSpace;
 import com.github.steanky.proxima.space.HashSpace;
@@ -20,13 +21,14 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class BasicAsyncPathfinderIntegrationTest {
     private static PathSettings settings(int width, int height, int fallTolerance, int jumpHeight,
-            @NotNull Space space, Bounds3I searchArea) {
+            @NotNull Space space, Bounds3I searchArea, Function<NodeSnapper, NodeProcessor> processorFunction) {
         return new PathSettings() {
             //using a ThreadLocal HashVec3I2ObjectMap is a very significant performance save
             private final ThreadLocal<Vec3I2ObjectMap<Node>> THREAD_LOCAL_GRAPH = ThreadLocal.withInitial(() ->
@@ -35,8 +37,12 @@ class BasicAsyncPathfinderIntegrationTest {
             private static final Vec3IBiPredicate SUCCESS_PREDICATE = (x1, y1, z1, x2, y2, z2) -> x1 == x2 && y1 == y2
                     && z1 == z2;
 
-            private final Explorer explorer = new WalkExplorer(new BasicNodeSnapper(width, height, fallTolerance,
-                    jumpHeight, space, false, 1E-6), PathLimiter.inBounds(searchArea));
+            private final NodeSnapper snapper = new BasicNodeSnapper(width, height, fallTolerance,
+                    jumpHeight, space, false, 1E-6);
+
+            private final Explorer explorer = new WalkExplorer(snapper, PathLimiter.inBounds(searchArea));
+
+            private final NodeProcessor processor = processorFunction.apply(snapper);
 
             @Override
             public @NotNull Vec3IBiPredicate successPredicate() {
@@ -60,7 +66,7 @@ class BasicAsyncPathfinderIntegrationTest {
 
             @Override
             public @NotNull NodeProcessor nodeProcessor() {
-                return NodeProcessor.NO_CHANGE;
+                return processor;
             }
         };
     }
@@ -83,7 +89,7 @@ class BasicAsyncPathfinderIntegrationTest {
         }
 
         return settings(1, 1, 1, 1, space, Bounds3I.immutable(-100, -100,
-                -100, 200, 200, 200));
+                -100, 200, 200, 200), (ignored) -> NodeProcessor.NO_CHANGE);
     }
 
     private static PathSettings hugeEnvironment() {
@@ -96,7 +102,7 @@ class BasicAsyncPathfinderIntegrationTest {
         }
 
         return settings(1, 1, 1, 1, space, Bounds3I.immutable(0, 0,
-                0, 1000, 4, 1000));
+                0, 1000, 4, 1000), (ignored) -> NodeProcessor.NO_CHANGE);
     }
 
     private static PathSettings hugeEnvironmentWithPartialBlocks() {
@@ -111,7 +117,7 @@ class BasicAsyncPathfinderIntegrationTest {
         }
 
         return settings(1, 1, 1, 1, space, Bounds3I.immutable(0, 0,
-                0, 1000, 4, 1000));
+                0, 1000, 4, 1000), (ignored) -> NodeProcessor.NO_CHANGE);
     }
 
     private static PathSettings synchronizedEnvironment() {
@@ -128,7 +134,24 @@ class BasicAsyncPathfinderIntegrationTest {
             }
         };
 
-        return settings(1, 1, 1, 1, space, bounds);
+        return settings(1, 1, 1, 1, space, bounds, (ignored) -> NodeProcessor.NO_CHANGE);
+    }
+
+    private static PathSettings synchronizedDiagonalProcessingEnvironment() {
+        Bounds3I bounds = Bounds3I.immutable(0, 0, 0, 1000, 4, 1000);
+
+        Space space = new ConcurrentCachingSpace() {
+            @Override
+            public @NotNull Solid loadSolid(int x, int y, int z) {
+                if (y == 0) {
+                    return Solid.FULL;
+                }
+
+                return Solid.EMPTY;
+            }
+        };
+
+        return settings(1, 1, 1, 1, space, bounds, NodeProcessor::createDiagonals);
     }
 
     @Test
@@ -142,7 +165,7 @@ class BasicAsyncPathfinderIntegrationTest {
         space.put(0, 1, 0, Solid.FULL);
 
         PathSettings settings = settings(1, 1, 4, 1, space, Bounds3I
-                .immutable(-100, -100, -100, 200, 200, 200));
+                .immutable(-100, -100, -100, 200, 200, 200), (ignored) -> NodeProcessor.NO_CHANGE);
         Pathfinder pathfinder = pathfinder();
 
         List<Vec3I> expected = List.of(Vec3I.immutable(0, 0, 0));
@@ -207,6 +230,18 @@ class BasicAsyncPathfinderIntegrationTest {
     @Test
     void synchronizedHugePath() {
         PathSettings settings = synchronizedEnvironment();
+        Pathfinder pathfinder = pathfinder();
+
+        for (int i = 0; i < 1000; i++) {
+            pathfinder.pathfind(0, 1, 0, 900, 1, 900, settings);
+        }
+
+        pathfinder.shutdown();
+    }
+
+    @Test
+    void synchronizedHugePathAdjustingDiagonals() {
+        PathSettings settings = synchronizedDiagonalProcessingEnvironment();
         Pathfinder pathfinder = pathfinder();
 
         for (int i = 0; i < 1000; i++) {

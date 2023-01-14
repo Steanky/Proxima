@@ -45,6 +45,10 @@ public class BasicPathOperation implements PathOperation {
         this.heuristic = settings.heuristic();
         this.nodeProcessor = settings.nodeProcessor();
 
+        this.destinationX = destX;
+        this.destinationY = destY;
+        this.destinationZ = destZ;
+
         //find the starting node(s)
         //this may populate openSet and graph with a few values to start
         this.explorer.exploreInitial(startX, startY, startZ, this::initialize);
@@ -60,10 +64,6 @@ public class BasicPathOperation implements PathOperation {
         }
 
         best = current = openSet.first();
-
-        this.destinationX = destX;
-        this.destinationY = destY;
-        this.destinationZ = destZ;
 
         //indicate that we can start stepping
         state = State.INITIALIZED;
