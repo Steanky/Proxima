@@ -37,8 +37,8 @@ class BasicAsyncPathfinderIntegrationTest {
             private static final Vec3IBiPredicate SUCCESS_PREDICATE = (x1, y1, z1, x2, y2, z2) -> x1 == x2 && y1 == y2
                     && z1 == z2;
 
-            private final NodeSnapper snapper = new BasicNodeSnapper(width, height, fallTolerance,
-                    jumpHeight, space, false, 1E-6);
+            private final NodeSnapper snapper = new BasicNodeSnapper(space, width, height, fallTolerance,
+                    jumpHeight, 1E-6);
 
             private final Explorer explorer = new WalkExplorer(snapper, PathLimiter.inBounds(searchArea));
 

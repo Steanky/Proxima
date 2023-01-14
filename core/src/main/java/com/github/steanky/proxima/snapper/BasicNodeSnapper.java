@@ -26,14 +26,9 @@ public class BasicNodeSnapper implements NodeSnapper {
 
     private final double adjustedWidth;
     private final double adjustedHeight;
-    public BasicNodeSnapper(double width, double height, double fallTolerance, double jumpHeight,
-            @NotNull Space space, boolean walk, double epsilon) {
-        validate(width, height, fallTolerance, jumpHeight, epsilon);
 
-        if (!walk) {
-            jumpHeight = 0;
-            fallTolerance = 0;
-        }
+    private BasicNodeSnapper(@NotNull Space space, double width, double height, double fallTolerance, double jumpHeight, boolean walk, double epsilon) {
+        validate(width, height, fallTolerance, jumpHeight, epsilon);
 
         int rWidth = (int) Math.rint(width);
 
@@ -52,10 +47,19 @@ public class BasicNodeSnapper implements NodeSnapper {
         this.halfBlockWidth = blockWidth / 2;
         this.jumpHeight = jumpHeight;
         this.space = Objects.requireNonNull(space);
-        this.walk = walk;
 
         this.adjustedWidth = width - epsilon;
         this.adjustedHeight = height - epsilon;
+
+        this.walk = walk;
+    }
+
+    public BasicNodeSnapper(@NotNull Space space, double width, double height, double epsilon) {
+        this(space, width, height, 0, 0, false, epsilon);
+    }
+
+    public BasicNodeSnapper(@NotNull Space space, double width, double height, double fallTolerance, double jumpHeight, double epsilon) {
+        this(space, width, height, fallTolerance, jumpHeight, true, epsilon);
     }
 
     private static void validate(double width, double height, double fallTolerance, double jumpHeight, double epsilon) {

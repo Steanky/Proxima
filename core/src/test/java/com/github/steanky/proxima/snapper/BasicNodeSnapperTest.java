@@ -12,6 +12,8 @@ import com.github.steanky.vector.Vec3I;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.function.DoubleConsumer;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class BasicNodeSnapperTest {
@@ -41,6 +43,11 @@ class BasicNodeSnapperTest {
     public static final Solid SMALL_UPPER_LEFT_SOLID = Solid.of(Bounds3D.immutable(0, 0, 0.7,
             0.1, 1, 0.1));
 
+    public static final Solid NEARLY_FULL_SOLID = Solid.of(Bounds3D.immutable(0.1, 0, 0.1, 0.8, 1, 0.8));
+
+    public static final Solid STAIRS = Solid.of(Bounds3D.immutable(0, 0, 0, 1, 0.5, 1),
+            Bounds3D.immutable(0, 0.5, 0.5, 1, 0.5, 0.5));
+
     private record SolidPos(Solid solid, Vec3I pos) { }
 
     private static SolidPos solid(Solid solid, int x, int y, int z) {
@@ -52,8 +59,7 @@ class BasicNodeSnapperTest {
     }
 
     private static SolidPos stairs(int x, int y, int z) {
-        return solid(Solid.of(Bounds3D.immutable(0, 0, 0, 1, 0.5, 1),
-                Bounds3D.immutable(0, 0.5, 0.5, 1, 0.5, 0.5)), x, y, z);
+        return solid(STAIRS, x, y, z);
     }
 
     private static Node node(int x, int y, int z) {
@@ -74,7 +80,7 @@ class BasicNodeSnapperTest {
             space.put(solid.pos, solid.solid);
         }
 
-        return new BasicNodeSnapper(width, height, fallTolerance, jumpHeight, space, true, epsilon);
+        return new BasicNodeSnapper(space, width, height, fallTolerance, jumpHeight, epsilon);
     }
 
     private static void assertSnap(BasicNodeSnapper snapper, Direction direction, Node node, NodeHandler handler,
@@ -1287,8 +1293,42 @@ class BasicNodeSnapperTest {
             };
         }
 
+        public static SolidPos[] nearlyFullBlockSqueeze(int x, int y, int z) {
+            return new SolidPos[] {
+                    full(x, y, z),
+                    full(x + 1, y, z),
+                    full(x - 1, y, z),
+                    full(x, y, z + 1),
+                    full(x, y, z - 1),
+                    solid(NEARLY_FULL_SOLID, x + 1, y + 1, z + 1),
+                    solid(NEARLY_FULL_SOLID,x - 1, y + 1, z + 1),
+                    solid(NEARLY_FULL_SOLID,x + 1, y + 1, z - 1),
+                    solid(NEARLY_FULL_SOLID,x - 1, y + 1, z - 1)
+            };
+        }
+
+        public static SolidPos[] stairsSqueeze(int x, int y, int z) {
+            return new SolidPos[] {
+                    full(x, y, z),
+                    full(x + 1, y, z),
+                    full(x - 1, y, z),
+                    full(x, y, z + 1),
+                    full(x, y, z - 1),
+                    solid(STAIRS, x + 1, y + 1, z + 1),
+                    solid(STAIRS,x - 1, y + 1, z + 1),
+                    solid(STAIRS,x + 1, y + 1, z - 1),
+                    solid(STAIRS,x - 1, y + 1, z - 1)
+            };
+        }
+
         public interface Vec3DConsumer {
             void consume(double x, double y, double z);
+        }
+
+        public static void genWidths(double start, double inc, DoubleConsumer consumer) {
+            for (double width = Math.min(start, 1); width <= 1; width += inc) {
+                consumer.accept(width);
+            }
         }
 
         public static void genSubBlockPositions(int x, int y, int z, double width, double inc, Vec3DConsumer consumer) {
@@ -1309,46 +1349,105 @@ class BasicNodeSnapperTest {
 
         public static void checkManyInitial(int x, int y, int z, Direction direction, double width,
                 double height, float eHeight, SolidPos... solids) {
-            BasicNodeSnapper snapper = make(width, height, 16, 0, EPSILON, solids);
-
             int tx = x + direction.x;
             int ty = y + direction.y;
             int tz = z + direction.z;
 
-            genSubBlockPositions(x, y, z, width, 0.01, (cx, cy, cz) -> {
-                double distance = Vec3D.distanceSquared(cx, cy, cz, tx + 0.5, cy, cz + 0.5);
-                if (distance > 1) {
-                    return;
-                }
+            genWidths(width, 0.01, w -> {
+                BasicNodeSnapper snapper = make(w, height, 16, 0, EPSILON, solids);
+                genSubBlockPositions(x, y, z, w, 0.01, (cx, cy, cz) -> {
+                    double distance = Vec3D.distanceSquared(cx, cy, cz, tx + 0.5, cy, cz + 0.5);
+                    if (distance > 1) {
+                        return;
+                    }
 
-                float res = snapper.checkInitial(cx, cy, cz, tx, ty, tz);
-                assertEquals(eHeight, res, () -> "target height: starting from " +
-                        Vec3D.immutable(cx, cy, cz) + " and going to " + Vec3I.immutable(tx, ty, tz));
+                    float res = snapper.checkInitial(cx, cy, cz, tx, ty, tz);
+                    assertEquals(eHeight, res, () -> "target height: starting from " +
+                            Vec3D.immutable(cx, cy, cz) + " and going to " + Vec3I.immutable(tx, ty, tz) +
+                            " for agent of width " + w);
+                });
             });
         }
 
-        @Test
-        void initialBlockNorth() {
-            checkManyInitial(0, 1, 0, Direction.NORTH, 0.5, 1, 0,
-                    fullBlockSqueeze(0, 0, 0));
+        @Nested
+        class FullBlocks {
+            @Test
+            void initialBlockNorth() {
+                checkManyInitial(0, 1, 0, Direction.NORTH, 0.1, 1, 0,
+                        fullBlockSqueeze(0, 0, 0));
+            }
+
+            @Test
+            void initialBlockEast() {
+                checkManyInitial(0, 1, 0, Direction.EAST, 0.1, 1, 0,
+                        fullBlockSqueeze(0, 0, 0));
+            }
+
+            @Test
+            void initialBlockSouth() {
+                checkManyInitial(0, 1, 0, Direction.SOUTH, 0.1, 1, 0,
+                        fullBlockSqueeze(0, 0, 0));
+            }
+
+            @Test
+            void initialBlockWest() {
+                checkManyInitial(0, 1, 0, Direction.WEST, 0.1, 1, 0,
+                        fullBlockSqueeze(0, 0, 0));
+            }
         }
 
-        @Test
-        void initialBlockEast() {
-            checkManyInitial(0, 1, 0, Direction.EAST, 0.5, 1, 0,
-                    fullBlockSqueeze(0, 0, 0));
+        @Nested
+        class NearlyFull {
+            @Test
+            void initialBlockNorth() {
+                checkManyInitial(0, 1, 0, Direction.NORTH, 0.5, 1, 0,
+                        nearlyFullBlockSqueeze(0, 0, 0));
+            }
+
+            @Test
+            void initialBlockEast() {
+                checkManyInitial(0, 1, 0, Direction.EAST, 0.5, 1, 0,
+                        nearlyFullBlockSqueeze(0, 0, 0));
+            }
+
+            @Test
+            void initialBlockSouth() {
+                checkManyInitial(0, 1, 0, Direction.SOUTH, 0.5, 1, 0,
+                        nearlyFullBlockSqueeze(0, 0, 0));
+            }
+
+            @Test
+            void initialBlockWest() {
+                checkManyInitial(0, 1, 0, Direction.WEST, 0.5, 1, 0,
+                        nearlyFullBlockSqueeze(0, 0, 0));
+            }
         }
 
-        @Test
-        void initialBlockSouth() {
-            checkManyInitial(0, 1, 0, Direction.SOUTH, 0.5, 1, 0,
-                    fullBlockSqueeze(0, 0, 0));
-        }
+        @Nested
+        class Stairs {
+            @Test
+            void initialBlockNorth() {
+                checkManyInitial(0, 1, 0, Direction.NORTH, 0.1, 1, 0,
+                        stairsSqueeze(0, 0, 0));
+            }
 
-        @Test
-        void initialBlockWest() {
-            checkManyInitial(0, 1, 0, Direction.WEST, 0.5, 1, 0,
-                    fullBlockSqueeze(0, 0, 0));
+            @Test
+            void initialBlockEast() {
+                checkManyInitial(0, 1, 0, Direction.EAST, 0.1, 1, 0,
+                        stairsSqueeze(0, 0, 0));
+            }
+
+            @Test
+            void initialBlockSouth() {
+                checkManyInitial(0, 1, 0, Direction.SOUTH, 0.1, 1, 0,
+                        stairsSqueeze(0, 0, 0));
+            }
+
+            @Test
+            void initialBlockWest() {
+                checkManyInitial(0, 1, 0, Direction.WEST, 0.1, 1, 0,
+                        stairsSqueeze(0, 0, 0));
+            }
         }
     }
 }

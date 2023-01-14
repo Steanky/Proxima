@@ -28,15 +28,13 @@ public class BasicNavigator implements Navigator {
 
     @Override
     public void navigate(double x, double y, double z, double toX, double toY, double toZ) {
-        PositionResolver.OffsetPosition destination = destinationResolver.resolve(toX, toY, toZ);
+        Vec3I destination = destinationResolver.resolve(toX, toY, toZ);
         if (result != null && !result.isDone()) {
             result.cancel(true);
             result = null;
         }
 
-        Vec3I destinationVector = destination.vector();
-        result = pathfinder.pathfind(x, y, z, destinationVector.x(), destinationVector.y(), destinationVector.z(),
-                pathSettings);
+        result = pathfinder.pathfind(x, y, z, destination.x(), destination.y(), destination.z(), pathSettings);
     }
 
     @Override

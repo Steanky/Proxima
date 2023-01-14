@@ -72,8 +72,8 @@ public class PathfindState {
             private static final Vec3IBiPredicate SUCCESS_PREDICATE = (x1, y1, z1, x2, y2, z2) -> x1 == x2 && y1 == y2
                     && z1 == z2;
 
-            private final Explorer explorer = new WalkExplorer(new BasicNodeSnapper(width, height, fallTolerance,
-                    jumpHeight, space, false, 1E-6), PathLimiter.inBounds(searchArea));
+            private final Explorer explorer = new WalkExplorer(new BasicNodeSnapper(space, width, height, fallTolerance,
+                    jumpHeight, 1E-6), PathLimiter.inBounds(searchArea));
 
             @Override
             public @NotNull Vec3IBiPredicate successPredicate() {
