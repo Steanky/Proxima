@@ -1056,8 +1056,26 @@ class BasicNodeSnapperTest {
                     solid(STAIRS, x + 1, y + 1, z - 1), solid(STAIRS, x - 1, y + 1, z - 1)};
         }
 
-        public static void genWidths(double start, double inc, DoubleConsumer consumer) {
-            for (double width = Math.min(start, 1); width <= 1; width += inc) {
+        public static SolidPos[] solidOverlapping(Solid solid, int x, int y, int z) {
+            return new SolidPos[] {
+                    full(x, y, z),
+                    solid(solid, x, y + 1, z),
+                    full(x + 1, y, z),
+                    full(x - 1, y, z),
+                    full(x, y, z + 1),
+                    full(x, y, z - 1),
+            };
+        }
+
+        public static SolidPos[] fullOverlapping(int x, int y, int z) {
+            return solidOverlapping(Solid.FULL, x, y, z);
+        }
+
+        public static void genWidths(double start, double end, double inc, DoubleConsumer consumer) {
+            double s = Math.min(start, end);
+            double e = Math.max(start, end);
+
+            for (double width = s; width <= e; width += inc) {
                 consumer.accept(width);
             }
         }
@@ -1078,12 +1096,14 @@ class BasicNodeSnapperTest {
             }
         }
 
-        public static void checkManyInitial(int x, int y, int z, Direction direction, double width, double height, float eHeight, SolidPos... solids) {
+        public static void checkManyInitial(int x, int y, int z, Direction direction, double wStart, double wEnd,
+                double height,
+                float eHeight, SolidPos... solids) {
             int tx = x + direction.x;
             int ty = y + direction.y;
             int tz = z + direction.z;
 
-            genWidths(width, 0.01, w -> {
+            genWidths(wStart, wEnd,  0.01, w -> {
                 BasicNodeSnapper snapper = make(w, height, 16, 0, EPSILON, solids);
                 genSubBlockPositions(x, y, z, w, 0.01, (cx, cy, cz) -> {
                     double distance = Vec3D.distanceSquared(cx, cy, cz, tx + 0.5, cy, cz + 0.5);
@@ -1099,30 +1119,90 @@ class BasicNodeSnapperTest {
             });
         }
 
+        public static void snapMany(int x, int y, int z, Direction direction, double wStart, double wEnd, double height,
+                float yOffset, float eOffset, boolean intermediate, SolidPos... solids) {
+
+            genWidths(wStart, wEnd, 0.01, w -> {
+                walk(direction, w, height, x, y, z, yOffset, x + direction.x, y + direction.y,
+                        z + direction.z, eOffset, intermediate, solids);
+            });
+        }
+
         public interface Vec3DConsumer {
             void consume(double x, double y, double z);
+        }
+
+        @Nested
+        class Overlapping {
+            @Test
+            void fullBlockNorth() {
+                snapMany(0, 1, 0, Direction.NORTH, 0.1, 5, 1, 0, 0, false,
+                        fullOverlapping(0, 0, 0));
+            }
+
+            @Test
+            void fullBlockEast() {
+                snapMany(0, 1, 0, Direction.EAST, 0.1, 5, 1, 0, 0, false,
+                        fullOverlapping(0, 0, 0));
+            }
+
+            @Test
+            void fullBlockSouth() {
+                snapMany(0, 1, 0, Direction.SOUTH, 0.1, 5, 1, 0, 0, false,
+                        fullOverlapping(0, 0, 0));
+            }
+
+            @Test
+            void fullBlockWest() {
+                snapMany(0, 1, 0, Direction.WEST, 0.1, 5, 1, 0, 0, false,
+                        fullOverlapping(0, 0, 0));
+            }
+
+            @Test
+            void partialBlockNorth() {
+                snapMany(0, 1, 0, Direction.NORTH, 0.9, 5, 1, 0, 0, false,
+                        solidOverlapping(PARTIAL_BLOCK_NORTH, 0, 0, 0));
+            }
+
+            @Test
+            void partialBlockEast() {
+                snapMany(0, 1, 0, Direction.EAST, 0.9, 5, 1, 0, 0, false,
+                        solidOverlapping(PARTIAL_BLOCK_EAST, 0, 0, 0));
+            }
+
+            @Test
+            void partialBlockSouth() {
+                snapMany(0, 1, 0, Direction.SOUTH, 0.9, 5, 1, 0, 0, false,
+                        solidOverlapping(PARTIAL_BLOCK_SOUTH, 0, 0, 0));
+            }
+
+            @Test
+            void partialBlockWest() {
+                snapMany(0, 1, 0, Direction.WEST, 0.9, 5, 1, 0, 0, false,
+                        solidOverlapping(PARTIAL_BLOCK_WEST, 0, 0, 0));
+            }
         }
 
         @Nested
         class FullBlocks {
             @Test
             void initialBlockNorth() {
-                checkManyInitial(0, 1, 0, Direction.NORTH, 0.1, 1, 0, fullBlockSqueeze(0, 0, 0));
+                checkManyInitial(0, 1, 0, Direction.NORTH, 0.1, 1, 1, 0, fullBlockSqueeze(0, 0, 0));
             }
 
             @Test
             void initialBlockEast() {
-                checkManyInitial(0, 1, 0, Direction.EAST, 0.1, 1, 0, fullBlockSqueeze(0, 0, 0));
+                checkManyInitial(0, 1, 0, Direction.EAST, 0.1, 1, 1, 0, fullBlockSqueeze(0, 0, 0));
             }
 
             @Test
             void initialBlockSouth() {
-                checkManyInitial(0, 1, 0, Direction.SOUTH, 0.1, 1, 0, fullBlockSqueeze(0, 0, 0));
+                checkManyInitial(0, 1, 0, Direction.SOUTH, 0.1, 1, 1, 0, fullBlockSqueeze(0, 0, 0));
             }
 
             @Test
             void initialBlockWest() {
-                checkManyInitial(0, 1, 0, Direction.WEST, 0.1, 1, 0, fullBlockSqueeze(0, 0, 0));
+                checkManyInitial(0, 1, 0, Direction.WEST, 0.1, 1, 1, 0, fullBlockSqueeze(0, 0, 0));
             }
         }
 
@@ -1130,22 +1210,22 @@ class BasicNodeSnapperTest {
         class NearlyFull {
             @Test
             void initialBlockNorth() {
-                checkManyInitial(0, 1, 0, Direction.NORTH, 0.5, 1, 0, nearlyFullBlockSqueeze(0, 0, 0));
+                checkManyInitial(0, 1, 0, Direction.NORTH, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(0, 0, 0));
             }
 
             @Test
             void initialBlockEast() {
-                checkManyInitial(0, 1, 0, Direction.EAST, 0.5, 1, 0, nearlyFullBlockSqueeze(0, 0, 0));
+                checkManyInitial(0, 1, 0, Direction.EAST, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(0, 0, 0));
             }
 
             @Test
             void initialBlockSouth() {
-                checkManyInitial(0, 1, 0, Direction.SOUTH, 0.5, 1, 0, nearlyFullBlockSqueeze(0, 0, 0));
+                checkManyInitial(0, 1, 0, Direction.SOUTH, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(0, 0, 0));
             }
 
             @Test
             void initialBlockWest() {
-                checkManyInitial(0, 1, 0, Direction.WEST, 0.5, 1, 0, nearlyFullBlockSqueeze(0, 0, 0));
+                checkManyInitial(0, 1, 0, Direction.WEST, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(0, 0, 0));
             }
         }
 
@@ -1153,22 +1233,22 @@ class BasicNodeSnapperTest {
         class Stairs {
             @Test
             void initialBlockNorth() {
-                checkManyInitial(0, 1, 0, Direction.NORTH, 0.1, 1, 0, stairsSqueeze(0, 0, 0));
+                checkManyInitial(0, 1, 0, Direction.NORTH, 0.1, 1, 1, 0, stairsSqueeze(0, 0, 0));
             }
 
             @Test
             void initialBlockEast() {
-                checkManyInitial(0, 1, 0, Direction.EAST, 0.1, 1, 0, stairsSqueeze(0, 0, 0));
+                checkManyInitial(0, 1, 0, Direction.EAST, 0.1, 1, 1, 0, stairsSqueeze(0, 0, 0));
             }
 
             @Test
             void initialBlockSouth() {
-                checkManyInitial(0, 1, 0, Direction.SOUTH, 0.1, 1, 0, stairsSqueeze(0, 0, 0));
+                checkManyInitial(0, 1, 0, Direction.SOUTH, 0.1, 1, 1, 0, stairsSqueeze(0, 0, 0));
             }
 
             @Test
             void initialBlockWest() {
-                checkManyInitial(0, 1, 0, Direction.WEST, 0.1, 1, 0, stairsSqueeze(0, 0, 0));
+                checkManyInitial(0, 1, 0, Direction.WEST, 0.1, 1, 1, 0, stairsSqueeze(0, 0, 0));
             }
         }
     }
