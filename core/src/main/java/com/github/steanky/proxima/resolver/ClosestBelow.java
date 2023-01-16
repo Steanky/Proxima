@@ -15,13 +15,15 @@ class ClosestBelow implements PositionResolver {
     private final int searchHeight;
     private final double width;
     private final double halfWidth;
+    private final double epsilon;
 
     ClosestBelow(@NotNull Space space, int searchHeight, double width, double epsilon) {
         validate(searchHeight, width, epsilon);
         this.space = Objects.requireNonNull(space);
         this.searchHeight = searchHeight;
-        this.width = width - epsilon;
-        this.halfWidth = this.width / 2;
+        this.width = width;
+        this.halfWidth = width / 2;
+        this.epsilon = epsilon;
     }
 
     private static void validate(int searchHeight, double width, double epsilon) {
@@ -84,7 +86,7 @@ class ClosestBelow implements PositionResolver {
                     } else {
                         Bounds3D closest =
                                 solid.closestCollision(bx, by, bz, ox, y, oz, width, 1, width, Direction.DOWN,
-                                        searchHeight);
+                                        searchHeight, epsilon);
                         if (closest != null) {
                             thisDistance = Vec3D.distanceSquared(bx + 0.5, by + closest.maxY(), bz + 0.5, x, y, z);
                         }

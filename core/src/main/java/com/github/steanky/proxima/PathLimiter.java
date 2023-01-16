@@ -11,7 +11,7 @@ import java.util.Objects;
 public interface PathLimiter {
     PathLimiter NO_LIMIT = (currentNode) -> true;
 
-    static @NotNull PathLimiter pathLength(int maxLength) {
+    static @NotNull PathLimiter pathLength(float maxLength) {
         return currentNode -> currentNode.g < maxLength;
     }
 

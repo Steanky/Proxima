@@ -55,7 +55,7 @@ public interface Solid {
     Solid FULL = new Solid12(Bounds3D.immutable(0, 0, 0, 1, 1, 1));
     /**
      * Returned by
-     * {@link Solid#minMaxCollision(int, int, int, double, double, double, double, double, double, Direction, double)}
+     * {@link Solid#minMaxCollision(int, int, int, double, double, double, double, double, double, Direction, double, double)}
      * to indicate no collision was found. The higher 32 bits represent single-precision positive infinity, whereas the
      * lower 32 bits represent single-precision negative infinity.
      */
@@ -111,23 +111,23 @@ public interface Solid {
 
     @NotNull @Unmodifiable List<Bounds3D> children();
 
-    default long minMaxCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, @NotNull Direction d, double l) {
-        return Util.minMaxCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l);
+    default long minMaxCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, @NotNull Direction d, double l, double e) {
+        return Util.minMaxCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l, e);
     }
 
-    default @Nullable Bounds3D closestCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, @NotNull Direction d, double l) {
-        return Util.closestCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l);
+    default @Nullable Bounds3D closestCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, @NotNull Direction d, double l, double e) {
+        return Util.closestCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l, e);
     }
 
-    default boolean hasCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, @NotNull Direction d, double l) {
-        return Util.hasCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l);
+    default boolean hasCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, @NotNull Direction d, double l, double e) {
+        return Util.hasCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l, e);
     }
 
-    default boolean hasCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, double dx, double dy, double dz) {
-        return Util.hasCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, dx, dy, dz);
+    default boolean hasCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, double dx, double dy, double dz, double e) {
+        return Util.hasCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, dx, dy, dz, e);
     }
 
-    default long minMaxCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, double dx, double dy, double dz) {
-        return Util.minMaxCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, dx, dy, dz);
+    default long minMaxCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, double dx, double dy, double dz, double e) {
+        return Util.minMaxCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, dx, dy, dz, e);
     }
 }

@@ -7,7 +7,7 @@ import com.github.steanky.vector.Bounds3D;
  * Default collision checking utilities. Not part of the public API.
  */
 final class Util {
-    static Bounds3D closestCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, Direction d, double l) {
+    static Bounds3D closestCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, Direction d, double l, double e) {
         ox -= x;
         oy -= y;
         oz -= z;
@@ -25,27 +25,35 @@ final class Util {
         double aoy = oy + Math.min(0, dy);
         double aoz = oz + Math.min(0, dz);
 
+        double eaox = aox + e;
+        double eaoy = aoy + e;
+        double eaoz = aoz + e;
+
+        double eox = ox + e;
+        double eoy = oy + e;
+        double eoz = oz + e;
+
         double alx = lx + Math.abs(dx);
         double aly = ly + Math.abs(dy);
         double alz = lz + Math.abs(dz);
 
-        double amx = aox + alx;
-        double amy = aoy + aly;
-        double amz = aoz + alz;
+        double amx = aox + alx - e;
+        double amy = aoy + aly - e;
+        double amz = aoz + alz - e;
 
-        double mx = ox + lx;
-        double my = oy + ly;
-        double mz = oz + lz;
+        double mx = ox + lx - e;
+        double my = oy + ly - e;
+        double mz = oz + lz - e;
 
         double closestDiff = Double.POSITIVE_INFINITY;
         Bounds3D closest = null;
 
         for (Bounds3D child : solid.children()) {
-            if (!overlaps(child, aox, aoy, aoz, amx, amy, amz) || overlaps(child, ox, oy, oz, mx, my, mz)) {
+            if (!overlaps(child, eaox, eaoy, eaoz, amx, amy, amz) || overlaps(child, eox, eoy, eoz, mx, my, mz)) {
                 continue;
             }
 
-            double diff = computeDiff(d, child, ox, oy, oz, mx, my, mz, adx, ady, adz);
+            double diff = computeDiff(d, child, eox, eoy, eoz, mx, my, mz, adx, ady, adz);
             if (diff < closestDiff) {
                 closestDiff = diff;
                 closest = child;
@@ -55,7 +63,7 @@ final class Util {
         return closest;
     }
 
-    static long minMaxCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, Direction d, double l) {
+    static long minMaxCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, Direction d, double l, double e) {
         ox -= x;
         oy -= y;
         oz -= z;
@@ -68,23 +76,31 @@ final class Util {
         double aoy = oy + Math.min(0, dy);
         double aoz = oz + Math.min(0, dz);
 
+        double eaox = aox + e;
+        double eaoy = aoy + e;
+        double eaoz = aoz + e;
+
+        double eox = ox + e;
+        double eoy = oy + e;
+        double eoz = oz + e;
+
         double alx = lx + Math.abs(dx);
         double aly = ly + Math.abs(dy);
         double alz = lz + Math.abs(dz);
 
-        double amx = aox + alx;
-        double amy = aoy + aly;
-        double amz = aoz + alz;
+        double amx = aox + alx - e;
+        double amy = aoy + aly - e;
+        double amz = aoz + alz - e;
 
-        double mx = ox + lx;
-        double my = oy + ly;
-        double mz = oz + lz;
+        double mx = ox + lx - e;
+        double my = oy + ly - e;
+        double mz = oz + lz - e;
 
         float lowest = Float.POSITIVE_INFINITY;
         float highest = Float.NEGATIVE_INFINITY;
 
         for (Bounds3D child : solid.children()) {
-            if (!overlaps(child, aox, aoy, aoz, amx, amy, amz) || overlaps(child, ox, oy, oz, mx, my, mz)) {
+            if (!overlaps(child, eaox, eaoy, eaoz, amx, amy, amz) || overlaps(child, eox, eoy, eoz, mx, my, mz)) {
                 continue;
             }
 
@@ -103,7 +119,7 @@ final class Util {
         return Solid.result(lowest, highest);
     }
 
-    static boolean hasCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, Direction d, double l) {
+    static boolean hasCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, Direction d, double l, double e) {
         ox -= x;
         oy -= y;
         oz -= z;
@@ -116,20 +132,28 @@ final class Util {
         double aoy = oy + Math.min(0, dy);
         double aoz = oz + Math.min(0, dz);
 
+        double eaox = aox + e;
+        double eaoy = aoy + e;
+        double eaoz = aoz + e;
+
+        double eox = ox + e;
+        double eoy = oy + e;
+        double eoz = oz + e;
+
         double alx = lx + Math.abs(dx);
         double aly = ly + Math.abs(dy);
         double alz = lz + Math.abs(dz);
 
-        double amx = aox + alx;
-        double amy = aoy + aly;
-        double amz = aoz + alz;
+        double amx = aox + alx - e;
+        double amy = aoy + aly - e;
+        double amz = aoz + alz - e;
 
-        double mx = ox + lx;
-        double my = oy + ly;
-        double mz = oz + lz;
+        double mx = ox + lx - e;
+        double my = oy + ly - e;
+        double mz = oz + lz - e;
 
         for (Bounds3D child : solid.children()) {
-            if (!overlaps(child, aox, aoy, aoz, amx, amy, amz) || overlaps(child, ox, oy, oz, mx, my, mz)) {
+            if (!overlaps(child, eaox, eaoy, eaoz, amx, amy, amz) || overlaps(child, eox, eoy, eoz, mx, my, mz)) {
                 continue;
             }
 
@@ -139,14 +163,18 @@ final class Util {
         return false;
     }
 
-    static boolean hasCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, double dx, double dy, double dz) {
+    static boolean hasCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, double dx, double dy, double dz, double e) {
         double adx = Math.abs(dx);
         double ady = Math.abs(dy);
         double adz = Math.abs(dz);
 
-        double adjustedXZ = (lz * adx + lx * adz) / 2;
-        double adjustedXY = (ly * adx + lx * ady) / 2;
-        double adjustedYZ = (lz * ady + ly * adz) / 2;
+        double elx = lx - e;
+        double ely = ly - e;
+        double elz = lz - e;
+
+        double adjustedXZ = (elz * adx + elx * adz) / 2;
+        double adjustedXY = (ely * adx + elx * ady) / 2;
+        double adjustedYZ = (elz * ady + ely * adz) / 2;
 
         double cx = ox + (lx / 2);
         double cy = oy + (ly / 2);
@@ -156,12 +184,16 @@ final class Util {
         oy -= y;
         oz -= z;
 
-        double mx = ox + lx;
-        double my = oy + ly;
-        double mz = oz + lz;
+        double mx = ox + lx - e;
+        double my = oy + ly - e;
+        double mz = oz + lz - e;
+
+        double eox = ox + e;
+        double eoy = oy + e;
+        double eoz = oz + e;
 
         for (Bounds3D child : solid.children()) {
-            if (overlaps(child, ox, oy, oz, mx, my, mz)) {
+            if (overlaps(child, eox, eoy, eoz, mx, my, mz)) {
                 continue;
             }
 
@@ -173,14 +205,18 @@ final class Util {
         return false;
     }
 
-    static long minMaxCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, double dx, double dy, double dz) {
+    static long minMaxCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, double dx, double dy, double dz, double e) {
         double adx = Math.abs(dx);
         double ady = Math.abs(dy);
         double adz = Math.abs(dz);
 
-        double adjustedXZ = (lz * adx + lx * adz) / 2;
-        double adjustedXY = (ly * adx + lx * ady) / 2;
-        double adjustedYZ = (lz * ady + ly * adz) / 2;
+        double elx = lx - e;
+        double ely = ly - e;
+        double elz = lz - e;
+
+        double adjustedXZ = (elz * adx + elx * adz) / 2;
+        double adjustedXY = (ely * adx + elx * ady) / 2;
+        double adjustedYZ = (elz * ady + ely * adz) / 2;
 
         double cx = ox + (lx / 2);
         double cy = oy + (ly / 2);
@@ -190,15 +226,19 @@ final class Util {
         oy -= y;
         oz -= z;
 
-        double mx = ox + lx;
-        double my = oy + ly;
-        double mz = oz + lz;
+        double mx = ox + lx - e;
+        double my = oy + ly - e;
+        double mz = oz + lz - e;
+
+        double eox = ox + e;
+        double eoy = oy + e;
+        double eoz = oz + e;
 
         float lowest = Float.POSITIVE_INFINITY;
         float highest = Float.NEGATIVE_INFINITY;
 
         for (Bounds3D child : solid.children()) {
-            if (overlaps(child, ox, oy, oz, mx, my, mz)) {
+            if (overlaps(child, eox, eoy, eoz, mx, my, mz)) {
                 continue;
             }
 
