@@ -47,7 +47,7 @@ class ClosestBelow implements PositionResolver {
             throw new IllegalArgumentException("epsilon must be non-negative");
         }
 
-        if (epsilon > width) {
+        if (epsilon >= width) {
             throw new IllegalArgumentException("epsilon must not be larger than width");
         }
     }

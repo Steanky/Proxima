@@ -16,11 +16,12 @@ public final class Node implements Comparable<Node> {
     public final float blockOffset;
     public final float jumpOffset;
     public float g;
+
     public Node parent;
 
     int heapIndex;
 
-    public Node(int x, int y, int z, float g, float h, @Nullable Node parent, float blockOffset, float jumpOffset) {
+    public Node(int x, int y, int z, float g, float h, float blockOffset, float jumpOffset) {
         this.x = x;
         this.y = y;
         this.z = z;
@@ -30,14 +31,13 @@ public final class Node implements Comparable<Node> {
 
         this.blockOffset = blockOffset;
 
-        this.parent = parent;
         this.heapIndex = -1;
 
         this.jumpOffset = jumpOffset;
     }
 
-    public Node(int x, int y, int z, float g, float h, @Nullable Node parent, float blockOffset) {
-        this(x, y, z, g, h, parent, blockOffset, 0F);
+    public Node(int x, int y, int z, float g, float h, float blockOffset) {
+        this(x, y, z, g, h, blockOffset, 0F);
     }
 
     public @NotNull @Unmodifiable List<Node> reverseToNavigationList() {

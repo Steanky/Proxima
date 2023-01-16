@@ -129,7 +129,7 @@ public class BasicPathOperation implements PathOperation {
     }
 
     private void initialize(int x, int y, int z, float offset) {
-        Node node = new Node(x, y, z, 0, heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ), null,
+        Node node = new Node(x, y, z, 0, heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ),
                 offset);
         graph.put(x, y, z, node);
         openSet.enqueue(node);
@@ -138,8 +138,7 @@ public class BasicPathOperation implements PathOperation {
     private void explore(Node current, Node target, int x, int y, int z, float blockOffset, float jumpOffset) {
         if (target == null) {
             target = new Node(x, y, z, Float.POSITIVE_INFINITY,
-                    heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ), null, blockOffset,
-                    jumpOffset);
+                    heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ), blockOffset, jumpOffset);
             graph.put(x, y, z, target);
         }
 

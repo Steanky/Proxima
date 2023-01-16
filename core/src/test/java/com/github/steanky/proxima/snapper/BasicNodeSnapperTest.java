@@ -57,7 +57,7 @@ class BasicNodeSnapperTest {
     }
 
     private static Node node(int x, int y, int z, float yOffset) {
-        return new Node(x, y, z, 0, 0, null, yOffset);
+        return new Node(x, y, z, 0, 0, yOffset);
     }
 
     private static BasicNodeSnapper make(double width, double height, double fallTolerance, double jumpHeight, double epsilon, SolidPos... solids) {

@@ -11,8 +11,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class NodeTest {
     @Test
     void invertToList() {
-        Node second = new Node(0, 0, 0, 0, 0, null, 0);
-        Node first = new Node(0, 0, 1, 0, 0, second, 0);
+        Node second = new Node(0, 0, 0, 0, 0, 0);
+        Node first = new Node(0, 0, 1, 0, 0, 0);
+        first.parent = second;
 
         List<Node> positions = first.reverseToNavigationList();
         Iterator<Node> itr = positions.iterator();
