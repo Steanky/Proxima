@@ -1,14 +1,8 @@
-# Template
+# Proxima
 
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
 
-A standard template repository for my Java projects.
-
-This repository contains:
-
-1. Initial build files to ease multi-module development
-2. A default license
-3. A default .editorconfig
+A general-purpose asynchronous pathfinding library for Minecraft, with an emphasis on performance and scalability. 
 
 ## Table of Contents
 
@@ -21,37 +15,53 @@ This repository contains:
 
 ## Background
 
-This repository began when I got tired of duplicating all my initial code for new products.
+This project began because it was necessary to implement an efficient, concurrent pathfinding system for my Minecraft server [Phantazm](https://github.com/PhantazmNetwork/PhantazmServer).
 
 ## Install
 
-As a template repository, users are expected to generate their own repositories from this one using GitHub's template repository feature.
+<a href="https://cloudsmith.io/~steanky/repos/element/packages/detail/maven/proxima-core/latest/a=noarch;xg=com.github.steanky/"><img src="https://api-prd.cloudsmith.io/v1/badges/version/steanky/proxima/maven/proxima-core/latest/a=noarch;xg=com.github.steanky/?render=true&show_latest=true" alt="Latest version of 'proxima-core' @ Cloudsmith" /></a>
+
+Proxima binaries are hosted over on [Cloudsmith](https://cloudsmith.io/~steanky/repos/proxima). You can use Proxima by adding it as a dependency to your build management system of choice.
+
+For Gradle, add the repository URL like this:
+
+```groovy
+
+repositories {
+    maven {
+        url 'https://dl.cloudsmith.io/public/steanky/proxima/maven/'
+    }
+}
+
+```
+
+
+And in your dependencies section:
+
+```groovy
+
+dependencies {
+
+    implementation 'com.github.steanky:proxima-core:1.0.0'
+
+}
+
+```
+
+(this assumes version 1.0.0, you'll probably want to grab the latest version above)
+
+
+You can also build binaries directly from source:
+
+```shell
+git clone https://github.com/Steanky/Proxima.git
+cd ./Proxima
+./gradlew build
+```
 
 ## Usage
 
-Template uses Java 17 and Gradle 7.4 by default.
-
-### Gradle Plugins
-
-Template specifies a few plugins in `buildSrc`: `java-conventions` and `library-conventions`. Modules should generally rely on one or the other as follows (in their respective `build.gradle.kts`): 
-
-```kotlin
-plugins {
-    id("template.java-conventions")
-}
-```
-
-One can edit the plugin scripts in `buildSrc` to apply build configuration changes globally across all modules that use them.
-
-`java-conventions` specifies the Maven public repository, as well as some dependencies: junit-jupiter, mockito, and jetbrains-annotations. It also configures the `Jar` task to copy the module or project license into any built jars.
-
-`java-library` supplies everything in `java-conventions`, with the addition of also producing javadoc and source jars.
-
-### Gradle Modules
-
-By default, there is a single module, `template-java`, that is included by default. Module names should be prefixed by the root project name (`template` being the default). Module *directory* names should not have this prefix.
-
-Assuming `git` is available from the command line, the buildscript will automatically generate (and add) a new `.gitignore` file which excludes the `./build` directory (relative to each module). 
+Proxima uses Java 17 and Gradle 7.4 by default.
 
 ## Maintainers
 
@@ -64,3 +74,9 @@ PRs accepted.
 ## License
 
 [GNU General Public License v3.0](LICENSE)
+
+## Hosting
+
+[![Hosted By: Cloudsmith](https://img.shields.io/badge/OSS%20hosting%20by-cloudsmith-blue?logo=cloudsmith&style=for-the-badge)](https://cloudsmith.com)
+
+Package repository hosting is graciously provided by  [Cloudsmith](https://cloudsmith.com). Cloudsmith is the only fully hosted, cloud-native, universal package management solution, that enables your organization to create, store and share packages in any format, to any place, with total confidence.
