@@ -101,8 +101,8 @@ public class BasicNodeSnapper implements NodeSnapper {
         }
     }
 
-    private static int computeOffset(double d, double oc, double mc) {
-        return d < 0 ? (int) Math.floor(oc) : (int) Math.floor(mc);
+    private static int computeOffset(double d, double originCoordinate, double maxCoordinate) {
+        return d < 0 ? (int) Math.floor(originCoordinate) : (int) Math.floor(maxCoordinate);
     }
 
     private long snapVertical(Direction direction, int nodeX, int nodeY, int nodeZ, float nodeOffset) {
@@ -656,12 +656,12 @@ public class BasicNodeSnapper implements NodeSnapper {
         return blockY == actualY ? searchHeight : ((int) Math.ceil(actualY + height + jumpHeight) - blockY) + 1;
     }
 
-    private boolean isFull(double d, double oc) {
+    private boolean isFull(double d, double originCoordinate) {
         if (d < 0) {
-            return oc == Math.rint(oc);
+            return originCoordinate == Math.rint(originCoordinate);
         }
 
-        double e = oc + 0.5 + halfWidth;
+        double e = originCoordinate + 0.5 + halfWidth;
         return e == Math.rint(e);
     }
 }

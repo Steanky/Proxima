@@ -74,6 +74,8 @@ public class BasicAsyncPathfinder implements Pathfinder {
         }
 
         try {
+            poolSize.incrementAndGet();
+
             //if the poolCapacity is exceeded, pathfind on the caller thread
             return CompletableFuture.completedFuture(callable.call());
         } catch (Throwable e) {
