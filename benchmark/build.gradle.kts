@@ -1,15 +1,15 @@
 plugins {
-    id("template.java-library-conventions")
+    id("template.java-conventions")
     id("me.champeau.jmh") version "0.6.8"
 }
 
 dependencies {
     implementation(project(":proxima-core"))
-    api(libs.vector.core)
-    api(libs.toolkit.collection)
-    api(libs.toolkit.function)
-    api(libs.jmh.core)
-    api(libs.jmh.generator.annprocess)
+    implementation(libs.vector.core)
+    implementation(libs.toolkit.collection)
+    implementation(libs.toolkit.function)
+    implementation(libs.jmh.core)
+    implementation(libs.jmh.generator.annprocess)
 
     jmhAnnotationProcessor(libs.jmh.generator.annprocess)
 }

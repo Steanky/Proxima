@@ -22,8 +22,8 @@ import java.util.concurrent.locks.StampedLock;
  * structure that allows as much concurrent access as possible.
  */
 public abstract class ConcurrentCachingSpace implements Space {
-    private static final int CHUNK_READ_ATTEMPTS = 5;
-    private static final int BLOCK_READ_ATTEMPTS = 5;
+    private static final int CHUNK_READ_ATTEMPTS = 10;
+    private static final int BLOCK_READ_ATTEMPTS = 10;
 
     private final StampedLock lock;
     private final Long2ObjectOpenHashMap<Chunk> cache;
@@ -109,14 +109,19 @@ public abstract class ConcurrentCachingSpace implements Space {
     }
 
     @Override
-    public final @NotNull Solid solidAt(int x, int y, int z) {
+    public final @Nullable Solid solidAt(int x, int y, int z) {
         long chunkKey = Chunk.key(x, z);
         int blockKey = Chunk.relative(x, y, z);
 
         Chunk chunk = getChunk(chunkKey);
         Solid solid;
         if (chunk == null) {
-            addToExistingOrNewChunk(null, chunkKey, blockKey, solid = loadSolid(x, y, z));
+            solid = loadSolid(x, y, z);
+            if (solid == null) {
+                return null;
+            }
+
+            addToExistingOrNewChunk(null, chunkKey, blockKey, solid);
             return solid;
         }
 
@@ -125,12 +130,17 @@ public abstract class ConcurrentCachingSpace implements Space {
             return solid;
         }
 
-        chunk.write(blockKey, solid = loadSolid(x, y, z));
+        solid = loadSolid(x, y, z);
+        if (solid == null) {
+            return null;
+        }
+
+        chunk.write(blockKey, solid);
         return solid;
     }
 
     @Override
-    public final @NotNull Solid solidAt(@NotNull Vec3I vec) {
+    public final @Nullable Solid solidAt(@NotNull Vec3I vec) {
         return solidAt(vec.x(), vec.y(), vec.z());
     }
 
@@ -186,14 +196,17 @@ public abstract class ConcurrentCachingSpace implements Space {
      * <p>
      * Threads calling this method will typically not hold any write locks. Therefore, implementations should expect
      * that this method will be called concurrently by two or more threads.
+     * <p>
+     * This method may return null to indicate that no solid can be found at the given location, and no solid will be
+     * cached. The {@link Space#solidAt(int, int, int)} method will return {@link Solid#FULL} for such a case.
      *
      * @param x the x-coordinate of the solid to load
      * @param y the y-coordinate of the solid to load
      * @param z the z-coordinate of the solid to load
      *
-     * @return a Solid object
+     * @return a Solid object, or null to indicate inability to load at this position
      */
-    public abstract @NotNull Solid loadSolid(int x, int y, int z);
+    public abstract @Nullable Solid loadSolid(int x, int y, int z);
 
     private record Chunk(Int2ObjectMap<Solid> map, StampedLock lock) {
         private Chunk() {

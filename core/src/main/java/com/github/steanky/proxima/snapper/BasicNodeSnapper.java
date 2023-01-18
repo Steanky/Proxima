@@ -126,6 +126,10 @@ public class BasicNodeSnapper implements NodeSnapper {
                         int z = nodeZ + dez;
 
                         Solid solid = space.solidAt(x, y, z);
+                        if (solid == null) {
+                            return FAIL;
+                        }
+
                         if (solid.isEmpty() || (i == -1 && solid.isFull())) {
                             continue;
                         }
@@ -149,6 +153,10 @@ public class BasicNodeSnapper implements NodeSnapper {
                     int z = nodeZ + dez;
 
                     Solid solid = space.solidAt(x, y, z);
+                    if (solid == null) {
+                        return FAIL;
+                    }
+
                     if (solid.isEmpty() || (i == -1 && solid.isFull())) {
                         continue;
                     }
@@ -209,6 +217,9 @@ public class BasicNodeSnapper implements NodeSnapper {
                     int z = dz == 0 ? nz + dh : nodeZ + (dz * halfBlockWidth) + (dz * j);
 
                     Solid solid = space.solidAt(x, y, z);
+                    if (solid == null) {
+                        return FAIL;
+                    }
 
                     if (solid.isEmpty() || (j == 0 && solid.isFull())) {
                         continue;
@@ -545,6 +556,10 @@ public class BasicNodeSnapper implements NodeSnapper {
             for (int bx = obx; bx <= mbx; bx++) {
                 for (int bz = obz; bz <= mbz; bz++) {
                     Solid solid = space.solidAt(bx, by, bz);
+                    if (solid == null) {
+                        return true;
+                    }
+
                     if (solid.isEmpty() || (i == -1 && solid.isFull())) {
                         continue;
                     }
@@ -604,6 +619,10 @@ public class BasicNodeSnapper implements NodeSnapper {
         for (int bx = startX; bx <= endX; bx++) {
             for (int bz = startZ; bz <= endZ; bz++) {
                 Solid solid = space.solidAt(bx, by, bz);
+                if (solid == null) {
+                    return Double.NEGATIVE_INFINITY;
+                }
+
                 if (solid.isEmpty() || (i == -1 && solid.isFull())) {
                     continue;
                 }
@@ -633,6 +652,9 @@ public class BasicNodeSnapper implements NodeSnapper {
 
     private long diagonalMinMax(int bx, int by, int bz, int i, double aox, double aoy, double aoz, double alx, double aly, double alz, double dx, double dz) {
         Solid solid = space.solidAt(bx, by, bz);
+        if (solid == null) {
+            return Solid.NO_COLLISION;
+        }
 
         if (solid.isEmpty() || (i == 0 && solid.isFull())) {
             return Solid.NO_COLLISION;
@@ -645,7 +667,7 @@ public class BasicNodeSnapper implements NodeSnapper {
             double aly, double alz, double dx, double dz) {
         Solid solid = space.solidAt(bx, by, bz);
 
-        if (solid.isEmpty() || (i == 0 && solid.isFull())) {
+        if (solid == null || solid.isEmpty() || (i == 0 && solid.isFull())) {
             return false;
         }
 
