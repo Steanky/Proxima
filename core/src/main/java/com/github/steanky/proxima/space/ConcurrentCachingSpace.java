@@ -192,11 +192,11 @@ public abstract class ConcurrentCachingSpace implements Space {
 
     /**
      * Removes a cached chunk, if it exists.
-     * @param x the x-coordinate (world, not chunk)
-     * @param z the z-coordiante (world, not chunk)
+     * @param x the x-coordinate (chunk)
+     * @param z the z-coordinate (chunk)
      */
     public void clearChunk(int x, int z) {
-        long key = Chunk.key(x, z);
+        long key = Chunk.keyFromChunk(x, z);
 
         long write = lock.writeLock();
         try {
@@ -233,7 +233,11 @@ public abstract class ConcurrentCachingSpace implements Space {
         private static long key(int x, int z) {
             int hi = x >> 4;
             int lo = z >> 4;
-            return (((long) hi) << 32) | (lo & 0xFFFF_FFFFL);
+            return keyFromChunk(hi, lo);
+        }
+
+        private static long keyFromChunk(int x, int z) {
+            return (((long) x) << 32) | (z & 0xFFFF_FFFFL);
         }
 
         private static int relative(int x, int y, int z) {
