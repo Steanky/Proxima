@@ -191,6 +191,23 @@ public abstract class ConcurrentCachingSpace implements Space {
     }
 
     /**
+     * Removes a cached chunk, if it exists.
+     * @param x the x-coordinate (world, not chunk)
+     * @param z the z-coordiante (world, not chunk)
+     */
+    public void clearChunk(int x, int z) {
+        long key = Chunk.key(x, z);
+
+        long write = lock.writeLock();
+        try {
+            cache.remove(key);
+        }
+        finally {
+            lock.unlockWrite(write);
+        }
+    }
+
+    /**
      * Loads a solid, which will be cached in this space until it is invalidated. This method is called by
      * {@link ConcurrentCachingSpace#solidAt(int, int, int)} when it encounters a cache miss.
      * <p>
