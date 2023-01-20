@@ -238,6 +238,10 @@ public class BasicNodeSnapper implements NodeSnapper {
                     long res =
                             solid.minMaxCollision(x, y, z, ax, exactY, az, width, height + jumpHeight, width,
                                     direction, 1, epsilon);
+                    if (res == Solid.FAIL) {
+                        return FAIL;
+                    }
+
                     float low = Solid.lowest(res);
                     float high = Solid.highest(res);
 
@@ -399,6 +403,10 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                     for (int bz = sz; bz <= ez; bz++) {
                         long res = diagonalMinMax(bx, by, bz, j, aox, adjustedY, aoz, width, height, width, dx, dz);
+                        if (res == Solid.FAIL) {
+                            return Float.NaN;
+                        }
+
                         float low = Solid.lowest(res);
                         float high = Solid.highest(res);
 
@@ -425,6 +433,10 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                     for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
                         long res = diagonalMinMax(bx, by, bz, j, aox, adjustedY, aoz, width, height, width, dx, dz);
+                        if (res == Solid.FAIL) {
+                            return Float.NaN;
+                        }
+
                         float low = Solid.lowest(res);
                         float high = Solid.highest(res);
 
@@ -653,7 +665,7 @@ public class BasicNodeSnapper implements NodeSnapper {
     private long diagonalMinMax(int bx, int by, int bz, int i, double aox, double aoy, double aoz, double alx, double aly, double alz, double dx, double dz) {
         Solid solid = space.solidAt(bx, by, bz);
         if (solid == null) {
-            return Solid.NO_COLLISION;
+            return Solid.FAIL;
         }
 
         if (solid.isEmpty() || (i == 0 && solid.isFull())) {
@@ -666,8 +678,11 @@ public class BasicNodeSnapper implements NodeSnapper {
     private boolean hasDiagonal(int bx, int by, int bz, int i, double aox, double aoy, double aoz, double alx,
             double aly, double alz, double dx, double dz) {
         Solid solid = space.solidAt(bx, by, bz);
+        if (solid == null) {
+            return true;
+        }
 
-        if (solid == null || solid.isEmpty() || (i == 0 && solid.isFull())) {
+        if (solid.isEmpty() || (i == 0 && solid.isFull())) {
             return false;
         }
 

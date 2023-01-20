@@ -1,6 +1,7 @@
 package com.github.steanky.proxima.solid;
 
 import com.github.steanky.proxima.Direction;
+import com.github.steanky.proxima.snapper.NodeSnapper;
 import com.github.steanky.vector.Bounds3D;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -53,13 +54,23 @@ public interface Solid {
      * with this field, as it is not guaranteed to be singleton.
      */
     Solid FULL = new Solid12(Bounds3D.immutable(0, 0, 0, 1, 1, 1));
+
     /**
-     * Returned by
-     * {@link Solid#minMaxCollision(int, int, int, double, double, double, double, double, double, Direction, double, double)}
-     * to indicate no collision was found. The higher 32 bits represent single-precision positive infinity, whereas the
-     * lower 32 bits represent single-precision negative infinity.
+     * Returned by {@link Solid#minMaxCollision(int, int, int, double, double, double, double, double, double,
+     * Direction, double, double)} and {@link Solid#minMaxCollision(int, int, int, double, double, double, double,
+     * double, double, double, double, double, double)} to indicate no collision was found. The higher 32 bits represent
+     * single-precision positive infinity, whereas the lower 32 bits represent single-precision negative infinity.
      */
     long NO_COLLISION = 0x7F80_0000_FF80_0000L;
+
+    /**
+     * Returned by {@link Solid#minMaxCollision(int, int, int, double, double, double, double, double, double,
+     * Direction, double, double)} and {@link Solid#minMaxCollision(int, int, int, double, double, double, double,
+     * double, double, double, double, double, double)} to indicate that collision checking failed; passability in this
+     * direction should not be possible, and {@link NodeSnapper} implementations should quickly exit instead of checking
+     * additional blocks. The default collision implementations in {@link Util} never return this value.
+     */
+    long FAIL = 0xFFC0_0001_FFC0_0001L;
 
     static long result(float lowest, float highest) {
         int hi = Float.floatToRawIntBits(lowest);
