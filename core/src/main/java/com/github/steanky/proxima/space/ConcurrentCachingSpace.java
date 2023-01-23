@@ -28,9 +28,16 @@ public abstract class ConcurrentCachingSpace implements Space {
     private final StampedLock lock;
     private final Long2ObjectOpenHashMap<Chunk> cache;
 
-    public ConcurrentCachingSpace() {
+    private final int minimumY;
+
+    public ConcurrentCachingSpace(int minimumY) {
         this.lock = new StampedLock();
         this.cache = new Long2ObjectOpenHashMap<>();
+        this.minimumY = minimumY;
+    }
+
+    public ConcurrentCachingSpace() {
+        this(-32);
     }
 
     //works identically to Chunk#read(int), but for the chunk cache rather than individual blocks
@@ -111,7 +118,7 @@ public abstract class ConcurrentCachingSpace implements Space {
     @Override
     public final @Nullable Solid solidAt(int x, int y, int z) {
         long chunkKey = Chunk.key(x, z);
-        int blockKey = Chunk.relative(x, y, z);
+        int blockKey = Chunk.relative(x, y, z, minimumY);
 
         Chunk chunk = getChunk(chunkKey);
         Solid solid;
@@ -161,7 +168,7 @@ public abstract class ConcurrentCachingSpace implements Space {
             Chunk chunk = getChunk(chunkKey);
             if (chunk != null) {
                 //returns true when we empty the chunk
-                if (chunk.remove(Chunk.relative(x, y, z))) {
+                if (chunk.remove(Chunk.relative(x, y, z, minimumY))) {
                     long write = lock.writeLock();
                     try {
                         cache.remove(chunkKey);
@@ -173,7 +180,7 @@ public abstract class ConcurrentCachingSpace implements Space {
         } else {
             //if the chunk does not exist (is null); creates it and adds the solid
             //otherwise, adds the solid to the existing chunk
-            addToExistingOrNewChunk(getChunk(chunkKey), chunkKey, Chunk.relative(x, y, z), solid);
+            addToExistingOrNewChunk(getChunk(chunkKey), chunkKey, Chunk.relative(x, y, z, minimumY), solid);
         }
     }
 
@@ -240,8 +247,8 @@ public abstract class ConcurrentCachingSpace implements Space {
             return (((long) x) << 32) | (z & 0xFFFF_FFFFL);
         }
 
-        private static int relative(int x, int y, int z) {
-            return ((x & 15) << 15) | ((y & 2047) << 4) | (z & 15);
+        private static int relative(int x, int y, int z, int minY) {
+            return ((x & 15) << 15) | (((y - minY) & 2047) << 4) | (z & 15);
         }
 
         @SuppressWarnings("DuplicatedCode")

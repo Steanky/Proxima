@@ -109,7 +109,9 @@ public class BasicPathOperation implements PathOperation {
         openSet.clear();
         openSet.trim(NodeQueue.DEFAULT_INITIAL_CAPACITY);
 
-        graph.clear();
+        if (graph != null) {
+            graph.clear();
+        }
 
         current = null;
         best = null;
