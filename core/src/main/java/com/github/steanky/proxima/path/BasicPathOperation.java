@@ -52,17 +52,9 @@ public class BasicPathOperation implements PathOperation {
         //this may populate openSet and graph with a few values to start
         this.explorer.exploreInitial(startX, startY, startZ, this::initialize);
 
-        //set the current node, g == 0
-        if (openSet.isEmpty()) {
-            //naive initialization since our initializer didn't add anything
-            int bx = (int) Math.floor(startX);
-            int by = (int) Math.floor(startY);
-            int bz = (int) Math.floor(startZ);
-
-            initialize(bx, by, bz, (float) (startY - by));
-        }
-
-        best = current = openSet.first();
+        //if nothing was added to openSet, we have no valid starting position
+        //this operation will complete with an unsuccessful path result
+        best = current = openSet.isEmpty() ? null : openSet.first();
 
         //indicate that we can start stepping
         state = State.INITIALIZED;
@@ -103,8 +95,13 @@ public class BasicPathOperation implements PathOperation {
             throw new IllegalStateException("Can't compile a result while incomplete");
         }
 
+        if (best == null) {
+            //if best is null, we don't even have a starting node, and so have not explored anything
+            return PathResult.EMPTY;
+        }
+
         nodeProcessor.processPath(best, graph);
-        return new PathResult(best.reverse(), graph.size(), success);
+        return new PathResult(best == null ? null : best.reverse(), graph.size(), success);
     }
 
     @Override

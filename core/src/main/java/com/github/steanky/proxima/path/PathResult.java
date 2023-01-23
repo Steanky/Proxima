@@ -13,9 +13,8 @@ public record PathResult(@Nullable Node head, int exploredCount, boolean isSucce
     public static PathResult EMPTY = new PathResult(null, 0, false);
 
     /**
-     * Creates a new BasicResult.
+     * Creates a new PathResult.
      *
-     * @param nodes         an unmodifiable list of nodes making up the path, from start to finish
      * @param exploredCount the number of nodes that were explored for this path, can be used to judge the computational
      *                      "difficulty" of this path
      * @param isSuccessful  if the path is successful (reached its destination)
