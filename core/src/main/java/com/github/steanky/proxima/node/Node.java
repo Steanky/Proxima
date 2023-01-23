@@ -2,11 +2,13 @@ package com.github.steanky.proxima.node;
 
 import com.github.steanky.toolkit.collection.Containers;
 import com.github.steanky.vector.Vec3I;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 public final class Node implements Comparable<Node> {
     public final int x;
@@ -40,15 +42,14 @@ public final class Node implements Comparable<Node> {
         this(x, y, z, g, h, blockOffset, 0F);
     }
 
-    public @NotNull @Unmodifiable List<Node> reverseToNavigationList() {
+    public @NotNull Node reverse() {
         if (parent == null) {
-            return List.of(this);
+            return this;
         }
 
         Node prev = null;
         Node current = this;
 
-        int size = 0;
         while (current != null) {
             //invert the linked list represented by this node, calculate size while we do this
             Node next = current.parent;
@@ -56,17 +57,45 @@ public final class Node implements Comparable<Node> {
 
             prev = current;
             current = next;
+        }
+
+        return prev;
+    }
+
+    public void forEach(@NotNull Consumer<? super Node> nodeConsumer) {
+        Objects.requireNonNull(nodeConsumer);
+
+        Node current = this;
+        while (current != null) {
+            nodeConsumer.accept(current);
+            current = current.parent;
+        }
+    }
+
+    /**
+     * Converts the linked list represented by this {@link Node} into an unmodifiable random access {@link List}. This
+     * operation is "slow", operating in {@code O(2n)} time, where {@code n} is the size of the linked list. It is
+     * intended for debugging only.
+     *
+     * @return an unmodifiable list of nodes
+     */
+    @ApiStatus.Internal
+    public @NotNull @Unmodifiable List<Node> toList() {
+        Node current = this;
+        int size = 0;
+        while (current != null) {
+            current = current.parent;
             size++;
         }
 
         Node[] nodes = new Node[size];
+        current = this;
         int i = 0;
-        do {
-            nodes[i++] = prev;
-            prev = prev.parent;
-        } while (prev != null);
+        while (current != null) {
+            nodes[i++] = current;
+            current = current.parent;
+        }
 
-        //Containers.arrayView instead of List.of so we don't need to copy the array
         return Containers.arrayView(nodes);
     }
 

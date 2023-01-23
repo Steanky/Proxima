@@ -255,7 +255,10 @@ class BasicAsyncPathfinderIntegrationTest {
             assertFalse(result.isSuccessful(), "expected failed result");
         }
 
-        List<Node> nodes = result.nodes();
+        Node head = result.head();
+        assertNotNull(head, "head was null");
+
+        List<Node> nodes = head.toList();
         assertEquals(expected.size(), nodes.size(), "path length mismatch");
 
         for (int i = 0; i < expected.size(); i++) {

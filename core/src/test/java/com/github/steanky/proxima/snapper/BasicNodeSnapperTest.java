@@ -1106,7 +1106,7 @@ class BasicNodeSnapperTest {
             genWidths(wStart, wEnd,  0.01, w -> {
                 BasicNodeSnapper snapper = make(w, height, 16, 0, EPSILON, solids);
                 genSubBlockPositions(x, y, z, w, 0.01, (cx, cy, cz) -> {
-                    double distance = Vec3D.distanceSquared(cx, cy, cz, tx + 0.5, cy, cz + 0.5);
+                    double distance = Vec3D.distanceSquared(cx, cy, cz, tx + 0.5, ty, tz + 0.5);
                     if (distance > 1) {
                         return;
                     }

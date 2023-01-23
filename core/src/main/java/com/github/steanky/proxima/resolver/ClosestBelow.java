@@ -76,7 +76,7 @@ class ClosestBelow implements PositionResolver {
                 for (int bz = sz; bz <= ez; bz++) {
                     Solid solid = space.solidAt(bx, by, bz);
 
-                    if (solid.isEmpty() || (i == -1 && solid.isFull())) {
+                    if (solid == null || solid.isEmpty() || (i == -1 && solid.isFull())) {
                         continue;
                     }
 

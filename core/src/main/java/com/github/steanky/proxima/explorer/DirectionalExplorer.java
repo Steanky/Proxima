@@ -5,7 +5,6 @@ import com.github.steanky.proxima.NodeHandler;
 import com.github.steanky.proxima.PathLimiter;
 import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.snapper.NodeSnapper;
-import com.github.steanky.vector.Vec3D;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -76,10 +75,10 @@ public abstract class DirectionalExplorer implements Explorer {
         int isy = (int) Math.floor(startY);
         int isz = (int) Math.floor(startZ);
 
-        float i = snapper.checkInitial(startX, startY, startZ, isx, isy, isz);
-        if (!Float.isNaN(i)) {
+        float offset = snapper.checkInitial(startX, startY, startZ, isx, isy, isz);
+        if (!Float.isNaN(offset)) {
             //if we can reach the starting node, don't explore any other options
-            initializer.initialize(isx, isy, isz, i);
+            initializer.initialize(isx, isy, isz, offset);
             return;
         }
 
@@ -93,17 +92,10 @@ public abstract class DirectionalExplorer implements Explorer {
             int iny = (int) Math.floor(ny);
             int inz = (int) Math.floor(nz);
 
-            double distance = Vec3D.distanceSquared(startX, startY, startZ, inx, iny, inz);
-
-            //checkInitial won't expect distances greater than 1
-            if (distance > 1) {
-                continue;
-            }
-
-            i = snapper.checkInitial(startX, startY, startZ, inx, iny, inz);
-            if (!Float.isNaN(i)) {
+            offset = snapper.checkInitial(startX, startY, startZ, inx, iny, inz);
+            if (!Float.isNaN(offset)) {
                 //valid, reachable, alternate starting node, initialize it
-                initializer.initialize(inx, iny, inz, i);
+                initializer.initialize(inx, iny, inz, offset);
             }
         }
     }

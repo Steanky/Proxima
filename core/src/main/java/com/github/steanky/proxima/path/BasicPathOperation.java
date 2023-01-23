@@ -104,7 +104,7 @@ public class BasicPathOperation implements PathOperation {
         }
 
         nodeProcessor.processPath(best, graph);
-        return new PathResult(best.reverseToNavigationList(), graph.size(), success);
+        return new PathResult(best.reverse(), graph.size(), success);
     }
 
     @Override

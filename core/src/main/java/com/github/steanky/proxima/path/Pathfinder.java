@@ -3,7 +3,6 @@ package com.github.steanky.proxima.path;
 import com.github.steanky.vector.Vec3D;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
 public interface Pathfinder {

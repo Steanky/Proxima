@@ -4,6 +4,7 @@ import com.github.steanky.proxima.Direction;
 import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.proxima.space.Space;
 import com.github.steanky.vector.Bounds3D;
+import com.github.steanky.vector.Vec3D;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
@@ -336,6 +337,13 @@ public class BasicNodeSnapper implements NodeSnapper {
 
     @Override
     public float checkInitial(double x, double y, double z, int tx, int ty, int tz) {
+        double cbx = tx + 0.5;
+        double cbz = tz + 0.5;
+
+        if (Vec3D.distanceSquared(x, y, z, cbx, ty, cbz) > 1) {
+            return Float.NaN;
+        }
+
         double aox = x - halfWidth;
         double aoz = z - halfWidth;
 
@@ -355,8 +363,8 @@ public class BasicNodeSnapper implements NodeSnapper {
             return Float.NaN;
         }
 
-        double dx = (tx + 0.5) - x;
-        double dz = (tz + 0.5) - z;
+        double dx = cbx - x;
+        double dz = cbz - z;
 
         boolean cx = dx != 0;
         boolean cz = dz != 0;
