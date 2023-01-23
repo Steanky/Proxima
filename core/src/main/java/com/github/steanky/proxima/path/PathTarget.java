@@ -58,8 +58,6 @@ public interface PathTarget {
             @Override
             public @Nullable Vec3I resolve() {
                 Vec3D newPosition = vectorSupplier.get();
-                lastPosition = newPosition;
-
                 if (newPosition != null) {
                     return resolver.resolve(newPosition);
                 }
@@ -72,17 +70,26 @@ public interface PathTarget {
                 Vec3D lastPosition = this.lastPosition;
                 Vec3D newPosition = vectorSupplier.get();
 
-                this.lastPosition = newPosition;
-
                 if (lastPosition == null) {
-                    return newPosition != null;
+                    boolean changed = newPosition != null;
+                    if (changed) {
+                        this.lastPosition = newPosition;
+                    }
+
+                    return changed;
                 }
 
                 if (newPosition == null) {
+                    this.lastPosition = null;
                     return true;
                 }
 
-                return changeDetector.test(lastPosition, newPosition);
+                if (changeDetector.test(lastPosition, newPosition)) {
+                    this.lastPosition = newPosition;
+                    return true;
+                }
+
+                return false;
             }
         };
     }
