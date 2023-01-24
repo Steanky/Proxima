@@ -9,14 +9,38 @@ import com.github.steanky.vector.Bounds3D;
 import com.github.steanky.vector.Bounds3I;
 import com.github.steanky.vector.Vec3D;
 import com.github.steanky.vector.Vec3I;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.junit.jupiter.params.provider.ArgumentsSources;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.DoubleConsumer;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class BasicNodeSnapperTest {
+    public static @NotNull Stream<Arguments> coordinates() {
+        List<Vec3I> vectors = new ArrayList<>();
+
+
+        for (int i = -2; i <= 2; i++) {
+            for (int j = -2; j <= 2; j++) {
+                for (int k = -2; k <= 2; k++) {
+                    vectors.add(Vec3I.immutable(i, j, k));
+                }
+            }
+        }
+
+        return vectors.stream().map(vec3I -> Arguments.of(vec3I.x(), vec3I.y(), vec3I.z()));
+    }
+
     public static final double EPSILON = 1E-6;
 
     public static final Solid LOWER_HALF_BLOCK = Solid.of(Bounds3D.immutable(0, 0, 0, 1, 0.5, 1));
@@ -1185,70 +1209,82 @@ class BasicNodeSnapperTest {
 
         @Nested
         class FullBlocks {
-            @Test
-            void initialBlockNorth() {
-                checkManyInitial(0, 1, 0, Direction.NORTH, 0.1, 1, 1, 0, fullBlockSqueeze(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            void initialBlockNorth(int x, int y, int z) {
+                checkManyInitial(x, y + 1, z, Direction.NORTH, 0.1, 1, 1, 0, fullBlockSqueeze(x, y, z));
             }
 
-            @Test
-            void initialBlockEast() {
-                checkManyInitial(0, 1, 0, Direction.EAST, 0.1, 1, 1, 0, fullBlockSqueeze(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            void initialBlockEast(int x, int y, int z) {
+                checkManyInitial(x, y + 1, z, Direction.EAST, 0.1, 1, 1, 0, fullBlockSqueeze(x, y, z));
             }
 
-            @Test
-            void initialBlockSouth() {
-                checkManyInitial(0, 1, 0, Direction.SOUTH, 0.1, 1, 1, 0, fullBlockSqueeze(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            void initialBlockSouth(int x, int y, int z) {
+                checkManyInitial(x, y + 1, z, Direction.SOUTH, 0.1, 1, 1, 0, fullBlockSqueeze(x, y, z));
             }
 
-            @Test
-            void initialBlockWest() {
-                checkManyInitial(0, 1, 0, Direction.WEST, 0.1, 1, 1, 0, fullBlockSqueeze(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            void initialBlockWest(int x, int y, int z) {
+                checkManyInitial(x, y + 1, z, Direction.WEST, 0.1, 1, 1, 0, fullBlockSqueeze(x, y, z));
             }
         }
 
         @Nested
         class NearlyFull {
-            @Test
-            void initialBlockNorth() {
-                checkManyInitial(0, 1, 0, Direction.NORTH, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            void initialBlockNorth(int x, int y, int z) {
+                checkManyInitial(x, y + 1, z, Direction.NORTH, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(x, y, z));
             }
 
-            @Test
-            void initialBlockEast() {
-                checkManyInitial(0, 1, 0, Direction.EAST, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            void initialBlockEast(int x, int y, int z) {
+                checkManyInitial(x, y + 1, z, Direction.EAST, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(x, y, z));
             }
 
-            @Test
-            void initialBlockSouth() {
-                checkManyInitial(0, 1, 0, Direction.SOUTH, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            void initialBlockSouth(int x, int y, int z) {
+                checkManyInitial(x, y + 1, z, Direction.SOUTH, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(x, y, z));
             }
 
-            @Test
-            void initialBlockWest() {
-                checkManyInitial(0, 1, 0, Direction.WEST, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            void initialBlockWest(int x, int y, int z) {
+                checkManyInitial(x, y + 1, z, Direction.WEST, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(x, y, z));
             }
         }
 
         @Nested
         class Stairs {
-            @Test
-            void initialBlockNorth() {
-                checkManyInitial(0, 1, 0, Direction.NORTH, 0.1, 1, 1, 0, stairsSqueeze(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            void initialBlockNorth(int x, int y, int z) {
+                checkManyInitial(x, y + 1, z, Direction.NORTH, 0.1, 1, 1, 0, stairsSqueeze(x, y, z));
             }
 
-            @Test
-            void initialBlockEast() {
-                checkManyInitial(0, 1, 0, Direction.EAST, 0.1, 1, 1, 0, stairsSqueeze(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            void initialBlockEast(int x, int y, int z) {
+                checkManyInitial(x, y + 1, z, Direction.EAST, 0.1, 1, 1, 0, stairsSqueeze(x, y, z));
             }
 
-            @Test
-            void initialBlockSouth() {
-                checkManyInitial(0, 1, 0, Direction.SOUTH, 0.1, 1, 1, 0, stairsSqueeze(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            void initialBlockSouth(int x, int y, int z) {
+                checkManyInitial(x, y + 1, z, Direction.SOUTH, 0.1, 1, 1, 0, stairsSqueeze(x, y, z));
             }
 
-            @Test
-            void initialBlockWest() {
-                checkManyInitial(0, 1, 0, Direction.WEST, 0.1, 1, 1, 0, stairsSqueeze(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            void initialBlockWest(int x, int y, int z) {
+                checkManyInitial(x, y + 1, z, Direction.WEST, 0.1, 1, 1, 0, stairsSqueeze(x, y, z));
             }
         }
     }

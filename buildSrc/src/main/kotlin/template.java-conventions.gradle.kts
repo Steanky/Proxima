@@ -24,6 +24,7 @@ pluginManager.withPlugin("java") {
 
     dependencies.addProvider("testImplementation", libs.findLibrary("junit.jupiter.api").get())
     dependencies.addProvider("testImplementation", libs.findLibrary("mockito.junit.jupiter").get())
+    dependencies.addProvider("testImplementation", libs.findLibrary("junit.jupiter.params").get())
 
     dependencies.addProvider("testRuntimeOnly", libs.findLibrary("junit.jupiter.engine").get())
 }
