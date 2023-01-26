@@ -11,11 +11,10 @@ import com.github.steanky.vector.Vec3D;
 import com.github.steanky.vector.Vec3I;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.ArgumentsSource;
-import org.junit.jupiter.params.provider.ArgumentsSources;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
@@ -25,7 +24,10 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Execution(ExecutionMode.CONCURRENT)
 class BasicNodeSnapperTest {
+    private static final String METHOD_PATH = "com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates";
+
     public static @NotNull Stream<Arguments> coordinates() {
         List<Vec3I> vectors = new ArrayList<>();
 
@@ -74,10 +76,6 @@ class BasicNodeSnapperTest {
 
     private static SolidPos stairs(int x, int y, int z) {
         return solid(STAIRS, x, y, z);
-    }
-
-    private static Node node(int x, int y, int z) {
-        return node(x, y, z, 0);
     }
 
     private static Node node(int x, int y, int z, float yOffset) {
@@ -177,44 +175,52 @@ class BasicNodeSnapperTest {
                                 stairs(x, y + 1, z - 1),};
                     }
 
-                    @Test
-                    void straightWalkNorth() {
-                        walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0, stairsBelow(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkNorth(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0, x, y + 1, z - 1, 0, stairsBelow(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkEast() {
-                        walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0, stairsBelow(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkEast(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0, x + 1, y + 1, z, 0, stairsBelow(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkSouth() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0, stairsBelow(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkSouth(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0, x, y + 1, z + 1, 0, stairsBelow(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkWest() {
-                        walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0, stairsBelow(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkWest(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0, x - 1, y + 1, z, 0, stairsBelow(x, y, z));
                     }
 
-                    @Test
-                    void straightJumpNorth() {
-                        walk(Direction.NORTH, 0, 1, 0, 0, 0, 2, -1, 0, stairsAround(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightJumpNorth(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0, x, y + 2, z - 1, 0, stairsAround(x, y, z));
                     }
 
-                    @Test
-                    void straightJumpEast() {
-                        walk(Direction.EAST, 0, 1, 0, 0, 1, 2, 0, 0, stairsAround(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightJumpEast(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0, x + 1, y + 2, z, 0, stairsAround(x, y, z));
                     }
 
-                    @Test
-                    void straightJumpSouth() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0, 0, 2, 1, 0, stairsAround(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightJumpSouth(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0, x, y + 2, z + 1, 0, stairsAround(x, y, z));
                     }
 
-                    @Test
-                    void straightJumpWest() {
-                        walk(Direction.WEST, 0, 1, 0, 0, -1, 2, 0, 0, stairsAround(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightJumpWest(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0, x - 1, y + 2, z, 0, stairsAround(x, y, z));
                     }
                 }
 
@@ -244,128 +250,152 @@ class BasicNodeSnapperTest {
                         return new SolidPos[] {full(x, y, z), solid(solid, x, y + 1, z)};
                     }
 
-                    @Test
-                    void jumpNorthThenFall() {
-                        noWalk(Direction.NORTH, 0.5, 1, 0, 1, 0, 0,
-                                intermediateJumpThenFall(0, 0, 0, PARTIAL_BLOCK_NORTH));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpNorthThenFall(int x, int y, int z) {
+                        noWalk(Direction.NORTH, 0.5, 1, x, y + 1, z, 0,
+                                intermediateJumpThenFall(x, y, z, PARTIAL_BLOCK_NORTH));
                     }
 
-                    @Test
-                    void jumpSouthThenFall() {
-                        noWalk(Direction.SOUTH, 0.5, 1, 0, 1, 0, 0,
-                                intermediateJumpThenFall(0, 0, 0, PARTIAL_BLOCK_SOUTH));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpSouthThenFall(int x, int y, int z) {
+                        noWalk(Direction.SOUTH, 0.5, 1, x, y + 1, z, 0,
+                                intermediateJumpThenFall(x, y, z, PARTIAL_BLOCK_SOUTH));
                     }
 
-                    @Test
-                    void jumpEastThenFall() {
-                        noWalk(Direction.EAST, 0.5, 1, 0, 1, 0, 0,
-                                intermediateJumpThenFall(0, 0, 0, PARTIAL_BLOCK_EAST));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpEastThenFall(int x, int y, int z) {
+                        noWalk(Direction.EAST, 0.5, 1, x, y + 1, z, 0,
+                                intermediateJumpThenFall(x, y, z, PARTIAL_BLOCK_EAST));
                     }
 
-                    @Test
-                    void jumpWestThenFall() {
-                        noWalk(Direction.WEST, 0.5, 1, 0, 1, 0, 0,
-                                intermediateJumpThenFall(0, 0, 0, PARTIAL_BLOCK_WEST));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWestThenFall(int x, int y, int z) {
+                        noWalk(Direction.WEST, 0.5, 1, x, y + 1, z, 0,
+                                intermediateJumpThenFall(x, y, z, PARTIAL_BLOCK_WEST));
                     }
 
-                    @Test
-                    void fallSingleWalkNorth() {
-                        walk(Direction.NORTH, 0, 1, 0, 0, 0, 0, -1, 0, fallWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void fallSingleWalkNorth(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0, x, y, z - 1, 0, fallWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void fallSingleWalkEast() {
-                        walk(Direction.EAST, 0, 1, 0, 0, 1, 0, 0, 0, fallWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void fallSingleWalkEast(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0, x + 1, y, z, 0, fallWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void fallSingleWalkSouth() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0, 0, 0, 1, 0, fallWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void fallSingleWalkSouth(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0, x, y, z + 1, 0, fallWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void fallSingleWalkWest() {
-                        walk(Direction.WEST, 0, 1, 0, 0, -1, 0, 0, 0, fallWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void fallSingleWalkWest(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0, x - 1, y, z, 0, fallWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void enclosedWalkNorth() {
-                        noWalk(Direction.NORTH, 1, 1, 0, 0, 0, 0.0F, enclosedBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void enclosedWalkNorth(int x, int y, int z) {
+                        noWalk(Direction.NORTH, 1, 1, x, y, z, 0.0F, enclosedBlocks(x, y, z));
                     }
 
-                    @Test
-                    void enclosedWalkEast() {
-                        noWalk(Direction.EAST, 1, 1, 0, 0, 0, 0.0F, enclosedBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void enclosedWalkEast(int x, int y, int z) {
+                        noWalk(Direction.EAST, 1, 1, x, y, z, 0.0F, enclosedBlocks(x, y, z));
                     }
 
-                    @Test
-                    void enclosedWalkSouth() {
-                        noWalk(Direction.SOUTH, 1, 1, 0, 0, 0, 0.0F, enclosedBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void enclosedWalkSouth(int x, int y, int z) {
+                        noWalk(Direction.SOUTH, 1, 1, x, y, z, 0.0F, enclosedBlocks(x, y, z));
                     }
 
-                    @Test
-                    void enclosedWalkWest() {
-                        noWalk(Direction.WEST, 1, 1, 0, 0, 0, 0.0F, enclosedBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void enclosedWalkWest(int x, int y, int z) {
+                        noWalk(Direction.WEST, 1, 1, x, y, z, 0.0F, enclosedBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkNorth() {
-                        walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkNorth(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0, x, y + 1, z - 1, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkEast() {
-                        walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkEast(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0, x + 1, y + 1, z, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkSouth() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkSouth(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0, x, y + 1, z + 1, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkWest() {
-                        walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkWest(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0, x - 1, y + 1, z, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkNorthOffset() {
-                        walk(Direction.NORTH, 0, 1, 0, 0.5F, 0, 1, -1, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkNorthOffset(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0.5F, x, y + 1, z - 1, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkEastOffset() {
-                        walk(Direction.EAST, 0, 1, 0, 0.5F, 1, 1, 0, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkEastOffset(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0.5F, x + 1, y + 1, z, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkSouthOffset() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0.5F, 0, 1, 1, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkSouthOffset(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0.5F, x, y + 1, z + 1, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkWestOffset() {
-                        walk(Direction.WEST, 0, 1, 0, 0.5F, -1, 1, 0, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkWestOffset(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0.5F, x - 1, y + 1, z, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkNorth() {
-                        walk(Direction.NORTH, 0, 1, 0, 0.5F, 0, 2, -1, 0, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkNorth(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0.5F, x, y + 2, z - 1, 0, jumpWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkEast() {
-                        walk(Direction.EAST, 0, 1, 0, 0.5F, 1, 2, 0, 0, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkEast(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0.5F, x + 1, y + 2, z, 0, jumpWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkSouth() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0.5F, 0, 2, 1, 0, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkSouth(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0.5F, x, y + 2, z + 1, 0, jumpWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkWest() {
-                        walk(Direction.WEST, 0, 1, 0, 0.5F, -1, 2, 0, 0, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkWest(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0.5F, x - 1, y + 2, z, 0, jumpWalkBlocks(x, y, z));
                     }
                 }
 
@@ -385,44 +415,52 @@ class BasicNodeSnapperTest {
                                 solid(LOWER_HALF_BLOCK, x, y + 1, z - 1)};
                     }
 
-                    @Test
-                    void straightWalkNorth() {
-                        walk(Direction.NORTH, 0, 0, 0, 0.5F, 0, 0, -1, 0.5, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkNorth(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y, z, 0.5F, x, y, z - 1, 0.5, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkEast() {
-                        walk(Direction.EAST, 0, 0, 0, 0.5F, 1, 0, 0, 0.5, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkEast(int x, int y, int z) {
+                        walk(Direction.EAST, x, y, z, 0.5F, x + 1, y, z, 0.5, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkSouth() {
-                        walk(Direction.SOUTH, 0, 0, 0, 0.5F, 0, 0, 1, 0.5, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkSouth(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y, z, 0.5F, x, y, z + 1, 0.5, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkWest() {
-                        walk(Direction.WEST, 0, 0, 0, 0.5F, -1, 0, 0, 0.5, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkWest(int x, int y, int z) {
+                        walk(Direction.WEST, x, y, z, 0.5F, x - 1, y, z, 0.5, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkNorth() {
-                        walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0.5, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkNorth(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0, x, y + 1, z - 1, 0.5, jumpWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkEast() {
-                        walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0.5, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkEast(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0, x + 1, y + 1, z, 0.5, jumpWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkSouth() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0.5, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkSouth(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0, x, y + 1, z + 1, 0.5, jumpWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkWest() {
-                        walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0.5, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkWest(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0, x - 1, y + 1, z, 0.5, jumpWalkBlocks(x, y, z));
                     }
                 }
             }
@@ -453,64 +491,76 @@ class BasicNodeSnapperTest {
                                 full(x, y + 1, z + 1), full(x, y + 1, z - 1)};
                     }
 
-                    @Test
-                    void straightWalkNorth() {
-                        walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkNorth(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0, x, y + 1, z - 1, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkEast() {
-                        walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkEast(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0, x + 1, y + 1, z, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkSouth() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkSouth(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0, x, y + 1, z + 1, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkWest() {
-                        walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkWest(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0, x - 1, y + 1, z, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkNorthOffset() {
-                        walk(Direction.NORTH, 0, 1, 0, 0.5F, 0, 1, -1, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkNorthOffset(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0.5F, x, y + 1, z - 1, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkEastOffset() {
-                        walk(Direction.EAST, 0, 1, 0, 0.5F, 1, 1, 0, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkEastOffset(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0.5F, x + 1, y + 1, z, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkSouthOffset() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0.5F, 0, 1, 1, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkSouthOffset(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0.5F, x, y + 1, z + 1, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkWestOffset() {
-                        walk(Direction.WEST, 0, 1, 0, 0.5F, -1, 1, 0, 0, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkWestOffset(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0.5F, x - 1, y + 1, z, 0, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkNorth() {
-                        walk(Direction.NORTH, 0, 1, 0, 0.5F, 0, 2, -1, 0, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkNorth(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0.5F, x, y + 2, z - 1, 0, jumpWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkEast() {
-                        walk(Direction.EAST, 0, 1, 0, 0.5F, 1, 2, 0, 0, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkEast(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0.5F, x + 1, y + 2, z, 0, jumpWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkSouth() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0.5F, 0, 2, 1, 0, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkSouth(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0.5F, x, y + 2, z + 1, 0, jumpWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkWest() {
-                        walk(Direction.WEST, 0, 1, 0, 0.5F, -1, 2, 0, 0, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkWest(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0.5F, x - 1, y + 2, z, 0, jumpWalkBlocks(x, y, z));
                     }
                 }
 
@@ -552,188 +602,224 @@ class BasicNodeSnapperTest {
                                 solid(LOWER_HALF_BLOCK, x, y + 1, z - 1), solid(UPPER_HALF_BLOCK, x, y + 2, z)};
                     }
 
-                    @Test
-                    void jumpUpFromSlabBlockedNorth() {
-                        noWalk(Direction.NORTH, 0.6, 1.95, 0, 0, 0, 0.5F, jumpUpFromSlabBlocked(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpUpFromSlabBlockedNorth(int x, int y, int z) {
+                        noWalk(Direction.NORTH, 0.6, 1.95, x, y, z, 0.5F, jumpUpFromSlabBlocked(x, y, z));
                     }
 
-                    @Test
-                    void jumpUpFromSlabBlockedEast() {
-                        noWalk(Direction.EAST, 0.6, 1.95, 0, 0, 0, 0.5F, jumpUpFromSlabBlocked(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpUpFromSlabBlockedEast(int x, int y, int z) {
+                        noWalk(Direction.EAST, 0.6, 1.95, x, y, z, 0.5F, jumpUpFromSlabBlocked(x, y, z));
                     }
 
-                    @Test
-                    void jumpUpFromSlabBlockedSouth() {
-                        noWalk(Direction.SOUTH, 0.6, 1.95, 0, 0, 0, 0.5F, jumpUpFromSlabBlocked(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpUpFromSlabBlockedSouth(int x, int y, int z) {
+                        noWalk(Direction.SOUTH, 0.6, 1.95, x, y, z, 0.5F, jumpUpFromSlabBlocked(x, y, z));
                     }
 
-                    @Test
-                    void jumpUpFromSlabBlockedWest() {
-                        noWalk(Direction.WEST, 0.6, 1.95, 0, 0, 0, 0.5F, jumpUpFromSlabBlocked(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpUpFromSlabBlockedWest(int x, int y, int z) {
+                        noWalk(Direction.WEST, 0.6, 1.95, x, y, z, 0.5F, jumpUpFromSlabBlocked(x, y, z));
                     }
 
-                    @Test
-                    void jumpUpFromSlabNorth() {
-                        walk(Direction.NORTH, 0, 0, 0, 0.5F, 0, 1, -1, 0.5, jumpUpFromSlabBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpUpFromSlabNorth(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y, z, 0.5F, x, y + 1, z - 1, 0.5, jumpUpFromSlabBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpUpFromSlabEast() {
-                        walk(Direction.EAST, 0, 0, 0, 0.5F, 1, 1, 0, 0.5, jumpUpFromSlabBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpUpFromSlabEast(int x, int y, int z) {
+                        walk(Direction.EAST, x, y, z, 0.5F, x + 1, y + 1, z, 0.5, jumpUpFromSlabBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpUpFromSlabSouth() {
-                        walk(Direction.SOUTH, 0, 0, 0, 0.5F, 0, 1, 1, 0.5, jumpUpFromSlabBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpUpFromSlabSouth(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y, z, 0.5F, x, y + 1, z + 1, 0.5, jumpUpFromSlabBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpUpFromSlabWest() {
-                        walk(Direction.WEST, 0, 0, 0, 0.5F, -1, 1, 0, 0.5, jumpUpFromSlabBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpUpFromSlabWest(int x, int y, int z) {
+                        walk(Direction.WEST, x, y, z, 0.5F, x - 1, y + 1, z, 0.5, jumpUpFromSlabBlocks(x, y, z));
                     }
 
-                    @Test
-                    void stepUpFromSlabNorth() {
-                        walk(Direction.NORTH, 0, 0, 0, 0.5F, 0, 1, -1, 0, stepUpFromSlabBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void stepUpFromSlabNorth(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y, z, 0.5F, x, y + 1, z - 1, 0, stepUpFromSlabBlocks(x, y, z));
                     }
 
-                    @Test
-                    void stepUpFromSlabEast() {
-                        walk(Direction.EAST, 0, 0, 0, 0.5F, 1, 1, 0, 0, stepUpFromSlabBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void stepUpFromSlabEast(int x, int y, int z) {
+                        walk(Direction.EAST, x, y, z, 0.5F, x + 1, y + 1, z, 0, stepUpFromSlabBlocks(x, y, z));
                     }
 
-                    @Test
-                    void stepUpFromSlabSouth() {
-                        walk(Direction.SOUTH, 0, 0, 0, 0.5F, 0, 1, 1, 0, stepUpFromSlabBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void stepUpFromSlabSouth(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y, z, 0.5F, x, y + 1, z + 1, 0, stepUpFromSlabBlocks(x, y, z));
                     }
 
-                    @Test
-                    void stepUpFromSlabWest() {
-                        walk(Direction.WEST, 0, 0, 0, 0.5F, -1, 1, 0, 0, stepUpFromSlabBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void stepUpFromSlabWest(int x, int y, int z) {
+                        walk(Direction.WEST, x, y, z, 0.5F, x - 1, y + 1, z, 0, stepUpFromSlabBlocks(x, y, z));
                     }
 
-                    @Test
-                    void walkNorthMissSouthPartialBlock() {
-                        walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0, intersectPartial(0, 0, 0, PARTIAL_BLOCK_SOUTH));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkNorthMissSouthPartialBlock(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0, x, y + 1, z - 1, 0, intersectPartial(x, y, z, PARTIAL_BLOCK_SOUTH));
                     }
 
-                    @Test
-                    void walkEastMissSouthPartialBlock() {
-                        walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0, intersectPartial(0, 0, 0, PARTIAL_BLOCK_SOUTH));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkEastMissSouthPartialBlock(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0, x + 1, y + 1, z, 0, intersectPartial(x, y, z, PARTIAL_BLOCK_SOUTH));
                     }
 
-                    @Test
-                    void walkWestMissSouthPartialBlock() {
-                        walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0, intersectPartial(0, 0, 0, PARTIAL_BLOCK_SOUTH));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkWestMissSouthPartialBlock(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0, x - 1, y + 1, z, 0, intersectPartial(x, y, z, PARTIAL_BLOCK_SOUTH));
                     }
 
-                    @Test
-                    void walkSouthMissNorthPartialBlock() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0, intersectPartial(0, 0, 0, PARTIAL_BLOCK_NORTH));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkSouthMissNorthPartialBlock(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0, x, y + 1, z + 1, 0, intersectPartial(x, y, z, PARTIAL_BLOCK_NORTH));
                     }
 
-                    @Test
-                    void walkEastMissNorthPartialBlock() {
-                        walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0, intersectPartial(0, 0, 0, PARTIAL_BLOCK_NORTH));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkEastMissNorthPartialBlock(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0, x + 1, y + 1, z, 0, intersectPartial(x, y, z, PARTIAL_BLOCK_NORTH));
                     }
 
-                    @Test
-                    void walkWestMissNorthPartialBlock() {
-                        walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0, intersectPartial(0, 0, 0, PARTIAL_BLOCK_NORTH));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkWestMissNorthPartialBlock(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0, x - 1, y + 1, z, 0, intersectPartial(x, y, z, PARTIAL_BLOCK_NORTH));
                     }
 
-                    @Test
-                    void walkSouthMissEastPartialBlock() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0, intersectPartial(0, 0, 0, PARTIAL_BLOCK_EAST));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkSouthMissEastPartialBlock(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0, x, y + 1, z + 1, 0, intersectPartial(x, y, z, PARTIAL_BLOCK_EAST));
                     }
 
-                    @Test
-                    void walkNorthMissEastPartialBlock() {
-                        walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0, intersectPartial(0, 0, 0, PARTIAL_BLOCK_EAST));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkNorthMissEastPartialBlock(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0, x, y + 1, z - 1, 0, intersectPartial(x, y, z, PARTIAL_BLOCK_EAST));
                     }
 
-                    @Test
-                    void walkWestMissEastPartialBlock() {
-                        walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0, intersectPartial(0, 0, 0, PARTIAL_BLOCK_EAST));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkWestMissEastPartialBlock(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0, x - 1, y + 1, z, 0, intersectPartial(x, y, z, PARTIAL_BLOCK_EAST));
                     }
 
-                    @Test
-                    void walkNorthMissWestPartialBlock() {
-                        walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0, intersectPartial(0, 0, 0, PARTIAL_BLOCK_WEST));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkNorthMissWestPartialBlock(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0, x, y + 1, z - 1, 0, intersectPartial(x, y, z, PARTIAL_BLOCK_WEST));
                     }
 
-                    @Test
-                    void walkEastMissWestPartialBlock() {
-                        walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0, intersectPartial(0, 0, 0, PARTIAL_BLOCK_WEST));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkEastMissWestPartialBlock(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0, x + 1, y + 1, z, 0, intersectPartial(x, y, z, PARTIAL_BLOCK_WEST));
                     }
 
-                    @Test
-                    void walkSouthMissWestPartialBlock() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0, intersectPartial(0, 0, 0, PARTIAL_BLOCK_WEST));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkSouthMissWestPartialBlock(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0, x, y + 1, z + 1, 0, intersectPartial(x, y, z, PARTIAL_BLOCK_WEST));
                     }
 
-                    @Test
-                    void walkNorthIntersectPartialBlock() {
-                        walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0, true,
-                                intersectPartial(0, 0, 0, PARTIAL_BLOCK_NORTH));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkNorthIntersectPartialBlock(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0, x, y + 1, z - 1, 0, true,
+                                intersectPartial(x, y, z, PARTIAL_BLOCK_NORTH));
                     }
 
-                    @Test
-                    void walkEastIntersectPartialBlock() {
-                        walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0, true,
-                                intersectPartial(0, 0, 0, PARTIAL_BLOCK_EAST));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkEastIntersectPartialBlock(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0, x + 1, y + 1, z, 0, true,
+                                intersectPartial(x, y, z, PARTIAL_BLOCK_EAST));
                     }
 
-                    @Test
-                    void walkSouthIntersectPartialBlock() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0, true,
-                                intersectPartial(0, 0, 0, PARTIAL_BLOCK_SOUTH));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkSouthIntersectPartialBlock(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0, x, y + 1, z + 1, 0, true,
+                                intersectPartial(x, y, z, PARTIAL_BLOCK_SOUTH));
                     }
 
-                    @Test
-                    void walkWestIntersectPartialBlock() {
-                        walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0, true,
-                                intersectPartial(0, 0, 0, PARTIAL_BLOCK_WEST));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void walkWestIntersectPartialBlock(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0, x - 1, y + 1, z, 0, true,
+                                intersectPartial(x, y, z, PARTIAL_BLOCK_WEST));
                     }
 
-                    @Test
-                    void straightWalkNorth() {
-                        walk(Direction.NORTH, 0, 0, 0, 0.5F, 0, 0, -1, 0.5, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkNorth(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y, z, 0.5F, x, y, z - 1, 0.5, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkEast() {
-                        walk(Direction.EAST, 0, 0, 0, 0.5F, 1, 0, 0, 0.5, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkEast(int x, int y, int z) {
+                        walk(Direction.EAST, x, y, z, 0.5F, x + 1, y, z, 0.5, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkSouth() {
-                        walk(Direction.SOUTH, 0, 0, 0, 0.5F, 0, 0, 1, 0.5, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkSouth(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y, z, 0.5F, x, y, z + 1, 0.5, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void straightWalkWest() {
-                        walk(Direction.WEST, 0, 0, 0, 0.5F, -1, 0, 0, 0.5, flatWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void straightWalkWest(int x, int y, int z) {
+                        walk(Direction.WEST, x, y, z, 0.5F, x - 1, y, z, 0.5, flatWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkNorth() {
-                        walk(Direction.NORTH, 0, 1, 0, 0, 0, 1, -1, 0.5, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkNorth(int x, int y, int z) {
+                        walk(Direction.NORTH, x, y + 1, z, 0, x, y + 1, z - 1, 0.5, jumpWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkEast() {
-                        walk(Direction.EAST, 0, 1, 0, 0, 1, 1, 0, 0.5, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkEast(int x, int y, int z) {
+                        walk(Direction.EAST, x, y + 1, z, 0, x + 1, y + 1, z, 0.5, jumpWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkSouth() {
-                        walk(Direction.SOUTH, 0, 1, 0, 0, 0, 1, 1, 0.5, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkSouth(int x, int y, int z) {
+                        walk(Direction.SOUTH, x, y + 1, z, 0, x, y + 1, z + 1, 0.5, jumpWalkBlocks(x, y, z));
                     }
 
-                    @Test
-                    void jumpWalkWest() {
-                        walk(Direction.WEST, 0, 1, 0, 0, -1, 1, 0, 0.5, jumpWalkBlocks(0, 0, 0));
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void jumpWalkWest(int x, int y, int z) {
+                        walk(Direction.WEST, x, y + 1, z, 0, x - 1, y + 1, z, 0.5, jumpWalkBlocks(x, y, z));
                     }
                 }
             }
@@ -745,10 +831,6 @@ class BasicNodeSnapperTest {
             class FullHeight {
                 private static void walk(Direction direction, int x, int y, int z, float yo, int ex, int ey, int ez, double eOffset, SolidPos... pos) {
                     BasicNodeSnapperTest.walk(direction, 2, 2, x, y, z, yo, ex, ey, ez, eOffset, false, pos);
-                }
-
-                private static void walk(Direction direction, int x, int y, int z, float yo, int ex, int ey, int ez, double eOffset, boolean intermediate, SolidPos... pos) {
-                    BasicNodeSnapperTest.walk(direction, 2, 2, x, y, z, yo, ex, ey, ez, eOffset, intermediate, pos);
                 }
 
                 private static void noWalk(Direction direction, int x, int y, int z, float yo, SolidPos... pos) {
@@ -767,48 +849,56 @@ class BasicNodeSnapperTest {
                             solid(UPPER_HALF_BLOCK, x + 2 * direction.x, y + 2, z + 2 * direction.z)};
                 }
 
-                @Test
-                void walkNorthBlockedBySlabsPartial() {
-                    noWalk(Direction.NORTH, 0, 1, 0, 0, blockedBySlabsPartial(0, 0, 0, Direction.NORTH));
+                @ParameterizedTest
+                @MethodSource(METHOD_PATH)
+                void walkNorthBlockedBySlabsPartial(int x, int y, int z) {
+                    noWalk(Direction.NORTH, x, y + 1, z, 0, blockedBySlabsPartial(x, y, z, Direction.NORTH));
                 }
 
-                @Test
-                void walkEastBlockedBySlabsPartial() {
-                    noWalk(Direction.EAST, 0, 1, 0, 0, blockedBySlabsPartial(0, 0, 0, Direction.EAST));
+                @ParameterizedTest
+                @MethodSource(METHOD_PATH)
+                void walkEastBlockedBySlabsPartial(int x, int y, int z) {
+                    noWalk(Direction.EAST, x, y + 1, z, 0, blockedBySlabsPartial(x, y, z, Direction.EAST));
                 }
 
-                @Test
-                void walkSouthBlockedBySlabsPartial() {
-                    noWalk(Direction.SOUTH, 0, 1, 0, 0, blockedBySlabsPartial(0, 0, 0, Direction.SOUTH));
+                @ParameterizedTest
+                @MethodSource(METHOD_PATH)
+                void walkSouthBlockedBySlabsPartial(int x, int y, int z) {
+                    noWalk(Direction.SOUTH, x, y + 1, z, 0, blockedBySlabsPartial(x, y, z, Direction.SOUTH));
                 }
 
-                @Test
-                void walkWestBlockedBySlabsPartial() {
-                    noWalk(Direction.WEST, 0, 1, 0, 0, blockedBySlabsPartial(0, 0, 0, Direction.WEST));
+                @ParameterizedTest
+                @MethodSource(METHOD_PATH)
+                void walkWestBlockedBySlabsPartial(int x, int y, int z) {
+                    noWalk(Direction.WEST, x, y + 1, z, 0, blockedBySlabsPartial(x, y, z, Direction.WEST));
                 }
 
-                @Test
-                void walkNorthIntersectPartial() {
-                    walk(Direction.NORTH, 0, 1, 0, 0, 0, 2, -1, 0,
-                            intersectPartial(0, 0, 0, PARTIAL_BLOCK_NORTH, Direction.NORTH));
+                @ParameterizedTest
+                @MethodSource(METHOD_PATH)
+                void walkNorthIntersectPartial(int x, int y, int z) {
+                    walk(Direction.NORTH, x, y + 1, z, 0, x, y + 2, z - 1, 0,
+                            intersectPartial(x, y, z, PARTIAL_BLOCK_NORTH, Direction.NORTH));
                 }
 
-                @Test
-                void walkEastIntersectPartial() {
-                    walk(Direction.EAST, 0, 1, 0, 0, 1, 2, 0, 0,
-                            intersectPartial(0, 0, 0, PARTIAL_BLOCK_EAST, Direction.EAST));
+                @ParameterizedTest
+                @MethodSource(METHOD_PATH)
+                void walkEastIntersectPartial(int x, int y, int z) {
+                    walk(Direction.EAST, x, y + 1, z, 0, x + 1, y + 2, z, 0,
+                            intersectPartial(x, y, z, PARTIAL_BLOCK_EAST, Direction.EAST));
                 }
 
-                @Test
-                void walkSouthIntersectPartial() {
-                    walk(Direction.SOUTH, 0, 1, 0, 0, 0, 2, 1, 0,
-                            intersectPartial(0, 0, 0, PARTIAL_BLOCK_SOUTH, Direction.SOUTH));
+                @ParameterizedTest
+                @MethodSource(METHOD_PATH)
+                void walkSouthIntersectPartial(int x, int y, int z) {
+                    walk(Direction.SOUTH, x, y + 1, z, 0, x, y + 2, z + 1, 0,
+                            intersectPartial(x, y, z, PARTIAL_BLOCK_SOUTH, Direction.SOUTH));
                 }
 
-                @Test
-                void walkWestIntersectPartial() {
-                    walk(Direction.WEST, 0, 1, 0, 0, -1, 2, 0, 0,
-                            intersectPartial(0, 0, 0, PARTIAL_BLOCK_WEST, Direction.WEST));
+                @ParameterizedTest
+                @MethodSource(METHOD_PATH)
+                void walkWestIntersectPartial(int x, int y, int z) {
+                    walk(Direction.WEST, x, y + 1, z, 0, x - 1, y + 2, z, 0,
+                            intersectPartial(x, y, z, PARTIAL_BLOCK_WEST, Direction.WEST));
                 }
             }
         }
@@ -843,176 +933,204 @@ class BasicNodeSnapperTest {
                     full(x, y, z - 1), solid(SMALL_CENTRAL_SOLID, x + clip.x, y + 1, z + clip.z)};
         }
 
-        @Test
-        void noSolidsNorthEast() {
-            checkDiagonal(1, 1, 0, 0, 0, Direction.NORTH, Direction.EAST, 0, true);
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void noSolidsNorthEast(int x, int y, int z) {
+            checkDiagonal(1, 1, x, y, z, Direction.NORTH, Direction.EAST, 0, true);
         }
 
-        @Test
-        void noSolidsSouthEast() {
-            checkDiagonal(1, 1, 0, 0, 0, Direction.SOUTH, Direction.EAST, 0, true);
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void noSolidsSouthEast(int x, int y, int z) {
+            checkDiagonal(1, 1, x, y, z, Direction.SOUTH, Direction.EAST, 0, true);
         }
 
-        @Test
-        void noSolidsSouthWest() {
-            checkDiagonal(1, 1, 0, 0, 0, Direction.SOUTH, Direction.WEST, 0, true);
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void noSolidsSouthWest(int x, int y, int z) {
+            checkDiagonal(1, 1, x, y, z, Direction.SOUTH, Direction.WEST, 0, true);
         }
 
-        @Test
-        void noSolidsNorthWest() {
-            checkDiagonal(1, 1, 0, 0, 0, Direction.NORTH, Direction.WEST, 0, true);
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void noSolidsNorthWest(int x, int y, int z) {
+            checkDiagonal(1, 1, x, y, z, Direction.NORTH, Direction.WEST, 0, true);
         }
 
         @Nested
         class Full {
-            @Test
-            void clipNorthNorthEast() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.EAST, 0, false,
-                        clipFullSolids(0, 0, 0, Direction.NORTH));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipNorthNorthEast(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.NORTH, Direction.EAST, 0, false,
+                        clipFullSolids(x, y, z, Direction.NORTH));
             }
 
-            @Test
-            void clipEastNorthEast() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.EAST, 0, false,
-                        clipFullSolids(0, 0, 0, Direction.EAST));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipEastNorthEast(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.NORTH, Direction.EAST, 0, false,
+                        clipFullSolids(x, y, z, Direction.EAST));
             }
 
-            @Test
-            void clipSouthSouthEast() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.EAST, 0, false,
-                        clipFullSolids(0, 0, 0, Direction.SOUTH));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipSouthSouthEast(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.SOUTH, Direction.EAST, 0, false,
+                        clipFullSolids(x, y, z, Direction.SOUTH));
             }
 
-            @Test
-            void clipEastSouthEast() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.EAST, 0, false,
-                        clipFullSolids(0, 0, 0, Direction.EAST));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipEastSouthEast(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.SOUTH, Direction.EAST, 0, false,
+                        clipFullSolids(x, y, z, Direction.EAST));
             }
 
-            @Test
-            void clipSouthSouthWest() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.WEST, 0, false,
-                        clipFullSolids(0, 0, 0, Direction.SOUTH));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipSouthSouthWest(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.SOUTH, Direction.WEST, 0, false,
+                        clipFullSolids(x, y, z, Direction.SOUTH));
             }
 
-            @Test
-            void clipWestSouthWest() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.WEST, 0, false,
-                        clipFullSolids(0, 0, 0, Direction.WEST));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipWestSouthWest(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.SOUTH, Direction.WEST, 0, false,
+                        clipFullSolids(x, y, z, Direction.WEST));
             }
 
-            @Test
-            void clipNorthNorthWest() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.WEST, 0, false,
-                        clipFullSolids(0, 0, 0, Direction.NORTH));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipNorthNorthWest(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.NORTH, Direction.WEST, 0, false,
+                        clipFullSolids(x, y, z, Direction.NORTH));
             }
 
-            @Test
-            void clipWestNorthWest() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.WEST, 0, false,
-                        clipFullSolids(0, 0, 0, Direction.WEST));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipWestNorthWest(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.NORTH, Direction.WEST, 0, false,
+                        clipFullSolids(x, y, z, Direction.WEST));
             }
         }
 
         @Nested
         class Partial {
-            @Test
-            void clipNorthNorthEast() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.EAST, 0, false,
-                        clipPartialSolids(0, 0, 0, Direction.NORTH));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipNorthNorthEast(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.NORTH, Direction.EAST, 0, false,
+                        clipPartialSolids(x, y, z, Direction.NORTH));
             }
 
-            @Test
-            void clipEastNorthEast() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.EAST, 0, false,
-                        clipPartialSolids(0, 0, 0, Direction.EAST));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipEastNorthEast(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.NORTH, Direction.EAST, 0, false,
+                        clipPartialSolids(x, y, z, Direction.EAST));
             }
 
-            @Test
-            void clipSouthSouthEast() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.EAST, 0, false,
-                        clipPartialSolids(0, 0, 0, Direction.SOUTH));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipSouthSouthEast(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.SOUTH, Direction.EAST, 0, false,
+                        clipPartialSolids(x, y, z, Direction.SOUTH));
             }
 
-            @Test
-            void clipEastSouthEast() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.EAST, 0, false,
-                        clipPartialSolids(0, 0, 0, Direction.EAST));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipEastSouthEast(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.SOUTH, Direction.EAST, 0, false,
+                        clipPartialSolids(x, y, z, Direction.EAST));
             }
 
-            @Test
-            void clipSouthSouthWest() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.WEST, 0, false,
-                        clipPartialSolids(0, 0, 0, Direction.SOUTH));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipSouthSouthWest(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.SOUTH, Direction.WEST, 0, false,
+                        clipPartialSolids(x, y, z, Direction.SOUTH));
             }
 
-            @Test
-            void clipWestSouthWest() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.WEST, 0, false,
-                        clipPartialSolids(0, 0, 0, Direction.WEST));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipWestSouthWest(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.SOUTH, Direction.WEST, 0, false,
+                        clipPartialSolids(x, y, z, Direction.WEST));
             }
 
-            @Test
-            void clipNorthNorthWest() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.WEST, 0, false,
-                        clipPartialSolids(0, 0, 0, Direction.NORTH));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipNorthNorthWest(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.NORTH, Direction.WEST, 0, false,
+                        clipPartialSolids(x, y, z, Direction.NORTH));
             }
 
-            @Test
-            void clipWestNorthWest() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.WEST, 0, false,
-                        clipPartialSolids(0, 0, 0, Direction.WEST));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipWestNorthWest(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.NORTH, Direction.WEST, 0, false,
+                        clipPartialSolids(x, y, z, Direction.WEST));
             }
         }
 
         @Nested
         class Tiny {
-            @Test
-            void clipNorthNorthEast() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.EAST, 0, true,
-                        clipTinySolids(0, 0, 0, Direction.NORTH));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipNorthNorthEast(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.NORTH, Direction.EAST, 0, true,
+                        clipTinySolids(x, y, z, Direction.NORTH));
             }
 
-            @Test
-            void clipEastNorthEast() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.EAST, 0, true,
-                        clipTinySolids(0, 0, 0, Direction.EAST));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipEastNorthEast(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.NORTH, Direction.EAST, 0, true,
+                        clipTinySolids(x, y, z, Direction.EAST));
             }
 
-            @Test
-            void clipSouthSouthEast() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.EAST, 0, true,
-                        clipTinySolids(0, 0, 0, Direction.SOUTH));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipSouthSouthEast(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.SOUTH, Direction.EAST, 0, true,
+                        clipTinySolids(x, y, z, Direction.SOUTH));
             }
 
-            @Test
-            void clipEastSouthEast() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.EAST, 0, true,
-                        clipTinySolids(0, 0, 0, Direction.EAST));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipEastSouthEast(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.SOUTH, Direction.EAST, 0, true,
+                        clipTinySolids(x, y, z, Direction.EAST));
             }
 
-            @Test
-            void clipSouthSouthWest() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.WEST, 0, true,
-                        clipTinySolids(0, 0, 0, Direction.SOUTH));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipSouthSouthWest(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.SOUTH, Direction.WEST, 0, true,
+                        clipTinySolids(x, y, z, Direction.SOUTH));
             }
 
-            @Test
-            void clipWestSouthWest() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.SOUTH, Direction.WEST, 0, true,
-                        clipTinySolids(0, 0, 0, Direction.WEST));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipWestSouthWest(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.SOUTH, Direction.WEST, 0, true,
+                        clipTinySolids(x, y, z, Direction.WEST));
             }
 
-            @Test
-            void clipNorthNorthWest() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.WEST, 0, true,
-                        clipTinySolids(0, 0, 0, Direction.NORTH));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipNorthNorthWest(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.NORTH, Direction.WEST, 0, true,
+                        clipTinySolids(x, y, z, Direction.NORTH));
             }
 
-            @Test
-            void clipWestNorthWest() {
-                checkDiagonal(0.5, 1, 0, 1, 0, Direction.NORTH, Direction.WEST, 0, true,
-                        clipTinySolids(0, 0, 0, Direction.WEST));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void clipWestNorthWest(int x, int y, int z) {
+                checkDiagonal(0.5, 1, x, y + 1, z, Direction.NORTH, Direction.WEST, 0, true,
+                        clipTinySolids(x, y, z, Direction.WEST));
             }
         }
     }
@@ -1038,24 +1156,28 @@ class BasicNodeSnapperTest {
             return new SolidPos[] {full(x, y, z), solid(SMALL_UPPER_LEFT_SOLID, x, y + 1, z)};
         }
 
-        @Test
-        void smallBoundsNoCollision() {
-            checkInitial(0.6, 1, 0.6, 0, 1, 0, 0.3, 2, 0, noCollisionBelow(0, 0, 0));
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void smallBoundsNoCollision(int x, int y, int z) {
+            checkInitial(x + 0.6, y + 1, z + 0.6, x, y + 1, z, 0.3, 2, 0, noCollisionBelow(x, y, z));
         }
 
-        @Test
-        void sameBoundsDiagonalCollision() {
-            checkInitial(0.2, 1, 0.2, 0, 1, 0, 0.2, 2, Float.NaN, smallCentralSolid(0, 0, 0));
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void sameBoundsDiagonalCollision(int x, int y, int z) {
+            checkInitial(x + 0.2, y + 1, z + 0.2, x, y + 1, z, 0.2, 2, Float.NaN, smallCentralSolid(x, y, z));
         }
 
-        @Test
-        void sameBoundsMissDiagonal() {
-            checkInitial(0.2, 1, 0.2, 0, 1, 0, 0.2, 2, 0, smallUpperLeftSolid(0, 0, 0));
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void sameBoundsMissDiagonal(int x, int y, int z) {
+            checkInitial(x + 0.2, y + 1, z + 0.2, x, y + 1, z, 0.2, 2, 0, smallUpperLeftSolid(x, y, z));
         }
 
-        @Test
-        void sameBoundsFallCenterSolid() {
-            checkInitial(0.2, 10, 0.2, 0, 1, 0, 0.2, 2, Float.NaN, smallCentralSolid(0, 0, 0));
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void sameBoundsFallCenterSolid(int x, int y, int z) {
+            checkInitial(x + 0.2, y + 10, z + 0.2, x, y + 1, z, 0.2, 2, Float.NaN, smallCentralSolid(x, y, z));
         }
     }
 
@@ -1146,10 +1268,8 @@ class BasicNodeSnapperTest {
         public static void snapMany(int x, int y, int z, Direction direction, double wStart, double wEnd, double height,
                 float yOffset, float eOffset, boolean intermediate, SolidPos... solids) {
 
-            genWidths(wStart, wEnd, 0.01, w -> {
-                walk(direction, w, height, x, y, z, yOffset, x + direction.x, y + direction.y,
-                        z + direction.z, eOffset, intermediate, solids);
-            });
+            genWidths(wStart, wEnd, 0.01, w -> walk(direction, w, height, x, y, z, yOffset, x + direction.x, y + direction.y,
+                    z + direction.z, eOffset, intermediate, solids));
         }
 
         public interface Vec3DConsumer {
@@ -1158,77 +1278,85 @@ class BasicNodeSnapperTest {
 
         @Nested
         class Overlapping {
-            @Test
-            void fullBlockNorth() {
-                snapMany(0, 1, 0, Direction.NORTH, 0.1, 5, 1, 0, 0, false,
-                        fullOverlapping(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void fullBlockNorth(int x, int y, int z) {
+                snapMany(x, y + 1, z, Direction.NORTH, 0.1, 5, 1, 0, 0, false,
+                        fullOverlapping(x, y, z));
             }
 
-            @Test
-            void fullBlockEast() {
-                snapMany(0, 1, 0, Direction.EAST, 0.1, 5, 1, 0, 0, false,
-                        fullOverlapping(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void fullBlockEast(int x, int y, int z) {
+                snapMany(x, y + 1, z, Direction.EAST, 0.1, 5, 1, 0, 0, false,
+                        fullOverlapping(x, y, z));
             }
 
-            @Test
-            void fullBlockSouth() {
-                snapMany(0, 1, 0, Direction.SOUTH, 0.1, 5, 1, 0, 0, false,
-                        fullOverlapping(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void fullBlockSouth(int x, int y, int z) {
+                snapMany(x, y + 1, z, Direction.SOUTH, 0.1, 5, 1, 0, 0, false,
+                        fullOverlapping(x, y, z));
             }
 
-            @Test
-            void fullBlockWest() {
-                snapMany(0, 1, 0, Direction.WEST, 0.1, 5, 1, 0, 0, false,
-                        fullOverlapping(0, 0, 0));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void fullBlockWest(int x, int y, int z) {
+                snapMany(x, y + 1, z, Direction.WEST, 0.1, 5, 1, 0, 0, false,
+                        fullOverlapping(x, y, z));
             }
 
-            @Test
-            void partialBlockNorth() {
-                snapMany(0, 1, 0, Direction.NORTH, 0.9, 5, 1, 0, 0, false,
-                        solidOverlapping(PARTIAL_BLOCK_NORTH, 0, 0, 0));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void partialBlockNorth(int x, int y, int z) {
+                snapMany(x, y + 1, z, Direction.NORTH, 0.9, 5, 1, 0, 0, false,
+                        solidOverlapping(PARTIAL_BLOCK_NORTH, x, y, z));
             }
 
-            @Test
-            void partialBlockEast() {
-                snapMany(0, 1, 0, Direction.EAST, 0.9, 5, 1, 0, 0, false,
-                        solidOverlapping(PARTIAL_BLOCK_EAST, 0, 0, 0));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void partialBlockEast(int x, int y, int z) {
+                snapMany(x, y + 1, z, Direction.EAST, 0.9, 5, 1, 0, 0, false,
+                        solidOverlapping(PARTIAL_BLOCK_EAST, x, y, z));
             }
 
-            @Test
-            void partialBlockSouth() {
-                snapMany(0, 1, 0, Direction.SOUTH, 0.9, 5, 1, 0, 0, false,
-                        solidOverlapping(PARTIAL_BLOCK_SOUTH, 0, 0, 0));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void partialBlockSouth(int x, int y, int z) {
+                snapMany(x, y + 1, z, Direction.SOUTH, 0.9, 5, 1, 0, 0, false,
+                        solidOverlapping(PARTIAL_BLOCK_SOUTH, x, y, z));
             }
 
-            @Test
-            void partialBlockWest() {
-                snapMany(0, 1, 0, Direction.WEST, 0.9, 5, 1, 0, 0, false,
-                        solidOverlapping(PARTIAL_BLOCK_WEST, 0, 0, 0));
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void partialBlockWest(int x, int y, int z) {
+                snapMany(x, y + 1, z, Direction.WEST, 0.9, 5, 1, 0, 0, false,
+                        solidOverlapping(PARTIAL_BLOCK_WEST, x, y, z));
             }
         }
 
         @Nested
         class FullBlocks {
             @ParameterizedTest
-            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            @MethodSource(METHOD_PATH)
             void initialBlockNorth(int x, int y, int z) {
                 checkManyInitial(x, y + 1, z, Direction.NORTH, 0.1, 1, 1, 0, fullBlockSqueeze(x, y, z));
             }
 
             @ParameterizedTest
-            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            @MethodSource(METHOD_PATH)
             void initialBlockEast(int x, int y, int z) {
                 checkManyInitial(x, y + 1, z, Direction.EAST, 0.1, 1, 1, 0, fullBlockSqueeze(x, y, z));
             }
 
             @ParameterizedTest
-            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            @MethodSource(METHOD_PATH)
             void initialBlockSouth(int x, int y, int z) {
                 checkManyInitial(x, y + 1, z, Direction.SOUTH, 0.1, 1, 1, 0, fullBlockSqueeze(x, y, z));
             }
 
             @ParameterizedTest
-            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            @MethodSource(METHOD_PATH)
             void initialBlockWest(int x, int y, int z) {
                 checkManyInitial(x, y + 1, z, Direction.WEST, 0.1, 1, 1, 0, fullBlockSqueeze(x, y, z));
             }
@@ -1237,25 +1365,25 @@ class BasicNodeSnapperTest {
         @Nested
         class NearlyFull {
             @ParameterizedTest
-            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            @MethodSource(METHOD_PATH)
             void initialBlockNorth(int x, int y, int z) {
                 checkManyInitial(x, y + 1, z, Direction.NORTH, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(x, y, z));
             }
 
             @ParameterizedTest
-            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            @MethodSource(METHOD_PATH)
             void initialBlockEast(int x, int y, int z) {
                 checkManyInitial(x, y + 1, z, Direction.EAST, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(x, y, z));
             }
 
             @ParameterizedTest
-            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            @MethodSource(METHOD_PATH)
             void initialBlockSouth(int x, int y, int z) {
                 checkManyInitial(x, y + 1, z, Direction.SOUTH, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(x, y, z));
             }
 
             @ParameterizedTest
-            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            @MethodSource(METHOD_PATH)
             void initialBlockWest(int x, int y, int z) {
                 checkManyInitial(x, y + 1, z, Direction.WEST, 0.1, 1, 1, 0, nearlyFullBlockSqueeze(x, y, z));
             }
@@ -1264,25 +1392,25 @@ class BasicNodeSnapperTest {
         @Nested
         class Stairs {
             @ParameterizedTest
-            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            @MethodSource(METHOD_PATH)
             void initialBlockNorth(int x, int y, int z) {
                 checkManyInitial(x, y + 1, z, Direction.NORTH, 0.1, 1, 1, 0, stairsSqueeze(x, y, z));
             }
 
             @ParameterizedTest
-            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            @MethodSource(METHOD_PATH)
             void initialBlockEast(int x, int y, int z) {
                 checkManyInitial(x, y + 1, z, Direction.EAST, 0.1, 1, 1, 0, stairsSqueeze(x, y, z));
             }
 
             @ParameterizedTest
-            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            @MethodSource(METHOD_PATH)
             void initialBlockSouth(int x, int y, int z) {
                 checkManyInitial(x, y + 1, z, Direction.SOUTH, 0.1, 1, 1, 0, stairsSqueeze(x, y, z));
             }
 
             @ParameterizedTest
-            @MethodSource("com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates")
+            @MethodSource(METHOD_PATH)
             void initialBlockWest(int x, int y, int z) {
                 checkManyInitial(x, y + 1, z, Direction.WEST, 0.1, 1, 1, 0, stairsSqueeze(x, y, z));
             }
