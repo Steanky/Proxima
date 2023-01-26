@@ -68,6 +68,8 @@ class ClosestBelow implements PositionResolver {
             int by = sy - (i + 1);
 
             double closestDistance = Double.POSITIVE_INFINITY;
+            double highestBlockRelative = Double.NEGATIVE_INFINITY;
+
             int cx = 0;
             int cy = 0;
             int cz = 0;
@@ -83,12 +85,17 @@ class ClosestBelow implements PositionResolver {
                     double thisDistance = Double.POSITIVE_INFINITY;
                     if (solid.isFull()) {
                         thisDistance = Vec3D.distanceSquared(bx + 0.5, by + 1, bz + 0.5, x, y, z);
+                        highestBlockRelative = 1;
                     } else {
                         Bounds3D closest =
                                 solid.closestCollision(bx, by, bz, ox, y, oz, width, 1, width, Direction.DOWN,
                                         searchHeight, epsilon);
                         if (closest != null) {
-                            thisDistance = Vec3D.distanceSquared(bx + 0.5, by + closest.maxY(), bz + 0.5, x, y, z);
+                            double maxY = closest.maxY();
+                            thisDistance = Vec3D.distanceSquared(bx + 0.5, by + maxY, bz + 0.5, x, y, z);
+                            if (maxY > highestBlockRelative) {
+                                highestBlockRelative = maxY;
+                            }
                         }
                     }
 
@@ -102,7 +109,7 @@ class ClosestBelow implements PositionResolver {
             }
 
             if (Double.isFinite(closestDistance)) {
-                return Vec3I.immutable(cx, cy, cz);
+                return Vec3I.immutable(cx, highestBlockRelative == 1 ? cy + 1 : cy, cz);
             }
         }
 
