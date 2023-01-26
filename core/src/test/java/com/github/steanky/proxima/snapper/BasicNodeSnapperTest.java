@@ -28,19 +28,22 @@ import static org.junit.jupiter.api.Assertions.*;
 class BasicNodeSnapperTest {
     private static final String METHOD_PATH = "com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates";
 
-    public static @NotNull Stream<Arguments> coordinates() {
-        List<Vec3I> vectors = new ArrayList<>();
+    private static final List<Arguments> vectors;
 
+    static {
+        vectors = new ArrayList<>(125);
 
         for (int i = -2; i <= 2; i++) {
             for (int j = -2; j <= 2; j++) {
                 for (int k = -2; k <= 2; k++) {
-                    vectors.add(Vec3I.immutable(i, j, k));
+                    vectors.add(Arguments.of(i, j, k));
                 }
             }
         }
+    }
 
-        return vectors.stream().map(vec3I -> Arguments.of(vec3I.x(), vec3I.y(), vec3I.z()));
+    public static @NotNull List<Arguments> coordinates() {
+        return vectors;
     }
 
     public static final double EPSILON = 1E-6;
