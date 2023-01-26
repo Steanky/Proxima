@@ -17,10 +17,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.DoubleConsumer;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,21 +25,22 @@ import static org.junit.jupiter.api.Assertions.*;
 class BasicNodeSnapperTest {
     private static final String METHOD_PATH = "com.github.steanky.proxima.snapper.BasicNodeSnapperTest#coordinates";
 
-    private static final List<Arguments> vectors;
+    private static final Arguments[] vectors;
 
     static {
-        vectors = new ArrayList<>(125);
+        vectors = new Arguments[125];
 
+        int n = 0;
         for (int i = -2; i <= 2; i++) {
             for (int j = -2; j <= 2; j++) {
                 for (int k = -2; k <= 2; k++) {
-                    vectors.add(Arguments.of(i, j, k));
+                    vectors[n++] = Arguments.of(i, j, k);
                 }
             }
         }
     }
 
-    public static @NotNull List<Arguments> coordinates() {
+    public static @NotNull Arguments[] coordinates() {
         return vectors;
     }
 
