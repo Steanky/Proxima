@@ -27,7 +27,7 @@ class DiagonalProcessor implements NodeProcessor {
             }
 
             Node next = current.parent;
-            if (next == null || next.parent == null) {
+            if (next == null) {
                 break;
             }
 
