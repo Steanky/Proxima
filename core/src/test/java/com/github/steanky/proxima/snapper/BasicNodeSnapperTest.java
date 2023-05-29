@@ -66,6 +66,8 @@ class BasicNodeSnapperTest {
 
     public static final Solid NEARLY_FULL_SOLID = Solid.of(Bounds3D.immutable(0.1, 0, 0.1, 0.8, 1, 0.8));
 
+    public static final Solid CENTERED_HALF_BLOCK = Solid.of(Bounds3D.immutable(0.25, 0, 0.25, 0.5, 5, 0.5));
+
     public static final Solid STAIRS =
             Solid.of(Bounds3D.immutable(0, 0, 0, 1, 0.5, 1), Bounds3D.immutable(0, 0.5, 0.5, 1, 0.5, 0.5));
 
@@ -1187,6 +1189,11 @@ class BasicNodeSnapperTest {
                     full(x - 1, y, z), full(x, y, z + 1), full(x, y, z - 1) };
         }
 
+        public static SolidPos[] centeredSolid(int x, int y, int z) {
+            return new SolidPos[]{ full(x, y - 1, z), solid(CENTERED_HALF_BLOCK, x, y, z), full(x + 1, y - 1, z),
+                    full(x - 1, y - 1, z), full(x, y - 1, z + 1), full(x, y - 1, z - 1)};
+        }
+
         @ParameterizedTest
         @MethodSource(METHOD_PATH)
         void smallBoundsNoCollision(int x, int y, int z) {
@@ -1233,6 +1240,37 @@ class BasicNodeSnapperTest {
         @MethodSource(METHOD_PATH)
         void diagonalSlotIn(int x, int y, int z) {
             checkInitial(x, y, z, x, y, z, 1, 1, 0, 0, y, surroundingSolids(x, y, z));
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void walkAwayFromPartialNorth(int x, int y, int z) {
+            x = 0;
+            y = 0;
+            z = 0;
+            checkInitial(x + 0.5, y + 1, z, x, y + 1, z - 1, 0.5, 0.5, 0,
+                    0, y, centeredSolid(x, y, z));
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void walkAwayFromPartialEast(int x, int y, int z) {
+            checkInitial(x + 1, y + 1, z + 0.5, x + 1, y + 1, z, 0.5, 0.5, 0,
+                    0, y, centeredSolid(x, y, z));
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void walkAwayFromPartialSouth(int x, int y, int z) {
+            checkInitial(x + 0.5, y + 1, z + 1, x, y + 1, z + 1, 0.5, 0.5, 0,
+                    0, y, centeredSolid(x, y, z));
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void walkAwayFromPartialWest(int x, int y, int z) {
+            checkInitial(x, y + 1, z + 0.5, x - 1, y + 1, z, 0.5, 0.5, 0,
+                    0, y, centeredSolid(x, y, z));
         }
     }
 
