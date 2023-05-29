@@ -60,6 +60,8 @@ class BasicNodeSnapperTest {
 
     public static final Solid SMALL_CENTRAL_SOLID = Solid.of(Bounds3D.immutable(0.45, 0, 0.45, 0.1, 1, 0.1));
 
+    public static final Solid TINY_CENTRAL_SOLID = Solid.of(Bounds3D.immutable(0.45, 0, 0.45, 0.1, 0.5, 0.1));
+
     public static final Solid SMALL_UPPER_LEFT_SOLID = Solid.of(Bounds3D.immutable(0, 0, 0.7, 0.1, 1, 0.1));
 
     public static final Solid NEARLY_FULL_SOLID = Solid.of(Bounds3D.immutable(0.1, 0, 0.1, 0.8, 1, 0.8));
@@ -1138,10 +1140,19 @@ class BasicNodeSnapperTest {
 
     @Nested
     class CheckInitial {
-        public static void checkInitial(double x, double y, double z, int tx, int ty, int tz, double width, double height, float eHeight, SolidPos... solids) {
-            BasicNodeSnapper snapper = make(width, height, 16, 0, EPSILON, solids);
-            float res = snapper.checkInitial(x, y, z, tx, ty, tz);
-            assertEquals(eHeight, res, "unexpected target height");
+        public static void checkInitial(double x, double y, double z, int tx, int ty, int tz, double width, double height, double jumpHeight, float eOffset, int eBlock, SolidPos... solids) {
+            BasicNodeSnapper snapper = make(width, height, 16, jumpHeight, EPSILON, solids);
+            long res = snapper.checkInitial(x, y, z, tx, ty, tz);
+
+            if (Float.isNaN(eOffset)) {
+                assertEquals(NodeSnapper.FAIL, res, "wasn't NodeSnapper.FAIL");
+            }
+            else {
+                assertNotEquals(NodeSnapper.FAIL, res, "was NodeSnapper.FAIL");
+
+                assertEquals(eBlock, NodeSnapper.blockHeight(res), "block height");
+                assertEquals(eOffset, NodeSnapper.blockOffset(res), "block offset");
+            }
         }
 
         public static SolidPos[] noCollisionBelow(int x, int y, int z) {
@@ -1157,28 +1168,65 @@ class BasicNodeSnapperTest {
             return new SolidPos[] {full(x, y, z), solid(SMALL_UPPER_LEFT_SOLID, x, y + 1, z)};
         }
 
+        public static SolidPos[] tinyCentralSolidBlocked(int x, int y, int z) {
+            return new SolidPos[]{ full(x, y, z), solid(TINY_CENTRAL_SOLID, x, y + 1, z), full(x, y + 3, z) };
+        }
+
+        public static SolidPos[] tinyCentralSolid(int x, int y, int z) {
+            return new SolidPos[]{ full(x, y, z), solid(TINY_CENTRAL_SOLID, x, y + 1, z) };
+        }
+
+        public static SolidPos[] surroundingSolids(int x, int y, int z) {
+            return new SolidPos[]{ full(x, y - 1, z), full(x, y + 1, z), full(x + 1, y, z),
+                    full(x - 1, y, z), full(x, y, z + 1), full(x, y, z - 1) };
+        }
+
         @ParameterizedTest
         @MethodSource(METHOD_PATH)
         void smallBoundsNoCollision(int x, int y, int z) {
-            checkInitial(x + 0.6, y + 1, z + 0.6, x, y + 1, z, 0.3, 2, 0, noCollisionBelow(x, y, z));
+            checkInitial(x + 0.6, y + 1, z + 0.6, x, y + 1, z, 0.3, 2, 0, 0,
+                    y + 1, noCollisionBelow(x, y, z));
         }
 
         @ParameterizedTest
         @MethodSource(METHOD_PATH)
         void sameBoundsDiagonalCollision(int x, int y, int z) {
-            checkInitial(x + 0.2, y + 1, z + 0.2, x, y + 1, z, 0.2, 2, Float.NaN, smallCentralSolid(x, y, z));
+            checkInitial(x + 0.2, y + 1, z + 0.2, x, y + 1, z, 0.2, 2, 0, Float.NaN,
+                    0, smallCentralSolid(x, y, z));
         }
 
         @ParameterizedTest
         @MethodSource(METHOD_PATH)
         void sameBoundsMissDiagonal(int x, int y, int z) {
-            checkInitial(x + 0.2, y + 1, z + 0.2, x, y + 1, z, 0.2, 2, 0, smallUpperLeftSolid(x, y, z));
+            checkInitial(x + 0.2, y + 1, z + 0.2, x, y + 1, z, 0.2, 2, 0, 0,
+                    y + 1, smallUpperLeftSolid(x, y, z));
         }
 
         @ParameterizedTest
         @MethodSource(METHOD_PATH)
         void sameBoundsFallCenterSolid(int x, int y, int z) {
-            checkInitial(x + 0.2, y + 10, z + 0.2, x, y + 1, z, 0.2, 2, Float.NaN, smallCentralSolid(x, y, z));
+            checkInitial(x + 0.2, y + 10, z + 0.2, x, y + 1, z, 0.2, 2, 0, Float.NaN,
+                    0, smallCentralSolid(x, y, z));
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void sameBoundsBlockedCenterSolid(int x, int y, int z) {
+            checkInitial(x + 0.9, y + 1, z + 0.5, x, y + 1, z, 0.2, 1.9, 1, Float.NaN,
+                    0, tinyCentralSolidBlocked(x, y, z));
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void sameBoundsUnblockedCenterSolid(int x, int y, int z) {
+            checkInitial(x + 0.9, y + 1, z + 0.5, x, y + 1, z, 0.2, 1.9, 1,
+                    0.5F, y + 1, tinyCentralSolid(x, y, z));
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void diagonalSlotIn(int x, int y, int z) {
+            checkInitial(x, y, z, x, y, z, 1, 1, 0, 0, y, surroundingSolids(x, y, z));
         }
     }
 
@@ -1258,8 +1306,8 @@ class BasicNodeSnapperTest {
                         return;
                     }
 
-                    float res = snapper.checkInitial(cx, cy, cz, tx, ty, tz);
-                    assertEquals(eHeight, res,
+                    long res = snapper.checkInitial(cx, cy, cz, tx, ty, tz);
+                    assertEquals(eHeight, NodeSnapper.blockOffset(res),
                             () -> "target height: starting from " + Vec3D.immutable(cx, cy, cz) + " and going to " +
                                     Vec3I.immutable(tx, ty, tz) + " for agent of width " + w);
                 });

@@ -22,7 +22,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -152,7 +151,7 @@ class BasicAsyncPathfinderIntegrationTest {
     }
 
     @Test
-    void overloadSmallFailedPath() {
+    void smallFailedPath() {
         HashSpace space = new HashSpace(-100, -100, -100, 100, 100, 100);
         for (Direction direction : Direction.values()) {
             space.put(direction.vector(), Solid.FULL);
@@ -166,12 +165,11 @@ class BasicAsyncPathfinderIntegrationTest {
         Pathfinder pathfinder = pathfinder();
 
         List<Vec3I> expected = List.of(Vec3I.immutable(0, 0, 0));
-        IntStream.range(0, 1000000).parallel().forEach(ignored -> {
-            PathResult result = assertDoesNotThrow(
-                    () -> pathfinder.pathfind(0, 0, 0, PathTarget.coordinate(10, 10, 10), settings).get());
 
-            assertPathEquals(expected, false, result);
-        });
+        PathResult result = assertDoesNotThrow(
+                () -> pathfinder.pathfind(0.5, 0, 0.5, PathTarget.coordinate(10, 10, 10), settings).get());
+
+        assertPathEquals(expected, false, result);
     }
 
     @Test

@@ -75,10 +75,14 @@ public abstract class DirectionalExplorer implements Explorer {
         int isy = (int) Math.floor(startY);
         int isz = (int) Math.floor(startZ);
 
-        float offset = snapper.checkInitial(startX, startY, startZ, isx, isy, isz);
-        if (!Float.isNaN(offset)) {
+        long result = snapper.checkInitial(startX, startY, startZ, isx, isy, isz);
+        if (result != NodeSnapper.FAIL) {
             //if we can reach the starting node, don't explore any other options
-            initializer.initialize(isx, isy, isz, offset);
+            int height = NodeSnapper.blockHeight(result);
+            float blockOffset = NodeSnapper.blockOffset(result);
+            float jumpOffset = NodeSnapper.jumpOffset(result);
+
+            initializer.initialize(isx, height, isz, blockOffset, jumpOffset);
             return;
         }
 
@@ -92,10 +96,14 @@ public abstract class DirectionalExplorer implements Explorer {
             int iny = (int) Math.floor(ny);
             int inz = (int) Math.floor(nz);
 
-            offset = snapper.checkInitial(startX, startY, startZ, inx, iny, inz);
-            if (!Float.isNaN(offset)) {
+            result = snapper.checkInitial(startX, startY, startZ, inx, iny, inz);
+            if (result != NodeSnapper.FAIL) {
                 //valid, reachable, alternate starting node, initialize it
-                initializer.initialize(inx, iny, inz, offset);
+                int height = NodeSnapper.blockHeight(result);
+                float blockOffset = NodeSnapper.blockOffset(result);
+                float jumpOffset = NodeSnapper.jumpOffset(result);
+
+                initializer.initialize(inx, height, inz, blockOffset, jumpOffset);
             }
         }
     }

@@ -127,9 +127,9 @@ public class BasicPathOperation implements PathOperation {
         this.success = success;
     }
 
-    private void initialize(int x, int y, int z, float offset) {
+    private void initialize(int x, int y, int z, float blockOffset, float jumpOffset) {
         Node node = new Node(x, y, z, 0, heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ),
-                offset);
+                blockOffset, jumpOffset);
         graph.put(x, y, z, node);
         openSet.enqueue(node);
     }
