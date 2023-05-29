@@ -173,6 +173,29 @@ class BasicAsyncPathfinderIntegrationTest {
     }
 
     @Test
+    void unsuccessfulPathWithCorrection() {
+        HashSpace space = new HashSpace(-100, -100, -100, 100, 100, 100);
+        for (Direction direction : Direction.values()) {
+            space.put(direction.vector(), Solid.FULL);
+        }
+
+        space.put(0, -1, 0, Solid.FULL);
+        space.put(0, 1, 0, Solid.FULL);
+
+        PathSettings settings = settings(1, 1, 4, 1, space, Bounds3I.immutable(-100, -100, -100, 200, 200, 200),
+                (ignored) -> NodeProcessor.NO_CHANGE);
+        Pathfinder pathfinder = pathfinder();
+
+        PathResult result = assertDoesNotThrow(
+                () -> pathfinder.pathfind(0, 0, 0, PathTarget.coordinate(5, 5, 5), settings).get());
+
+        assertFalse(result.isSuccessful());
+        Node node = result.head();
+        assertNotNull(node);
+        assertTrue(node.positionEquals(Vec3I.ORIGIN));
+    }
+
+    @Test
     void overloadSimplePath() {
         PathSettings settings = simpleEnvironment();
         Pathfinder pathfinder = pathfinder();
