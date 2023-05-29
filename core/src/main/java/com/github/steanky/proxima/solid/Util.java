@@ -192,8 +192,16 @@ final class Util {
         double eoy = oy + e;
         double eoz = oz + e;
 
+        double exox = eox + Math.min(0, dx);
+        double exoy = eoy + Math.min(0, dy);
+        double exoz = eoz + Math.min(0, dz);
+
+        double exmx = exox + lx + adx - e;
+        double exmy = exoy + ly + ady - e;
+        double exmz = exoz + lz + adz - e;
+
         for (Bounds3D child : solid.children()) {
-            if (overlaps(child, eox, eoy, eoz, mx, my, mz)) {
+            if (overlaps(child, eox, eoy, eoz, mx, my, mz) || !overlaps(child, exox, exoy, exoz, exmx, exmy, exmz)) {
                 continue;
             }
 
@@ -234,11 +242,19 @@ final class Util {
         double eoy = oy + e;
         double eoz = oz + e;
 
+        double exox = eox + Math.min(0, dx);
+        double exoy = eoy + Math.min(0, dy);
+        double exoz = eoz + Math.min(0, dz);
+
+        double exmx = exox + lx + adx - e;
+        double exmy = exoy + ly + ady - e;
+        double exmz = exoz + lz + adz - e;
+
         float lowest = Float.POSITIVE_INFINITY;
         float highest = Float.NEGATIVE_INFINITY;
 
         for (Bounds3D child : solid.children()) {
-            if (overlaps(child, eox, eoy, eoz, mx, my, mz)) {
+            if (overlaps(child, eox, eoy, eoz, mx, my, mz) || !overlaps(child, exox, exoy, exoz, exmx, exmy, exmz)) {
                 continue;
             }
 

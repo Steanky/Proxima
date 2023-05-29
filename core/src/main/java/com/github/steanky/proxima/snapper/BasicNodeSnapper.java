@@ -369,14 +369,14 @@ public class BasicNodeSnapper implements NodeSnapper {
         boolean cx = dx != 0;
         boolean cz = dz != 0;
 
-        double eox = aox + Math.min(0, dx);
-        double eoz = aoz + Math.min(0, dz);
+        int firstX = (int) Math.floor(x + halfWidth * Math.signum(dx));
+        int firstZ = (int) Math.floor(z + halfWidth * Math.signum(dz));
 
-        int sx = (int) Math.floor(eox);
-        int ex = (int) Math.floor(eox + width + Math.abs(dx) - epsilon);
+        int sx = Math.min(firstX, tx);
+        int ex = Math.max(firstX, tx);
 
-        int sz = (int) Math.floor(eoz);
-        int ez = (int) Math.floor(eoz + width + Math.abs(dz) - epsilon);
+        int sz = Math.min(firstZ, tz);
+        int ez = Math.max(firstZ, tz);
 
         int adjustedBlockY = (int) Math.floor(exactY);
 
@@ -406,7 +406,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
             if (cx) {
                 outer:
-                for (int j = xf ? 1 : 0; j < ((dx > 0 ? mbx : obx) == ex ? 1 : 2); j++) {
+                for (int j = xf ? 1 : 0; j < (sx == ex || (dx > 0 ? mbx : obx) == ex ? 1 : 2); j++) {
                     int bx = xo + j * sdx;
 
                     for (int bz = sz; bz <= ez; bz++) {
@@ -437,7 +437,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
             if (cz) {
                 outer:
-                for (int j = zf ? 1 : 0; j < ((dz > 0 ? mbz : obz) == ez ? 1 : 2); j++) {
+                for (int j = zf ? 1 : 0; j < (sz == ez || (dz > 0 ? mbz : obz) == ez ? 1 : 2); j++) {
                     int bz = zo + j * sdz;
 
                     for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
@@ -547,14 +547,20 @@ public class BasicNodeSnapper implements NodeSnapper {
         double amx = cx + halfWidth;
         double amz = cz + halfWidth;
 
-        double eox = aox + Math.min(0, dx);
-        double eoz = aoz + Math.min(0, dz);
+        int obx = (int) Math.floor(aox);
+        int obz = (int) Math.floor(aoz);
 
-        int sx = (int) Math.floor(eox);
-        int ex = (int) Math.floor(eox + width + Math.abs(dx));
+        int mbx = (int) Math.floor(amx);
+        int mbz = (int) Math.floor(amz);
 
-        int sz = (int) Math.floor(eoz);
-        int ez = (int) Math.floor(eoz + width + Math.abs(dz));
+        int firstX = (int) Math.floor(cx + halfWidth * Math.signum(dx));
+        int firstZ = (int) Math.floor(cz + halfWidth * Math.signum(dz));
+
+        int sx = Math.min(firstX, tx);
+        int ex = Math.max(firstX, tx);
+
+        int sz = Math.min(firstZ, tz);
+        int ez = Math.max(firstZ, tz);
 
         boolean xf = isFull(dx, x);
         int xo = computeOffset(dx, x, amx, epsilon);
@@ -573,22 +579,28 @@ public class BasicNodeSnapper implements NodeSnapper {
         for (int i = 0; i < requiredHeight; i++) {
             int by = y + i;
 
-            for (int j = xf ? 1 : 0; j < (sx == ex ? 1 : 2); j++) {
-                int bx = xo + j * sdx;
+            if (dx != 0) {
+                for (int j = xf ? 1 : 0; j < (sx == ex ? 1 : 2); j++) {
+                    int bx = xo + j * sdx;
+                    boolean xs = bx == (dx < 0 ? obx : mbx);
 
-                for (int bz = sz; bz <= ez; bz++) {
-                    if (hasDiagonal(bx, by, bz, j, aox, adjustedY, aoz, width, height, width, dx, dz)) {
-                        return false;
+                    for (int bz = sz; bz <= ez; bz++) {
+                        if (hasDiagonal(bx, by, bz, xs && bz == (dz < 0 ? obz : mbz), aox, adjustedY, aoz, width, height, width, dx, dz)) {
+                            return false;
+                        }
                     }
                 }
             }
 
-            for (int j = zf ? 1 : 0; j < (sz == ez ? 1 : 2); j++) {
-                int bz = zo + j * sdz;
+            if (dz != 0) {
+                for (int j = zf ? 1 : 0; j < (sz == ez ? 1 : 2); j++) {
+                    int bz = zo + j * sdz;
+                    boolean zs = bz == (dz < 0 ? obz : mbz);
 
-                for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
-                    if (hasDiagonal(bx, by, bz, j, aox, adjustedY, aoz, width, height, width, dx, dz)) {
-                        return false;
+                    for (int bx = limitMinX ? sx + (xf ? 1 : 2) : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
+                        if (hasDiagonal(bx, by, bz, zs && bx == (bx < 0 ? obx : mbx), aox, adjustedY, aoz, width, height, width, dx, dz)) {
+                            return false;
+                        }
                     }
                 }
             }
@@ -715,14 +727,14 @@ public class BasicNodeSnapper implements NodeSnapper {
         return solid.minMaxCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, 0, dz, epsilon);
     }
 
-    private boolean hasDiagonal(int bx, int by, int bz, int i, double aox, double aoy, double aoz, double alx,
+    private boolean hasDiagonal(int bx, int by, int bz, boolean s, double aox, double aoy, double aoz, double alx,
             double aly, double alz, double dx, double dz) {
         Solid solid = space.solidAt(bx, by, bz);
         if (solid == null) {
             return true;
         }
 
-        if (solid.isEmpty() || (i == 0 && solid.isFull())) {
+        if (solid.isEmpty() || (s && solid.isFull())) {
             return false;
         }
 
