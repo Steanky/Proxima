@@ -1245,9 +1245,6 @@ class BasicNodeSnapperTest {
         @ParameterizedTest
         @MethodSource(METHOD_PATH)
         void walkAwayFromPartialNorth(int x, int y, int z) {
-            x = 0;
-            y = 0;
-            z = 0;
             checkInitial(x + 0.5, y + 1, z, x, y + 1, z - 1, 0.5, 0.5, 0,
                     0, y, centeredSolid(x, y, z));
         }

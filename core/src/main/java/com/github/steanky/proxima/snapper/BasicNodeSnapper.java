@@ -385,11 +385,9 @@ public class BasicNodeSnapper implements NodeSnapper {
         boolean limitMinX = cx && dx < 0;
         boolean limitMaxX = cx && dx > 0;
 
-        boolean xf = isFull(dx, x);
         int xo = computeOffset(dx, x, amx, epsilon);
         int sdx = (int) Math.signum(dx);
 
-        boolean zf = isFull(dz, z);
         int zo = computeOffset(dz, z, amz, epsilon);
         int sdz = (int) Math.signum(dz);
 
@@ -406,11 +404,12 @@ public class BasicNodeSnapper implements NodeSnapper {
 
             if (cx) {
                 outer:
-                for (int j = xf ? 1 : 0; j < (sx == ex || (dx > 0 ? mbx : obx) == ex ? 1 : 2); j++) {
+                for (int j = 0; j < (sx == ex || (dx > 0 ? mbx : obx) == ex ? 1 : 2); j++) {
                     int bx = xo + j * sdx;
+                    boolean xs = bx == (dx < 0 ? obx : mbx);
 
                     for (int bz = sz; bz <= ez; bz++) {
-                        long res = diagonalMinMax(bx, by, bz, j, aox, exactY, aoz, width, height + jumpHeight,
+                        long res = diagonalMinMax(bx, by, bz, xs && bz == (dz < 0 ? obz : mbz), aox, exactY, aoz, width, height + jumpHeight,
                                 width, dx, dz);
                         if (res == Solid.FAIL) {
                             return FAIL;
@@ -437,11 +436,12 @@ public class BasicNodeSnapper implements NodeSnapper {
 
             if (cz) {
                 outer:
-                for (int j = zf ? 1 : 0; j < (sz == ez || (dz > 0 ? mbz : obz) == ez ? 1 : 2); j++) {
+                for (int j = 0; j < (sz == ez || (dz > 0 ? mbz : obz) == ez ? 1 : 2); j++) {
                     int bz = zo + j * sdz;
+                    boolean zs = bz == (dz < 0 ? obz : mbz);
 
                     for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
-                        long res = diagonalMinMax(bx, by, bz, j, aox, exactY, aoz, width, height + jumpHeight,
+                        long res = diagonalMinMax(bx, by, bz, zs && bx == (bx < 0 ? obx : mbx), aox, exactY, aoz, width, height + jumpHeight,
                                 width, dx, dz);
                         if (res == Solid.FAIL) {
                             return FAIL;
@@ -562,11 +562,9 @@ public class BasicNodeSnapper implements NodeSnapper {
         int sz = Math.min(firstZ, tz);
         int ez = Math.max(firstZ, tz);
 
-        boolean xf = isFull(dx, x);
         int xo = computeOffset(dx, x, amx, epsilon);
         int sdx = (int) Math.signum(dx);
 
-        boolean zf = isFull(dz, z);
         int zo = computeOffset(dz, z, amz, epsilon);
         int sdz = (int) Math.signum(dz);
 
@@ -580,7 +578,7 @@ public class BasicNodeSnapper implements NodeSnapper {
             int by = y + i;
 
             if (dx != 0) {
-                for (int j = xf ? 1 : 0; j < (sx == ex ? 1 : 2); j++) {
+                for (int j = 0; j < (sx == ex ? 1 : 2); j++) {
                     int bx = xo + j * sdx;
                     boolean xs = bx == (dx < 0 ? obx : mbx);
 
@@ -593,11 +591,11 @@ public class BasicNodeSnapper implements NodeSnapper {
             }
 
             if (dz != 0) {
-                for (int j = zf ? 1 : 0; j < (sz == ez ? 1 : 2); j++) {
+                for (int j = 0; j < (sz == ez ? 1 : 2); j++) {
                     int bz = zo + j * sdz;
                     boolean zs = bz == (dz < 0 ? obz : mbz);
 
-                    for (int bx = limitMinX ? sx + (xf ? 1 : 2) : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
+                    for (int bx = limitMinX ? sx + 2 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
                         if (hasDiagonal(bx, by, bz, zs && bx == (bx < 0 ? obx : mbx), aox, adjustedY, aoz, width, height, width, dx, dz)) {
                             return false;
                         }
@@ -714,13 +712,13 @@ public class BasicNodeSnapper implements NodeSnapper {
         return highestY;
     }
 
-    private long diagonalMinMax(int bx, int by, int bz, int i, double aox, double aoy, double aoz, double alx, double aly, double alz, double dx, double dz) {
+    private long diagonalMinMax(int bx, int by, int bz, boolean s, double aox, double aoy, double aoz, double alx, double aly, double alz, double dx, double dz) {
         Solid solid = space.solidAt(bx, by, bz);
         if (solid == null) {
             return Solid.FAIL;
         }
 
-        if (solid.isEmpty() || (i == 0 && solid.isFull())) {
+        if (solid.isEmpty() || (s && solid.isFull())) {
             return Solid.NO_COLLISION;
         }
 
