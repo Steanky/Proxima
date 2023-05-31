@@ -742,12 +742,4 @@ public class BasicNodeSnapper implements NodeSnapper {
     private int computeJumpSearchHeight(int blockY, double actualY) {
         return blockY == actualY ? searchHeight : ((int) Math.ceil(actualY + height + jumpHeight) - blockY) + 1;
     }
-
-    private boolean isFull(double d, double originCoordinate) {
-        if (d < 0) {
-            return originCoordinate - halfWidth == Math.rint(originCoordinate);
-        }
-
-        return originCoordinate + halfWidth == Math.rint(originCoordinate);
-    }
 }

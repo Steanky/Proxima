@@ -218,11 +218,12 @@ public abstract class ConcurrentCachingSpace implements Space {
      * Loads a solid, which will be cached in this space until it is invalidated. This method is called by
      * {@link ConcurrentCachingSpace#solidAt(int, int, int)} when it encounters a cache miss.
      * <p>
-     * Threads calling this method will typically not hold any write locks. Therefore, implementations should expect
-     * that this method will be called concurrently by two or more threads.
+     * This method may be called concurrently by two or more threads. However, this class will cache any solids it
+     * returns. Future requests for solids which have been cached will use a concurrency-friendly data structure that is
+     * designed to minimize lock contention.
      * <p>
      * This method may return null to indicate that no solid can be found at the given location, and no solid will be
-     * cached. The {@link Space#solidAt(int, int, int)} method will return {@link Solid#FULL} for such a case.
+     * cached in this case.
      *
      * @param x the x-coordinate of the solid to load
      * @param y the y-coordinate of the solid to load
