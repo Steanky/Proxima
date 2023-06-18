@@ -340,7 +340,7 @@ public class BasicNodeSnapper implements NodeSnapper {
         double cbx = tx + 0.5;
         double cbz = tz + 0.5;
 
-        if (Vec3D.distanceSquared(x, y, z, cbx, ty, cbz) > 1) {
+        if (Vec3D.distanceSquared(x, y, z, cbx, y, cbz) > 1) {
             return FAIL;
         }
 
