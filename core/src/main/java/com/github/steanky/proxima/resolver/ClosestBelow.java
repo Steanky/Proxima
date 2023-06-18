@@ -7,7 +7,6 @@ import com.github.steanky.vector.Bounds3D;
 import com.github.steanky.vector.Vec3D;
 import com.github.steanky.vector.Vec3I;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -54,7 +53,7 @@ class ClosestBelow implements PositionResolver {
     }
 
     @Override
-    public @Nullable Vec3I resolve(double x, double y, double z) {
+    public @NotNull Vec3I resolve(double x, double y, double z) {
         double ox = x - halfWidth;
         double oz = z - halfWidth;
 
@@ -114,6 +113,6 @@ class ClosestBelow implements PositionResolver {
             }
         }
 
-        return null;
+        return FLOORED.resolve(x, y, z);
     }
 }

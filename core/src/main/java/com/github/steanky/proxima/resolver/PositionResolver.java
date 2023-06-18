@@ -6,7 +6,6 @@ import com.github.steanky.proxima.space.Space;
 import com.github.steanky.vector.Vec3D;
 import com.github.steanky.vector.Vec3I;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -26,7 +25,7 @@ public interface PositionResolver {
                     new Direction[] {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
 
             @Override
-            public @Nullable Vec3I resolve(double x, double y, double z) {
+            public @NotNull Vec3I resolve(double x, double y, double z) {
                 int isx = (int) Math.floor(x);
                 int isy = (int) Math.floor(y);
                 int isz = (int) Math.floor(z);
@@ -34,7 +33,7 @@ public interface PositionResolver {
                 long result = snapper.checkInitial(x, y, z, isx, isy, isz);
                 if (result != NodeSnapper.FAIL) {
                     //if we can reach the starting node, don't explore any other options
-                    return Vec3I.immutable(isx, isy, isz);
+                    return Vec3I.immutable(isx, NodeSnapper.blockHeight(result), isz);
                 }
 
                 Vec3I closestVector = null;
@@ -46,22 +45,24 @@ public interface PositionResolver {
 
                     result = snapper.checkInitial(x, y, z, inx, iny, inz);
                     if (result != NodeSnapper.FAIL) {
-                        double thisDistance = Vec3D.distanceSquared(x, y, z, inx + 0.5, iny, inz + 0.5);
+                        float height = NodeSnapper.height(result);
+
+                        double thisDistance = Vec3D.distanceSquared(x, y, z, inx + 0.5, height, inz + 0.5);
                         if (thisDistance < closestVectorDistance) {
                             closestVectorDistance = thisDistance;
-                            closestVector = Vec3I.immutable(inx, iny, inz);
+                            closestVector = Vec3I.immutable(inx, NodeSnapper.blockHeight(result), inz);
                         }
                     }
                 }
 
-                return closestVector;
+                return closestVector == null ? FLOORED.resolve(x, y, z) : closestVector;
             }
         };
     }
 
-    @Nullable Vec3I resolve(double x, double y, double z);
+    @NotNull Vec3I resolve(double x, double y, double z);
 
-    default @Nullable Vec3I resolve(@NotNull Vec3D vec) {
+    default @NotNull Vec3I resolve(@NotNull Vec3D vec) {
         return resolve(vec.x(), vec.y(), vec.z());
     }
 }
