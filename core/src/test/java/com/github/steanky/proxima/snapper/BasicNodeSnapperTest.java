@@ -3,6 +3,7 @@ package com.github.steanky.proxima.snapper;
 import com.github.steanky.proxima.Direction;
 import com.github.steanky.proxima.NodeHandler;
 import com.github.steanky.proxima.node.Node;
+import com.github.steanky.proxima.resolver.PositionResolver;
 import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.proxima.space.HashSpace;
 import com.github.steanky.vector.Bounds3D;
@@ -66,7 +67,7 @@ class BasicNodeSnapperTest {
 
     public static final Solid NEARLY_FULL_SOLID = Solid.of(Bounds3D.immutable(0.1, 0, 0.1, 0.8, 1, 0.8));
 
-    public static final Solid CENTERED_HALF_BLOCK = Solid.of(Bounds3D.immutable(0.25, 0, 0.25, 0.5, 5, 0.5));
+    public static final Solid CENTERED_HALF_BLOCK = Solid.of(Bounds3D.immutable(0.25, 0, 0.25, 0.5, 1, 0.5));
 
     public static final Solid STAIRS =
             Solid.of(Bounds3D.immutable(0, 0, 0, 1, 0.5, 1), Bounds3D.immutable(0, 0.5, 0.5, 1, 0.5, 0.5));
@@ -148,6 +149,150 @@ class BasicNodeSnapperTest {
     }
 
     private record SolidPos(Solid solid, Vec3I pos) {
+    }
+
+    @Nested
+    class Resolver {
+        @Nested
+        class WithoutCatch {
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void centerWest(int x, int y, int z) {
+                BasicNodeSnapper snapper = make(0.6, 1.95, 1, 1, EPSILON,
+                        solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
+
+                PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+                Vec3I target = resolver.resolve(x + 1.05, y + 1, z);
+                assertEquals(Vec3I.immutable(x, y + 2, z), target);
+            }
+
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void centerEast(int x, int y, int z) {
+                BasicNodeSnapper snapper = make(0.6, 1.95, 1, 1, EPSILON,
+                        solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
+
+                PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+                Vec3I target = resolver.resolve(x - 0.05, y + 1, z);
+
+                assertEquals(Vec3I.immutable(x, y + 2, z), target);
+            }
+
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void centerSouth(int x, int y, int z) {
+                BasicNodeSnapper snapper = make(0.6, 1.95, 1, 1, EPSILON,
+                        solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
+
+                PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+                Vec3I target = resolver.resolve(x, y + 1, z - 0.05);
+                assertEquals(Vec3I.immutable(x, y + 2, z), target);
+            }
+
+            @ParameterizedTest
+            @MethodSource(METHOD_PATH)
+            void centerNorth(int x, int y, int z) {
+                BasicNodeSnapper snapper = make(0.6, 1.95, 1, 1, EPSILON,
+                        solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
+
+                PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+                Vec3I target = resolver.resolve(x, y + 1, z + 1.05);
+                assertEquals(Vec3I.immutable(x, y + 2, z), target);
+            }
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void ledgeFallWest(int x, int y, int z) {
+            BasicNodeSnapper snapper = make(0.6, 1.95, 1, 0.5, EPSILON,
+                    solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z),
+                    solid(Solid.FULL, x + 1, y - 1, z));
+
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            Vec3I target = resolver.resolve(x + 1.05, y + 1, z);
+            assertEquals(Vec3I.immutable(x + 1, y, z), target);
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void ledgeFallEast(int x, int y, int z) {
+            BasicNodeSnapper snapper = make(0.6, 1.95, 1, 0.5, EPSILON,
+                    solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z),
+                    solid(Solid.FULL, x - 1, y - 1, z));
+
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            Vec3I target = resolver.resolve(x - 0.05, y + 1, z);
+
+            assertEquals(Vec3I.immutable(x - 1, y, z), target);
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void ledgeFallNorth(int x, int y, int z) {
+            BasicNodeSnapper snapper = make(0.6, 1.95, 1, 0.5, EPSILON,
+                    solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z),
+                    solid(Solid.FULL, x, y - 1, z - 1));
+
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            Vec3I target = resolver.resolve(x, y + 1, z - 0.05);
+            assertEquals(Vec3I.immutable(x, y, z - 1), target);
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void ledgeFallSouth(int x, int y, int z) {
+            BasicNodeSnapper snapper = make(0.6, 1.95, 1, 0.5, EPSILON,
+                    solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z),
+                    solid(Solid.FULL, x, y - 1, z + 1));
+
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            Vec3I target = resolver.resolve(x, y + 1, z + 1.05);
+            assertEquals(Vec3I.immutable(x, y, z + 1), target);
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void ledgeJumpWest(int x, int y, int z) {
+            BasicNodeSnapper snapper = make(0.25, 1.95, 1, 1, EPSILON,
+                    solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
+
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            Vec3I target = resolver.resolve(x + 0.875, y + 1, z);
+            assertEquals(Vec3I.immutable(x, y + 2, z), target);
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void ledgeJumpEast(int x, int y, int z) {
+            BasicNodeSnapper snapper = make(0.25, 1.95, 1, 1, EPSILON,
+                    solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
+
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            Vec3I target = resolver.resolve(x + 0.125, y + 1, z);
+            assertEquals(Vec3I.immutable(x, y + 2, z), target);
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void ledgeJumpNorth(int x, int y, int z) {
+            BasicNodeSnapper snapper = make(0.25, 1.95, 1, 1, EPSILON,
+                    solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
+
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            Vec3I target = resolver.resolve(x, y + 1, z + 0.875);
+            assertEquals(Vec3I.immutable(x, y + 2, z), target);
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void ledgeJumpSouth(int x, int y, int z) {
+            BasicNodeSnapper snapper = make(0.25, 1.95, 1, 1, EPSILON,
+                    solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
+
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            Vec3I target = resolver.resolve(x, y + 1, z + 0.125);
+            assertEquals(Vec3I.immutable(x, y + 2, z), target);
+        }
     }
 
     @Nested
@@ -1019,9 +1164,6 @@ class BasicNodeSnapperTest {
             @ParameterizedTest
             @MethodSource(METHOD_PATH)
             void clipWestNorthWest(int x, int y, int z) {
-                x = 0;
-                y = 0;
-                z = 0;
                 checkDiagonal(0.5, 1, x, y + 1, z, Direction.NORTH, Direction.WEST, 0, false,
                         clipFullSolids(x, y, z, Direction.WEST));
             }

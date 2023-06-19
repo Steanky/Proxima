@@ -385,10 +385,10 @@ public class BasicNodeSnapper implements NodeSnapper {
         boolean limitMinX = cx && dx < 0;
         boolean limitMaxX = cx && dx > 0;
 
-        int xo = computeOffset(dx, x, amx, epsilon);
+        int xo = computeOffset(dx, aox, amx, epsilon);
         int sdx = (int) Math.signum(dx);
 
-        int zo = computeOffset(dz, z, amz, epsilon);
+        int zo = computeOffset(dz, aoz, amz, epsilon);
         int sdz = (int) Math.signum(dz);
 
         double newY = Double.NaN;
