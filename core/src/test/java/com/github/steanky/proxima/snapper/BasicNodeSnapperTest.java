@@ -1140,9 +1140,6 @@ class BasicNodeSnapperTest {
             @ParameterizedTest
             @MethodSource(METHOD_PATH)
             void clipSouthSouthWest(int x, int y, int z) {
-                x = 0;
-                y =0;
-                z = 0;
                 checkDiagonal(0.5, 1, x, y + 1, z, Direction.SOUTH, Direction.WEST, 0, false,
                         clipFullSolids(x, y, z, Direction.SOUTH));
             }
