@@ -30,14 +30,17 @@ public interface PositionResolver {
                 int isy = (int) Math.floor(y);
                 int isz = (int) Math.floor(z);
 
+                double closestVectorDistance = Double.POSITIVE_INFINITY;
+                Vec3I closestVector = null;
+
                 long result = snapper.checkInitial(x, y, z, isx, isy, isz);
                 if (result != NodeSnapper.FAIL) {
-                    //if we can reach the starting node, don't explore any other options
-                    return Vec3I.immutable(isx, NodeSnapper.blockHeight(result), isz);
+                    float height = NodeSnapper.height(result);
+
+                    closestVectorDistance = Vec3D.distanceSquared(x, y, z, isx + 0.5, height, isz + 0.5);
+                    closestVector = Vec3I.immutable(isx, NodeSnapper.blockHeight(result), isz);
                 }
 
-                Vec3I closestVector = null;
-                double closestVectorDistance = Double.POSITIVE_INFINITY;
                 for (Direction direction : DIRECTIONS) {
                     int inx = (int) Math.floor(x + direction.x);
                     int iny = (int) Math.floor(y + direction.y);
