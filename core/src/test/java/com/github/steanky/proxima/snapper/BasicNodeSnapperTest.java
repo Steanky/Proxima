@@ -28,13 +28,16 @@ class BasicNodeSnapperTest {
 
     private static final Arguments[] vectors;
 
+    private static final int ARG_SIZE = 2;
+
     static {
-        vectors = new Arguments[125];
+        int range = ARG_SIZE * 2 + 1;
+        vectors = new Arguments[range * range * range];
 
         int n = 0;
-        for (int i = -2; i <= 2; i++) {
-            for (int j = -2; j <= 2; j++) {
-                for (int k = -2; k <= 2; k++) {
+        for (int i = -ARG_SIZE; i <= ARG_SIZE; i++) {
+            for (int j = -ARG_SIZE; j <= ARG_SIZE; j++) {
+                for (int k = -ARG_SIZE; k <= ARG_SIZE; k++) {
                     vectors[n++] = Arguments.of(i, j, k);
                 }
             }
