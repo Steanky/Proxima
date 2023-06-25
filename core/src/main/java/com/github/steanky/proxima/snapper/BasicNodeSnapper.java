@@ -10,6 +10,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 
 public class BasicNodeSnapper implements NodeSnapper {
+    private static final double INITIAL_SEARCH_LIMIT = Math.sqrt(2);
+
     private final double fallTolerance;
 
     private final int searchHeight;
@@ -340,7 +342,7 @@ public class BasicNodeSnapper implements NodeSnapper {
         double cbx = tx + 0.5;
         double cbz = tz + 0.5;
 
-        if (Vec3D.distanceSquared(x, y, z, cbx, y, cbz) > 1) {
+        if (Vec3D.distanceSquared(x, y, z, cbx, y, cbz) > INITIAL_SEARCH_LIMIT) {
             return FAIL;
         }
 
