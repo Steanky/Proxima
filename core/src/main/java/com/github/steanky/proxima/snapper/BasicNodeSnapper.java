@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 
 public class BasicNodeSnapper implements NodeSnapper {
-    private static final double INITIAL_SEARCH_LIMIT = Math.sqrt(2);
+    private static final double INITIAL_SEARCH_LIMIT = 2;
 
     private final double fallTolerance;
 
