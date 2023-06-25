@@ -1,6 +1,7 @@
 package com.github.steanky.proxima.snapper;
 
 import com.github.steanky.proxima.Direction;
+import com.github.steanky.proxima.space.Space;
 import org.jetbrains.annotations.NotNull;
 
 public interface NodeSnapper {
@@ -45,4 +46,6 @@ public interface NodeSnapper {
     long checkInitial(double x, double y, double z, int tx, int ty, int tz);
 
     boolean checkDiagonal(int x, int y, int z, int tx, int tz, float nodeOffset);
+
+    @NotNull Space space();
 }

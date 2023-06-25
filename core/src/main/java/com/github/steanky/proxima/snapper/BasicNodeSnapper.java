@@ -607,6 +607,11 @@ public class BasicNodeSnapper implements NodeSnapper {
         return true;
     }
 
+    @Override
+    public @NotNull Space space() {
+        return space;
+    }
+
     private boolean checkJump(int obx, int mbx, int obz, int mbz, double aox, double aoy, double aoz, double targetHeight) {
         double exactHeight = aoy + height;
         int ceilHeight = (int) Math.ceil(exactHeight);

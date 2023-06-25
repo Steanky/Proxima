@@ -164,7 +164,7 @@ class BasicNodeSnapperTest {
                 BasicNodeSnapper snapper = make(0.6, 1.95, 1, 1, EPSILON,
                         solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
 
-                PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+                PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.6, EPSILON);
                 Vec3I target = resolver.resolve(x + 1.05, y + 1, z);
                 assertEquals(Vec3I.immutable(x, y + 2, z), target);
             }
@@ -175,7 +175,7 @@ class BasicNodeSnapperTest {
                 BasicNodeSnapper snapper = make(0.6, 1.95, 1, 1, EPSILON,
                         solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
 
-                PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+                PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.6, EPSILON);
                 Vec3I target = resolver.resolve(x - 0.05, y + 1, z);
 
                 assertEquals(Vec3I.immutable(x, y + 2, z), target);
@@ -187,7 +187,7 @@ class BasicNodeSnapperTest {
                 BasicNodeSnapper snapper = make(0.6, 1.95, 1, 1, EPSILON,
                         solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
 
-                PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+                PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.6, EPSILON);
                 Vec3I target = resolver.resolve(x, y + 1, z - 0.05);
                 assertEquals(Vec3I.immutable(x, y + 2, z), target);
             }
@@ -198,7 +198,7 @@ class BasicNodeSnapperTest {
                 BasicNodeSnapper snapper = make(0.6, 1.95, 1, 1, EPSILON,
                         solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
 
-                PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+                PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.6, EPSILON);
                 Vec3I target = resolver.resolve(x, y + 1, z + 1.05);
                 assertEquals(Vec3I.immutable(x, y + 2, z), target);
             }
@@ -211,9 +211,9 @@ class BasicNodeSnapperTest {
                     solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z),
                     solid(Solid.FULL, x + 1, y - 1, z));
 
-            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.6, EPSILON);
             Vec3I target = resolver.resolve(x + 1.05, y + 1, z);
-            assertEquals(Vec3I.immutable(x + 1, y, z), target);
+            assertEquals(Vec3I.immutable(x, y + 1, z), target);
         }
 
         @ParameterizedTest
@@ -223,10 +223,10 @@ class BasicNodeSnapperTest {
                     solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z),
                     solid(Solid.FULL, x - 1, y - 1, z));
 
-            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.6, EPSILON);
             Vec3I target = resolver.resolve(x - 0.05, y + 1, z);
 
-            assertEquals(Vec3I.immutable(x - 1, y, z), target);
+            assertEquals(Vec3I.immutable(x, y + 1, z), target);
         }
 
         @ParameterizedTest
@@ -236,9 +236,9 @@ class BasicNodeSnapperTest {
                     solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z),
                     solid(Solid.FULL, x, y - 1, z - 1));
 
-            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.6, EPSILON);
             Vec3I target = resolver.resolve(x, y + 1, z - 0.05);
-            assertEquals(Vec3I.immutable(x, y, z - 1), target);
+            assertEquals(Vec3I.immutable(x, y + 1, z), target);
         }
 
         @ParameterizedTest
@@ -248,9 +248,9 @@ class BasicNodeSnapperTest {
                     solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z),
                     solid(Solid.FULL, x, y - 1, z + 1));
 
-            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.6, EPSILON);
             Vec3I target = resolver.resolve(x, y + 1, z + 1.05);
-            assertEquals(Vec3I.immutable(x, y, z + 1), target);
+            assertEquals(Vec3I.immutable(x, y + 1, z), target);
         }
 
         @ParameterizedTest
@@ -259,7 +259,7 @@ class BasicNodeSnapperTest {
             BasicNodeSnapper snapper = make(0.25, 1.95, 1, 1, EPSILON,
                     solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
 
-            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.25, EPSILON);
             Vec3I target = resolver.resolve(x + 0.875, y + 1, z);
             assertEquals(Vec3I.immutable(x, y + 2, z), target);
         }
@@ -270,7 +270,7 @@ class BasicNodeSnapperTest {
             BasicNodeSnapper snapper = make(0.25, 1.95, 1, 1, EPSILON,
                     solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
 
-            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.25, EPSILON);
             Vec3I target = resolver.resolve(x + 0.125, y + 1, z);
             assertEquals(Vec3I.immutable(x, y + 2, z), target);
         }
@@ -281,7 +281,7 @@ class BasicNodeSnapperTest {
             BasicNodeSnapper snapper = make(0.25, 1.95, 1, 1, EPSILON,
                     solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
 
-            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.25, EPSILON);
             Vec3I target = resolver.resolve(x, y + 1, z + 0.875);
             assertEquals(Vec3I.immutable(x, y + 2, z), target);
         }
@@ -292,7 +292,7 @@ class BasicNodeSnapperTest {
             BasicNodeSnapper snapper = make(0.25, 1.95, 1, 1, EPSILON,
                     solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z));
 
-            PositionResolver resolver = PositionResolver.asIfByInitial(snapper);
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.25, EPSILON);
             Vec3I target = resolver.resolve(x, y + 1, z + 0.125);
             assertEquals(Vec3I.immutable(x, y + 2, z), target);
         }

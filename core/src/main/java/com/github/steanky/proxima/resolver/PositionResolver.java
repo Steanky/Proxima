@@ -17,8 +17,10 @@ public interface PositionResolver {
         return new ClosestBelow(space, searchHeight, width, epsilon);
     }
 
-    static @NotNull PositionResolver asIfByInitial(@NotNull NodeSnapper snapper) {
+    static @NotNull PositionResolver asIfByInitial(@NotNull NodeSnapper snapper, int searchHeight, double width, double epsilon) {
         Objects.requireNonNull(snapper, "snapper");
+
+        PositionResolver seekBelow = seekBelow(snapper.space(), searchHeight, width, epsilon);
 
         return new PositionResolver() {
             private static final Direction[] DIRECTIONS =
@@ -26,9 +28,11 @@ public interface PositionResolver {
 
             @Override
             public @NotNull Vec3I resolve(double x, double y, double z) {
-                int isx = (int) Math.floor(x);
-                int isy = (int) Math.floor(y);
-                int isz = (int) Math.floor(z);
+                Vec3I standingOn = seekBelow.resolve(x, y, z);
+
+                int isx = standingOn.x();
+                int isy = standingOn.y();
+                int isz = standingOn.z();
 
                 double closestVectorDistance = Double.POSITIVE_INFINITY;
                 Vec3I closestVector = null;
@@ -58,7 +62,7 @@ public interface PositionResolver {
                     }
                 }
 
-                return closestVector == null ? FLOORED.resolve(x, y, z) : closestVector;
+                return closestVector == null ? standingOn : closestVector;
             }
         };
     }
