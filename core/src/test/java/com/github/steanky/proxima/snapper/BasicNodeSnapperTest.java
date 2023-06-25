@@ -206,6 +206,54 @@ class BasicNodeSnapperTest {
 
         @ParameterizedTest
         @MethodSource(METHOD_PATH)
+        void noLedgeFallNortheast(int x, int y, int z) {
+            Vec3I sum = Direction.NORTH.vector().add(Direction.EAST.vector());
+            BasicNodeSnapper snapper = make(0.6, 1.95, 16, 0.5, EPSILON,
+                    solid(Solid.FULL, x, y, z), solid(Solid.FULL, x + sum.x(), y - 1, z + sum.z()));
+
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.6, EPSILON);
+            Vec3I target = resolver.resolve(x + (1 - EPSILON), y + 1, z - 0.3 + EPSILON);
+            assertEquals(Vec3I.immutable(x, y + 1, z), target);
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void noLedgeFallSoutheast(int x, int y, int z) {
+            Vec3I sum = Direction.SOUTH.vector().add(Direction.EAST.vector());
+            BasicNodeSnapper snapper = make(0.6, 1.95, 16, 0.5, EPSILON,
+                    solid(Solid.FULL, x, y, z), solid(Solid.FULL, x + sum.x(), y - 1, z + sum.z()));
+
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.6, EPSILON);
+            Vec3I target = resolver.resolve(x + (1 - EPSILON), y + 1, z + (1 - EPSILON));
+            assertEquals(Vec3I.immutable(x, y + 1, z), target);
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void noLedgeFallSouthwest(int x, int y, int z) {
+            Vec3I sum = Direction.SOUTH.vector().add(Direction.WEST.vector());
+            BasicNodeSnapper snapper = make(0.6, 1.95, 16, 0.5, EPSILON,
+                    solid(Solid.FULL, x, y, z), solid(Solid.FULL, x + sum.x(), y - 1, z + sum.z()));
+
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.6, EPSILON);
+            Vec3I target = resolver.resolve(x - 0.3 + EPSILON, y + 1, z + (1 - EPSILON));
+            assertEquals(Vec3I.immutable(x, y + 1, z), target);
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void noLedgeFallNorthwest(int x, int y, int z) {
+            Vec3I sum = Direction.NORTH.vector().add(Direction.WEST.vector());
+            BasicNodeSnapper snapper = make(0.6, 1.95, 16, 0.5, EPSILON,
+                    solid(Solid.FULL, x, y, z), solid(Solid.FULL, x + sum.x(), y - 1, z + sum.z()));
+
+            PositionResolver resolver = PositionResolver.asIfByInitial(snapper, 16, 0.6, EPSILON);
+            Vec3I target = resolver.resolve(x - 0.3 + EPSILON, y + 1, z - 0.3 + EPSILON);
+            assertEquals(Vec3I.immutable(x, y + 1, z), target);
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
         void ledgeFallWest(int x, int y, int z) {
             BasicNodeSnapper snapper = make(0.6, 1.95, 1, 0.5, EPSILON,
                     solid(Solid.FULL, x, y, z), solid(CENTERED_HALF_BLOCK, x, y + 1, z),
