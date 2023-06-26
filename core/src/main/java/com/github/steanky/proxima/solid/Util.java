@@ -197,7 +197,7 @@ final class Util {
         return false;
     }
 
-    static long minMaxCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, double dx, double dy, double dz, double e) {
+    static long minMaxCollision(Solid solid, int x, int y, int z, double cx, double cy, double cz, double lx, double ly, double lz, double dx, double dy, double dz, double e) {
         double adx = Math.abs(dx);
         double ady = Math.abs(dy);
         double adz = Math.abs(dz);
@@ -210,17 +210,13 @@ final class Util {
         double adjustedXY = (ely * adx + elx * ady) / 2;
         double adjustedYZ = (elz * ady + ely * adz) / 2;
 
-        double cx = ox + (lx / 2);
-        double cy = oy + (ly / 2);
-        double cz = oz + (lz / 2);
+        double mx = cx + (lx / 2) - e;
+        double my = cy + ly - e;
+        double mz = cz + (lz / 2) - e;
 
-        double mx = ox + lx - e;
-        double my = oy + ly - e;
-        double mz = oz + lz - e;
-
-        double eox = ox + e;
-        double eoy = oy + e;
-        double eoz = oz + e;
+        double eox = cx - (lx / 2) + e;
+        double eoy = cy + e;
+        double eoz = cz - (lz / 2) + e;
 
         double exox = eox + Math.min(0, dx);
         double exoy = eoy + Math.min(0, dy);

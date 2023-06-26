@@ -411,7 +411,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     boolean xs = bx == (dx < 0 ? obx : mbx);
 
                     for (int bz = sz; bz <= ez; bz++) {
-                        long res = diagonalMinMax(bx, by, bz, xs && bz == (dz < 0 ? obz : mbz), aox, exactY, aoz, width, height + jumpHeight,
+                        long res = diagonalMinMax(bx, by, bz, xs && bz == (dz < 0 ? obz : mbz), x, exactY, z, width, height + jumpHeight,
                                 width, dx, dz);
                         if (res == Solid.FAIL) {
                             return FAIL;
@@ -443,7 +443,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     boolean zs = bz == (dz < 0 ? obz : mbz);
 
                     for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
-                        long res = diagonalMinMax(bx, by, bz, zs && bx == (bx < 0 ? obx : mbx), aox, exactY, aoz, width, height + jumpHeight,
+                        long res = diagonalMinMax(bx, by, bz, zs && bx == (bx < 0 ? obx : mbx), x, exactY, z, width, height + jumpHeight,
                                 width, dx, dz);
                         if (res == Solid.FAIL) {
                             return FAIL;
@@ -719,7 +719,7 @@ public class BasicNodeSnapper implements NodeSnapper {
         return highestY;
     }
 
-    private long diagonalMinMax(int bx, int by, int bz, boolean s, double aox, double aoy, double aoz, double alx, double aly, double alz, double dx, double dz) {
+    private long diagonalMinMax(int bx, int by, int bz, boolean s, double cx, double cy, double cz, double alx, double aly, double alz, double dx, double dz) {
         Solid solid = space.solidAt(bx, by, bz);
         if (solid == null) {
             return Solid.FAIL;
@@ -729,7 +729,7 @@ public class BasicNodeSnapper implements NodeSnapper {
             return Solid.NO_COLLISION;
         }
 
-        return solid.minMaxCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, 0, dz, epsilon);
+        return solid.minMaxCollision(bx, by, bz, cx, cy, cz, alx, aly, alz, dx, 0, dz, epsilon);
     }
 
     private boolean hasDiagonal(int bx, int by, int bz, boolean s, double aox, double aoy, double aoz, double alx,
