@@ -585,7 +585,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     boolean xs = bx == (dx < 0 ? obx : mbx);
 
                     for (int bz = sz; bz <= ez; bz++) {
-                        if (hasDiagonal(bx, by, bz, xs && bz == (dz < 0 ? obz : mbz), aox, adjustedY, aoz, width, height, width, dx, dz)) {
+                        if (hasDiagonal(bx, by, bz, xs && bz == (dz < 0 ? obz : mbz), cx, adjustedY, cz, width, height, width, dx, dz)) {
                             return false;
                         }
                     }
@@ -598,7 +598,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     boolean zs = bz == (dz < 0 ? obz : mbz);
 
                     for (int bx = limitMinX ? sx + 2 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
-                        if (hasDiagonal(bx, by, bz, zs && bx == (bx < 0 ? obx : mbx), aox, adjustedY, aoz, width, height, width, dx, dz)) {
+                        if (hasDiagonal(bx, by, bz, zs && bx == (bx < 0 ? obx : mbx), cx, adjustedY, cz, width, height, width, dx, dz)) {
                             return false;
                         }
                     }
@@ -732,7 +732,7 @@ public class BasicNodeSnapper implements NodeSnapper {
         return solid.minMaxCollision(bx, by, bz, cx, cy, cz, alx, aly, alz, dx, 0, dz, epsilon);
     }
 
-    private boolean hasDiagonal(int bx, int by, int bz, boolean s, double aox, double aoy, double aoz, double alx,
+    private boolean hasDiagonal(int bx, int by, int bz, boolean s, double cx, double cy, double cz, double alx,
             double aly, double alz, double dx, double dz) {
         Solid solid = space.solidAt(bx, by, bz);
         if (solid == null) {
@@ -743,7 +743,7 @@ public class BasicNodeSnapper implements NodeSnapper {
             return false;
         }
 
-        return solid.hasCollision(bx, by, bz, aox, aoy, aoz, alx, aly, alz, dx, 0, dz, epsilon);
+        return solid.hasCollision(bx, by, bz, cx, cy, cz, alx, aly, alz, dx, 0, dz, epsilon);
     }
 
     private int computeJumpSearchHeight(int blockY, double actualY) {
