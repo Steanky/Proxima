@@ -59,22 +59,22 @@ final class Util {
         return closest;
     }
 
-    static long minMaxCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, Direction d, double l, double e) {
+    static long minMaxCollision(Solid solid, int x, int y, int z, double cx, double cy, double cz, double lx, double ly, double lz, Direction d, double l, double e) {
         double dx = d.x * l;
         double dy = d.y * l;
         double dz = d.z * l;
 
-        double aox = ox + Math.min(0, dx);
-        double aoy = oy + Math.min(0, dy);
-        double aoz = oz + Math.min(0, dz);
+        double aox = cx - (lx / 2) + Math.min(0, dx);
+        double aoy = cy + Math.min(0, dy);
+        double aoz = cz - (lz / 2) + Math.min(0, dz);
 
         double eaox = aox + e;
         double eaoy = aoy + e;
         double eaoz = aoz + e;
 
-        double eox = ox + e;
-        double eoy = oy + e;
-        double eoz = oz + e;
+        double eox = cx - (lx / 2) + e;
+        double eoy = cy + e;
+        double eoz = cz - (lz / 2) + e;
 
         double alx = lx + Math.abs(dx);
         double aly = ly + Math.abs(dy);
@@ -84,9 +84,9 @@ final class Util {
         double amy = aoy + aly - e;
         double amz = aoz + alz - e;
 
-        double mx = ox + lx - e;
-        double my = oy + ly - e;
-        double mz = oz + lz - e;
+        double mx = cx - (lx / 2) + lx - e;
+        double my = cy + ly - e;
+        double mz = cz - (lz / 2) + lz - e;
 
         float lowest = Float.POSITIVE_INFINITY;
         float highest = Float.NEGATIVE_INFINITY;

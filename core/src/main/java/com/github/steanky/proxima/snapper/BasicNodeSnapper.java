@@ -239,7 +239,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     }
 
                     long res =
-                            solid.minMaxCollision(x, y, z, ax, exactY, az, width, height + jumpHeight, width,
+                            solid.minMaxCollision(x, y, z, nodeX + 0.5, exactY, nodeZ + 0.5, width, height + jumpHeight, width,
                                     direction, 1, epsilon);
                     if (res == Solid.FAIL) {
                         return FAIL;
