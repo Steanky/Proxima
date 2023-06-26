@@ -111,8 +111,8 @@ public class BasicNodeSnapper implements NodeSnapper {
     private long snapVertical(Direction direction, int nodeX, int nodeY, int nodeZ, float nodeOffset) {
         double exactY = nodeY + nodeOffset;
 
-        double ax = nodeX + 0.5 - halfWidth;
-        double az = nodeZ + 0.5 - halfWidth;
+        double ax = nodeX + 0.5;
+        double az = nodeZ + 0.5;
 
         if (direction == Direction.UP) {
             double exactHeight = height + nodeOffset;

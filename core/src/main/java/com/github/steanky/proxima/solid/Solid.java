@@ -130,8 +130,8 @@ public interface Solid {
         return Util.closestCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l, e);
     }
 
-    default boolean hasCollision(int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, @NotNull Direction d, double l, double e) {
-        return Util.hasCollision(this, x, y, z, ox, oy, oz, lx, ly, lz, d, l, e);
+    default boolean hasCollision(int x, int y, int z, double cx, double cy, double cz, double lx, double ly, double lz, @NotNull Direction d, double l, double e) {
+        return Util.hasCollision(this, x, y, z, cx, cy, cz, lx, ly, lz, d, l, e);
     }
 
     default boolean hasCollision(int x, int y, int z, double cx, double cy, double cz, double lx, double ly, double lz, double dx, double dy, double dz, double e) {
