@@ -299,7 +299,7 @@ public class BasicNodeSnapper implements NodeSnapper {
             int obz = nodeZ - halfBlockWidth;
             int mbz = nodeZ + halfBlockWidth;
 
-            if (checkJump(obx, mbx, obz, mbz, ax, exactY, az, newY)) {
+            if (checkJump(obx, mbx, obz, mbz, nodeX + 0.5, exactY, nodeZ + 0.5, newY)) {
                 return FAIL;
             }
 
@@ -328,7 +328,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
         //for walking entities, check blocks below the target
         //for flying entities, check the current block (which is non-full) and use its offset
-        double finalY = checkFall(obx, mbx, obz, mbz, oby, nax, newY, naz);
+        double finalY = checkFall(obx, mbx, obz, mbz, oby, nx + 0.5, newY, nz + 0.5);
         if (Double.isNaN(finalY)) {
             return FAIL;
         }
@@ -359,7 +359,7 @@ public class BasicNodeSnapper implements NodeSnapper {
         int mbx = (int) Math.floor(amx);
         int mbz = (int) Math.floor(amz);
 
-        double exactY = checkFall(obx, mbx, obz, mbz, oby, aox, y, aoz);
+        double exactY = checkFall(obx, mbx, obz, mbz, oby, x, y, z);
         if (Double.isNaN(exactY)) {
             //invalid start location
             return FAIL;
@@ -499,7 +499,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
         //jumping is necessary, so we need to check above us
         if (newY > exactY) {
-            if (checkJump(obx, mbx, obz, mbz, ax, exactY, az, newY)) {
+            if (checkJump(obx, mbx, obz, mbz, x, exactY, z, newY)) {
                 return FAIL;
             }
 
@@ -526,7 +526,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
         //for walking entities, check blocks below the target
         //for flying entities, check the current block (which is non-full) and use its offset
-        double finalY = checkFall(nobx, nmbx, nobz, nmbz, oby, nax, newY, naz);
+        double finalY = checkFall(nobx, nmbx, nobz, nmbz, oby, x + dx, newY, z + dz);
         if (Double.isNaN(finalY)) {
             return FAIL;
         }
@@ -614,10 +614,10 @@ public class BasicNodeSnapper implements NodeSnapper {
         return space;
     }
 
-    private boolean checkJump(int obx, int mbx, int obz, int mbz, double aox, double aoy, double aoz, double targetHeight) {
-        double exactHeight = aoy + height;
+    private boolean checkJump(int obx, int mbx, int obz, int mbz, double x, double y, double z, double targetHeight) {
+        double exactHeight = y + height;
         int ceilHeight = (int) Math.ceil(exactHeight);
-        int jumpSearch = (int) Math.ceil(targetHeight - aoy);
+        int jumpSearch = (int) Math.ceil(targetHeight - y);
 
         for (int i = exactHeight == ceilHeight ? 0 : -1; i < jumpSearch; i++) {
             int by = ceilHeight + i;
@@ -637,7 +637,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                         return true;
                     }
 
-                    Bounds3D closest = solid.closestCollision(bx, by, bz, aox, aoy, aoz, width, height, width,
+                    Bounds3D closest = solid.closestCollision(bx, by, bz, x, y, z, width, height, width,
                             Direction.UP, jumpHeight, epsilon);
                     if (closest != null && by + closest.originY() - targetHeight < height - epsilon) {
                         return true;
@@ -649,16 +649,16 @@ public class BasicNodeSnapper implements NodeSnapper {
         return false;
     }
 
-    private double checkFall(int obx, int mbx, int obz, int mbz, int oby, double aox, double aoy, double aoz) {
-        boolean full = oby == aoy;
+    private double checkFall(int obx, int mbx, int obz, int mbz, int oby, double x, double y, double z) {
+        boolean full = oby == y;
         if (full && !walk) {
-            return aoy;
+            return y;
         }
 
         for (int i = full ? 0 : -1; i < fallSearchHeight; i++) {
             int by = oby - (i + 1);
 
-            double highestY = checkDownwardLayer(obx, mbx, obz, mbz, by, i, aox, aoy, aoz);
+            double highestY = checkDownwardLayer(obx, mbx, obz, mbz, by, i, x, y, z);
             if (!walk) {
                 //only ever check a single layer if flying
                 //if we find a block: use its offset
@@ -671,7 +671,7 @@ public class BasicNodeSnapper implements NodeSnapper {
             }
 
             double target = by + highestY;
-            double fall = aoy - target;
+            double fall = y - target;
             if (fall > fallTolerance) {
                 return Double.NaN;
             }
@@ -682,7 +682,7 @@ public class BasicNodeSnapper implements NodeSnapper {
         return Double.NaN;
     }
 
-    private double checkDownwardLayer(int startX, int endX, int startZ, int endZ, int by, int i, double ox, double oy, double oz) {
+    private double checkDownwardLayer(int startX, int endX, int startZ, int endZ, int by, int i, double x, double y, double z) {
         double highestY = Double.NEGATIVE_INFINITY;
 
         for (int bx = startX; bx <= endX; bx++) {
@@ -701,7 +701,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                 }
 
                 Bounds3D bounds =
-                        solid.closestCollision(bx, by, bz, ox, oy, oz, width, height, width, Direction.DOWN,
+                        solid.closestCollision(bx, by, bz, x, y, z, width, height, width, Direction.DOWN,
                                 fallSearchHeight, epsilon);
                 if (bounds != null) {
                     double height = bounds.maxY();

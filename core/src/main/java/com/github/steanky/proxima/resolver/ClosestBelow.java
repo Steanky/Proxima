@@ -54,9 +54,6 @@ class ClosestBelow implements PositionResolver {
 
     @Override
     public @NotNull Vec3I resolve(double x, double y, double z) {
-        double ox = x - halfWidth;
-        double oz = z - halfWidth;
-
         int sx = (int) Math.floor(x - halfWidth);
         int sy = (int) Math.floor(y);
         int sz = (int) Math.floor(z - halfWidth);
@@ -88,7 +85,7 @@ class ClosestBelow implements PositionResolver {
                         highestBlockRelative = 1;
                     } else {
                         Bounds3D closest =
-                                solid.closestCollision(bx, by, bz, ox, y, oz, width, 1, width, Direction.DOWN,
+                                solid.closestCollision(bx, by, bz, x, y, z, width, 1, width, Direction.DOWN,
                                         searchHeight, epsilon);
                         if (closest != null) {
                             double maxY = closest.maxY();
