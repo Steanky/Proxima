@@ -8,10 +8,6 @@ import com.github.steanky.vector.Bounds3D;
  */
 final class Util {
     static Bounds3D closestCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, Direction d, double l, double e) {
-        ox -= x;
-        oy -= y;
-        oz -= z;
-
         //fast directional expansion algorithm
         double adx = Math.abs(d.x);
         double ady = Math.abs(d.y);
@@ -49,7 +45,7 @@ final class Util {
         Bounds3D closest = null;
 
         for (Bounds3D child : solid.children()) {
-            if (!overlaps(child, eaox, eaoy, eaoz, amx, amy, amz) || overlaps(child, eox, eoy, eoz, mx, my, mz)) {
+            if (!overlaps(child, x, y, z, eaox, eaoy, eaoz, amx, amy, amz) || overlaps(child, x, y, z, eox, eoy, eoz, mx, my, mz)) {
                 continue;
             }
 
@@ -64,10 +60,6 @@ final class Util {
     }
 
     static long minMaxCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, Direction d, double l, double e) {
-        ox -= x;
-        oy -= y;
-        oz -= z;
-
         double dx = d.x * l;
         double dy = d.y * l;
         double dz = d.z * l;
@@ -100,7 +92,7 @@ final class Util {
         float highest = Float.NEGATIVE_INFINITY;
 
         for (Bounds3D child : solid.children()) {
-            if (!overlaps(child, eaox, eaoy, eaoz, amx, amy, amz) || overlaps(child, eox, eoy, eoz, mx, my, mz)) {
+            if (!overlaps(child, x, y, z, eaox, eaoy, eaoz, amx, amy, amz) || overlaps(child, x, y, z, eox, eoy, eoz, mx, my, mz)) {
                 continue;
             }
 
@@ -120,10 +112,6 @@ final class Util {
     }
 
     static boolean hasCollision(Solid solid, int x, int y, int z, double ox, double oy, double oz, double lx, double ly, double lz, Direction d, double l, double e) {
-        ox -= x;
-        oy -= y;
-        oz -= z;
-
         double dx = d.x * l;
         double dy = d.y * l;
         double dz = d.z * l;
@@ -153,7 +141,7 @@ final class Util {
         double mz = oz + lz - e;
 
         for (Bounds3D child : solid.children()) {
-            if (!overlaps(child, eaox, eaoy, eaoz, amx, amy, amz) || overlaps(child, eox, eoy, eoz, mx, my, mz)) {
+            if (!overlaps(child, x, y, z, eaox, eaoy, eaoz, amx, amy, amz) || overlaps(child, x, y, z, eox, eoy, eoz, mx, my, mz)) {
                 continue;
             }
 
@@ -180,10 +168,6 @@ final class Util {
         double cy = oy + (ly / 2);
         double cz = oz + (lz / 2);
 
-        ox -= x;
-        oy -= y;
-        oz -= z;
-
         double mx = ox + lx - e;
         double my = oy + ly - e;
         double mz = oz + lz - e;
@@ -201,7 +185,7 @@ final class Util {
         double exmz = Math.min(0, dz) + adz + mz;
 
         for (Bounds3D child : solid.children()) {
-            if (overlaps(child, eox, eoy, eoz, mx, my, mz) || !overlaps(child, exox, exoy, exoz, exmx, exmy, exmz)) {
+            if (overlaps(child, x, y, z, eox, eoy, eoz, mx, my, mz) || !overlaps(child, x, y, z, exox, exoy, exoz, exmx, exmy, exmz)) {
                 continue;
             }
 
@@ -230,10 +214,6 @@ final class Util {
         double cy = oy + (ly / 2);
         double cz = oz + (lz / 2);
 
-        ox -= x;
-        oy -= y;
-        oz -= z;
-
         double mx = ox + lx - e;
         double my = oy + ly - e;
         double mz = oz + lz - e;
@@ -254,7 +234,7 @@ final class Util {
         float highest = Float.NEGATIVE_INFINITY;
 
         for (Bounds3D child : solid.children()) {
-            if (overlaps(child, eox, eoy, eoz, mx, my, mz) || !overlaps(child, exox, exoy, exoz, exmx, exmy, exmz)) {
+            if (overlaps(child, x, y, z, eox, eoy, eoz, mx, my, mz) || !overlaps(child, x, y, z, exox, exoy, exoz, exmx, exmy, exmz)) {
                 continue;
             }
 
@@ -320,8 +300,8 @@ final class Util {
                 ((d.z < 0 ? oz - child.maxZ() : child.maxZ() - mz) * adz);
     }
 
-    private static boolean overlaps(Bounds3D bounds, double ox, double oy, double oz, double mx, double my, double mz) {
-        return bounds.originX() < mx && bounds.originY() < my && bounds.originZ() < mz && ox < bounds.maxX() &&
-                oy < bounds.maxY() && oz < bounds.maxZ();
+    private static boolean overlaps(Bounds3D bounds, int x, int y, int z, double ox, double oy, double oz, double mx, double my, double mz) {
+        return bounds.originX() + x < mx && bounds.originY() + y < my && bounds.originZ() + z < mz && ox < bounds.maxX() + x &&
+                oy < bounds.maxY() + y && oz < bounds.maxZ() + z;
     }
 }
