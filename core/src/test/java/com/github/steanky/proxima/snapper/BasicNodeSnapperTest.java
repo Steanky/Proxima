@@ -631,9 +631,6 @@ class BasicNodeSnapperTest {
                     @ParameterizedTest
                     @MethodSource(METHOD_PATH)
                     void straightWalkSouth(int x, int y, int z) {
-                        x = 0;
-                        y = 0;
-                        z = 0;
                         walk(Direction.SOUTH, x, y, z, 0.5F, x, y, z + 1, 0.5, flatWalkBlocks(x, y, z));
                     }
 
