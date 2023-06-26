@@ -199,9 +199,6 @@ public class BasicNodeSnapper implements NodeSnapper {
         //the actual number of blocks we need to check vertically may vary depending on the nodeOffset
         int actualSearchHeight = computeJumpSearchHeight(nodeY, exactY);
 
-        double ax = nodeX + 0.5 - halfWidth;
-        double az = nodeZ + 0.5 - halfWidth;
-
         //we may need to jump over a block to get to the next node
         boolean highestIsIntermediate = false;
 
@@ -322,9 +319,6 @@ public class BasicNodeSnapper implements NodeSnapper {
 
         int obz = nz - halfBlockWidth;
         int mbz = nz + halfBlockWidth;
-
-        double nax = ax + dx;
-        double naz = az + dz;
 
         //for walking entities, check blocks below the target
         //for flying entities, check the current block (which is non-full) and use its offset
@@ -494,9 +488,6 @@ public class BasicNodeSnapper implements NodeSnapper {
             return FAIL;
         }
 
-        double ax = x - halfWidth;
-        double az = z - halfWidth;
-
         //jumping is necessary, so we need to check above us
         if (newY > exactY) {
             if (checkJump(obx, mbx, obz, mbz, x, exactY, z, newY)) {
@@ -520,9 +511,6 @@ public class BasicNodeSnapper implements NodeSnapper {
 
         int nobz = tz - halfBlockWidth;
         int nmbz = tz + halfBlockWidth;
-
-        double nax = ax + dx;
-        double naz = az + dz;
 
         //for walking entities, check blocks below the target
         //for flying entities, check the current block (which is non-full) and use its offset
