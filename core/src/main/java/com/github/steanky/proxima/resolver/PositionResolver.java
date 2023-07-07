@@ -39,10 +39,7 @@ public interface PositionResolver {
 
                 long result = snapper.checkInitial(x, y, z, isx, isy, isz);
                 if (result != NodeSnapper.FAIL) {
-                    float height = NodeSnapper.height(result);
-
-                    closestVectorDistance = Vec3D.distanceSquared(x, y, z, isx + 0.5, height, isz + 0.5);
-                    closestVector = Vec3I.immutable(isx, NodeSnapper.blockHeight(result), isz);
+                    return Vec3I.immutable(isx, NodeSnapper.blockHeight(result), isz);
                 }
 
                 for (Direction direction : DIRECTIONS) {
