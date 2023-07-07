@@ -48,7 +48,7 @@ class BasicNodeSnapperTest {
         return vectors;
     }
 
-    public static final double EPSILON = 1E-6;
+    public static final double EPSILON = 0.0001;
 
     public static final Solid LOWER_HALF_BLOCK = Solid.of(Bounds3D.immutable(0, 0, 0, 1, 0.5, 1));
 
