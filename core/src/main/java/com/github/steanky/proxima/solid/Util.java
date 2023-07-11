@@ -185,7 +185,7 @@ final class Util {
                 continue;
             }
 
-            if (checkBounds(x, y, z, child, cx, cy, cz, adjustedXZ, adjustedXY, adjustedYZ, dx, dy, dz)) {
+            if (checkBounds(x, y, z, child, cx, cy + (ly / 2), cz, adjustedXZ, adjustedXY, adjustedYZ, dx, dy, dz)) {
                 return true;
             }
         }
@@ -230,7 +230,7 @@ final class Util {
                 continue;
             }
 
-            if (!checkBounds(x, y, z, child, cx, cy, cz, adjustedXZ, adjustedXY, adjustedYZ, dx, dy, dz)) {
+            if (!checkBounds(x, y, z, child, cx, cy + (ly / 2), cz, adjustedXZ, adjustedXY, adjustedYZ, dx, dy, dz)) {
                 continue;
             }
 
