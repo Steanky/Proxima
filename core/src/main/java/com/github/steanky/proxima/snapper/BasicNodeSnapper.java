@@ -105,7 +105,7 @@ public class BasicNodeSnapper implements NodeSnapper {
     }
 
     private static int computeOffset(double d, double originCoordinate, double maxCoordinate, double epsilon) {
-        return d < 0 ? (int) Math.floor(originCoordinate) : (int) Math.floor(maxCoordinate - epsilon);
+        return d < 0 ? (int) Math.floor(originCoordinate + d + epsilon) : (int) Math.floor(maxCoordinate + d - epsilon);
     }
 
     private long snapVertical(Direction direction, int nodeX, int nodeY, int nodeZ, float nodeOffset) {
@@ -368,11 +368,14 @@ public class BasicNodeSnapper implements NodeSnapper {
         int firstX = (int) Math.floor(x + halfWidth * Math.signum(dx));
         int firstZ = (int) Math.floor(z + halfWidth * Math.signum(dz));
 
-        int sx = Math.min(firstX, tx);
-        int ex = Math.max(firstX, tx);
+        int lastX = (int) Math.floor(cbx + halfWidth * Math.signum(dx));
+        int lastZ = (int) Math.floor(cbz + halfWidth * Math.signum(dz));
 
-        int sz = Math.min(firstZ, tz);
-        int ez = Math.max(firstZ, tz);
+        int sx = Math.min(firstX, lastX);
+        int ex = Math.max(firstX, lastX);
+
+        int sz = Math.min(firstZ, lastZ);
+        int ez = Math.max(firstZ, lastZ);
 
         int adjustedBlockY = (int) Math.floor(exactY);
 
@@ -400,12 +403,12 @@ public class BasicNodeSnapper implements NodeSnapper {
 
             if (cx) {
                 outer:
-                for (int j = 0; j < (sx == ex || (dx > 0 ? mbx : obx) == ex ? 1 : 2); j++) {
+                for (int j = 0; j < (ex == sx ? 1 : 2); j++) {
                     int bx = xo + j * sdx;
-                    boolean xs = bx == (dx < 0 ? obx : mbx);
+                    boolean s = bx == (dx < 0 ? obx : mbx);
 
                     for (int bz = sz; bz <= ez; bz++) {
-                        long res = diagonalMinMax(bx, by, bz, xs && bz == (dz < 0 ? obz : mbz), x, exactY, z, width, height + jumpHeight,
+                        long res = diagonalMinMax(bx, by, bz, s, x, exactY, z, width, height + jumpHeight,
                                 width, dx, dz);
                         if (res == Solid.FAIL) {
                             return FAIL;
@@ -420,7 +423,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                         if (high > highest) {
                             highest = high;
-                            highestIsIntermediate = j == 0;
+                            highestIsIntermediate = s;
                         }
 
                         if (low == 0 && high == 1) {
@@ -432,12 +435,12 @@ public class BasicNodeSnapper implements NodeSnapper {
 
             if (cz) {
                 outer:
-                for (int j = 0; j < (sz == ez || (dz > 0 ? mbz : obz) == ez ? 1 : 2); j++) {
+                for (int j = 0; j < (ez == sz ? 1 : 2); j++) {
                     int bz = zo + j * sdz;
-                    boolean zs = bz == (dz < 0 ? obz : mbz);
+                    boolean s = bz == (dz < 0 ? obz : mbz);
 
                     for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
-                        long res = diagonalMinMax(bx, by, bz, zs && bx == (bx < 0 ? obx : mbx), x, exactY, z, width, height + jumpHeight,
+                        long res = diagonalMinMax(bx, by, bz, s, x, exactY, z, width, height + jumpHeight,
                                 width, dx, dz);
                         if (res == Solid.FAIL) {
                             return FAIL;
@@ -452,7 +455,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
                         if (high > highest) {
                             highest = high;
-                            highestIsIntermediate = j == 0;
+                            highestIsIntermediate = s;
                         }
 
                         if (low == 0 && high == 1) {
@@ -546,11 +549,14 @@ public class BasicNodeSnapper implements NodeSnapper {
         int firstX = (int) Math.floor(cx + halfWidth * Math.signum(dx));
         int firstZ = (int) Math.floor(cz + halfWidth * Math.signum(dz));
 
-        int sx = Math.min(firstX, tx);
-        int ex = Math.max(firstX, tx);
+        int lastX = (int) Math.floor(tx + 0.5 + halfWidth * Math.signum(dx));
+        int lastZ = (int) Math.floor(tz + 0.5 + halfWidth * Math.signum(dz));
 
-        int sz = Math.min(firstZ, tz);
-        int ez = Math.max(firstZ, tz);
+        int sx = Math.min(firstX, lastX);
+        int ex = Math.max(firstX, lastX);
+
+        int sz = Math.min(firstZ, lastZ);
+        int ez = Math.max(firstZ, lastZ);
 
         int xo = computeOffset(dx, x, amx, epsilon);
         int sdx = (int) Math.signum(dx);
@@ -570,10 +576,10 @@ public class BasicNodeSnapper implements NodeSnapper {
             if (dx != 0) {
                 for (int j = 0; j < (sx == ex ? 1 : 2); j++) {
                     int bx = xo + j * sdx;
-                    boolean xs = bx == (dx < 0 ? obx : mbx);
+                    boolean s = bx == (dx < 0 ? obx : mbx);
 
                     for (int bz = sz; bz <= ez; bz++) {
-                        if (hasDiagonal(bx, by, bz, xs && bz == (dz < 0 ? obz : mbz), cx, adjustedY, cz, width, height, width, dx, dz)) {
+                        if (hasDiagonal(bx, by, bz, s, cx, adjustedY, cz, width, height, width, dx, dz)) {
                             return false;
                         }
                     }
@@ -583,10 +589,10 @@ public class BasicNodeSnapper implements NodeSnapper {
             if (dz != 0) {
                 for (int j = 0; j < (sz == ez ? 1 : 2); j++) {
                     int bz = zo + j * sdz;
-                    boolean zs = bz == (dz < 0 ? obz : mbz);
+                    boolean s = bz == (dz < 0 ? obz : mbz);
 
-                    for (int bx = limitMinX ? sx + 2 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
-                        if (hasDiagonal(bx, by, bz, zs && bx == (bx < 0 ? obx : mbx), cx, adjustedY, cz, width, height, width, dx, dz)) {
+                    for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
+                        if (hasDiagonal(bx, by, bz, s, cx, adjustedY, cz, width, height, width, dx, dz)) {
                             return false;
                         }
                     }

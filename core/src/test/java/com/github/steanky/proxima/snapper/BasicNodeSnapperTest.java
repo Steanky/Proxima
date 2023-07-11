@@ -1384,6 +1384,38 @@ class BasicNodeSnapperTest {
                     full(x - 1, y - 1, z), full(x, y - 1, z + 1), full(x, y - 1, z - 1)};
         }
 
+        public static SolidPos[] clipWalk(int x, int y, int z, Direction direction) {
+            return new SolidPos[]{ full(x, y, z), full(x + direction.x, y + 1, z + direction.z)};
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void largeClipOnCenterWest(int x, int y, int z) {
+            checkInitial(x + 0.7, y + 1, z + 0.5, x, y + 1, z, 1.1, 2, 1, 0.0F,
+                    y + 2, clipWalk(x, y, z, Direction.WEST));
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void largeClipOnCenterEast(int x, int y, int z) {
+            checkInitial(x - 0.3, y + 1, z + 0.5, x, y + 1, z, 1.1, 2, 1, 0.0F,
+                    y + 2, clipWalk(x, y, z, Direction.EAST));
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void largeClipOnCenterNorth(int x, int y, int z) {
+            checkInitial(x + 0.5, y + 1, z + 0.7, x, y + 1, z, 1.1, 2, 1, 0.0F,
+                    y + 2, clipWalk(x, y, z, Direction.NORTH));
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void largeClipOnCenterSouth(int x, int y, int z) {
+            checkInitial(x + 0.5, y + 1, z - 0.3, x, y + 1, z, 1.1, 2, 1, 0.0F,
+                    y + 2, clipWalk(x, y, z, Direction.SOUTH));
+        }
+
         @ParameterizedTest
         @MethodSource(METHOD_PATH)
         void smallBoundsNoCollision(int x, int y, int z) {
