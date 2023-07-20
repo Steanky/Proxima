@@ -609,13 +609,10 @@ public class BasicNodeSnapper implements NodeSnapper {
     }
 
     private boolean checkJump(int obx, int mbx, int obz, int mbz, double x, double y, double z, double targetHeight) {
-        double exactHeight = y + height;
-        int ceilHeight = (int) Math.ceil(exactHeight);
-        int jumpSearch = (int) Math.ceil(targetHeight - y);
-
-        for (int i = exactHeight == ceilHeight ? 0 : -1; i < jumpSearch; i++) {
-            int by = ceilHeight + i;
-
+        double exactStart = y + height;
+        int start = (int)Math.floor(exactStart);
+        int end = (int)Math.floor(targetHeight + height);
+        for (int by = start; by <= end; by++) {
             for (int bx = obx; bx <= mbx; bx++) {
                 for (int bz = obz; bz <= mbz; bz++) {
                     Solid solid = space.solidAt(bx, by, bz);
@@ -623,7 +620,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                         return true;
                     }
 
-                    if (solid.isEmpty() || (i == -1 && solid.isFull())) {
+                    if (solid.isEmpty() || (by == start && start != exactStart && solid.isFull())) {
                         continue;
                     }
 

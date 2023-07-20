@@ -671,6 +671,10 @@ class BasicNodeSnapperTest {
         class PartialWidth {
             @Nested
             class PartialHeight {
+                private static void walkTall(Direction direction, int x, int y, int z, float yo, int ex, int ey, int ez, double eOffset, SolidPos... pos) {
+                    BasicNodeSnapperTest.walk(direction, 0.6, 2.4, x, y, z, yo, ex, ey, ez, eOffset, false, pos);
+                }
+
                 private static void walk(Direction direction, int x, int y, int z, float yo, int ex, int ey, int ez, double eOffset, SolidPos... pos) {
                     BasicNodeSnapperTest.walk(direction, 0.6, 1.95, x, y, z, yo, ex, ey, ez, eOffset, false, pos);
                 }
@@ -803,6 +807,42 @@ class BasicNodeSnapperTest {
                                 solid(LOWER_HALF_BLOCK, x, y + 1, z - 1), solid(UPPER_HALF_BLOCK, x, y + 2, z)};
                     }
 
+                    private static SolidPos[] offsetSlab(int x, int y, int z, Direction direction) {
+                        return new SolidPos[] {full(x, y, z),
+                                solid(LOWER_HALF_BLOCK, x + direction.x, y + 1, z + direction.z),
+                                full(x + direction.x, y + 4, z + direction.z),
+                                full(x, y + 4, z)
+                        };
+                    }
+
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void offsetSlabNorth(int x, int y, int z) {
+                        walkTall(Direction.NORTH, x, y, z, 0, x, y, z - 1, 0.5,
+                                offsetSlab(x, y - 1, z, Direction.NORTH));
+                    }
+
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void offsetSlabEast(int x, int y, int z) {
+                        walkTall(Direction.EAST, x, y, z, 0, x + 1, y, z, 0.5,
+                                offsetSlab(x, y - 1, z, Direction.EAST));
+                    }
+
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void offsetSlabSouth(int x, int y, int z) {
+                        walkTall(Direction.SOUTH, x, y, z, 0, x, y, z + 1, 0.5,
+                                offsetSlab(x, y - 1, z, Direction.SOUTH));
+                    }
+
+                    @ParameterizedTest
+                    @MethodSource(METHOD_PATH)
+                    void offsetSlabWest(int x, int y, int z) {
+                        walkTall(Direction.WEST, x, y, z, 0, x - 1, y, z, 0.5,
+                                offsetSlab(x, y - 1, z, Direction.WEST));
+                    }
+
                     @ParameterizedTest
                     @MethodSource(METHOD_PATH)
                     void jumpUpFromSlabBlockedNorth(int x, int y, int z) {
@@ -830,6 +870,9 @@ class BasicNodeSnapperTest {
                     @ParameterizedTest
                     @MethodSource(METHOD_PATH)
                     void jumpUpFromSlabNorth(int x, int y, int z) {
+                        x = 0;
+                        y = 0;
+                        z = 0;
                         walk(Direction.NORTH, x, y, z, 0.5F, x, y + 1, z - 1, 0.5, jumpUpFromSlabBlocks(x, y, z));
                     }
 
