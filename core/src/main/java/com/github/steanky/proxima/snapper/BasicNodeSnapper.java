@@ -10,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Objects;
 
 public class BasicNodeSnapper implements NodeSnapper {
+    private static final long SOLID_FAIL = 0xFFC0_0001_FFC0_0001L;
     private static final double INITIAL_SEARCH_LIMIT = 2;
 
     private final double fallTolerance;
@@ -235,12 +236,8 @@ public class BasicNodeSnapper implements NodeSnapper {
                         break outer;
                     }
 
-                    long res =
-                            solid.minMaxCollision(x, y, z, nodeX + 0.5, exactY, nodeZ + 0.5, width, height + jumpHeight, width,
-                                    direction, 1, epsilon);
-                    if (res == Solid.FAIL) {
-                        return FAIL;
-                    }
+                    long res = solid.minMaxCollision(x, y, z, nodeX + 0.5, exactY, nodeZ + 0.5, width,
+                            height + jumpHeight, width, direction, 1, epsilon);
 
                     float low = Solid.lowest(res);
                     float high = Solid.highest(res);
@@ -410,7 +407,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     for (int bz = sz; bz <= ez; bz++) {
                         long res = diagonalMinMax(bx, by, bz, s, x, exactY, z, width, height + jumpHeight,
                                 width, dx, dz);
-                        if (res == Solid.FAIL) {
+                        if (res == SOLID_FAIL) {
                             return FAIL;
                         }
 
@@ -442,7 +439,7 @@ public class BasicNodeSnapper implements NodeSnapper {
                     for (int bx = limitMinX ? sx + 1 : sx; bx <= (limitMaxX ? ex - 1 : ex); bx++) {
                         long res = diagonalMinMax(bx, by, bz, s, x, exactY, z, width, height + jumpHeight,
                                 width, dx, dz);
-                        if (res == Solid.FAIL) {
+                        if (res == SOLID_FAIL) {
                             return FAIL;
                         }
 
@@ -714,7 +711,7 @@ public class BasicNodeSnapper implements NodeSnapper {
     private long diagonalMinMax(int bx, int by, int bz, boolean s, double cx, double cy, double cz, double alx, double aly, double alz, double dx, double dz) {
         Solid solid = space.solidAt(bx, by, bz);
         if (solid == null) {
-            return Solid.FAIL;
+            return SOLID_FAIL;
         }
 
         if (solid.isEmpty() || (s && solid.isFull())) {

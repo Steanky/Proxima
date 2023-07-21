@@ -1,7 +1,6 @@
 package com.github.steanky.proxima.solid;
 
 import com.github.steanky.proxima.Direction;
-import com.github.steanky.proxima.snapper.NodeSnapper;
 import com.github.steanky.vector.Bounds3D;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -13,17 +12,20 @@ import java.util.List;
  * Represents an object in 3D voxel space. Conceptually, solids consist of zero or more three-dimensional bounding
  * boxes. If a solid has no bounds, it will not be collided with (see {@link Solid#EMPTY}).
  * <p>
- * None of the bounds of a solid may exceed a 1x1x1 cube.
+ * Solid instances can be created using {@link Solid#of(Bounds3D...)} or any associated overloads. In all cases, none of
+ * the bounds of the solid may possess an origin vector with a component less than 0, <i>or</i> a bound in which the
+ * sum of the origin and lengths vector exceeds 1. Attempting to create such solids will throw a
+ * {@link IllegalArgumentException}.
  */
 public sealed interface Solid permits SolidImpl {
     /**
-     * The shared, empty Solid. It is encouraged to call {@link Solid#isEmpty()}, rather than doing an equality
+     * The shared, empty Solid. It is encouraged to call {@link Solid#isEmpty()}, rather than doing a reference
      * comparison with this field, as it is not guaranteed to be singleton.
      */
     Solid EMPTY = new SolidImpl();
 
     /**
-     * The shared, full Solid. It is encouraged to call {@link Solid#isFull()}, rather than doing an equality comparison
+     * The shared, full Solid. It is encouraged to call {@link Solid#isFull()}, rather than doing a reference comparison
      * with this field, as it is not guaranteed to be singleton.
      */
     Solid FULL = new SolidImpl(Bounds3D.immutable(0, 0, 0, 1, 1, 1));
@@ -37,19 +39,21 @@ public sealed interface Solid permits SolidImpl {
     long NO_COLLISION = 0x7F80_0000_FF80_0000L;
 
     /**
-     * Returned by {@link Solid#minMaxCollision(int, int, int, double, double, double, double, double, double,
-     * Direction, double, double)} and {@link Solid#minMaxCollision(int, int, int, double, double, double, double,
-     * double, double, double, double, double, double)} to indicate that collision checking failed; passability in this
-     * direction should not be possible, and {@link NodeSnapper} implementations should quickly exit instead of checking
-     * additional blocks. The default collision implementations in {@link Util} never return this value.
+     * Packs two floats into a single long. This is used by
+     * {@link Solid#minMaxCollision(int, int, int, double, double, double, double, double, double, Direction, double, double)}
+     * and
+     * {@link Solid#minMaxCollision(int, int, int, double, double, double, double, double, double, double, double, double, double)}
+     * to return the highest and lowest colliding points of a solid.
+     * @param lowest the lowest float
+     * @param highest the highest float
+     * @return a long containing the two values
      */
-    long FAIL = 0xFFC0_0001_FFC0_0001L;
-
     static long result(float lowest, float highest) {
         int hi = Float.floatToRawIntBits(lowest);
         int lo = Float.floatToRawIntBits(highest);
         return (((long) hi) << 32) | (lo & 0xFFFF_FFFFL);
     }
+
 
     static float lowest(long collisionResult) {
         return Float.intBitsToFloat((int) (collisionResult >>> 32));
