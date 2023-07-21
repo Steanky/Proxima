@@ -103,7 +103,7 @@ class BasicAsyncPathfinderIntegrationTest {
     }
 
     private static PathSettings hugeEnvironmentWithPartialBlocks() {
-        Solid stairs = Solid.of(Bounds3D.immutable(0, 0, 0, 1, 0.5, 1), Bounds3D.immutable(0, 0.5, 0.5, 0.5, 0.5, 1));
+        Solid stairs = Solid.of(Bounds3D.immutable(0, 0, 0, 1, 0.5, 1), Bounds3D.immutable(0, 0.5, 0.5, 0.5, 0.5, 0.5));
 
         HashSpace space = new HashSpace(0, 0, 0, 1000, 4, 1000);
         for (int x = 0; x < 1000; x++) {

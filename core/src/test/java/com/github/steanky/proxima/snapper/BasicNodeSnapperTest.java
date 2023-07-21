@@ -75,6 +75,12 @@ class BasicNodeSnapperTest {
     public static final Solid STAIRS =
             Solid.of(Bounds3D.immutable(0, 0, 0, 1, 0.5, 1), Bounds3D.immutable(0, 0.5, 0.5, 1, 0.5, 0.5));
 
+    public static final Solid FENCE_LOWER =
+            Solid.of(Bounds3D.immutable(0.375, 0, 0.375, 0.25, 1, 0.25));
+
+    public static final Solid FENCE_UPPER =
+            Solid.of(Bounds3D.immutable(0.375, 0, 0.375, 0.25, 0.5, 0.25));
+
     private static SolidPos solid(Solid solid, int x, int y, int z) {
         return new SolidPos(solid, Vec3I.immutable(x, y, z));
     }
@@ -870,9 +876,6 @@ class BasicNodeSnapperTest {
                     @ParameterizedTest
                     @MethodSource(METHOD_PATH)
                     void jumpUpFromSlabNorth(int x, int y, int z) {
-                        x = 0;
-                        y = 0;
-                        z = 0;
                         walk(Direction.NORTH, x, y, z, 0.5F, x, y + 1, z - 1, 0.5, jumpUpFromSlabBlocks(x, y, z));
                     }
 
@@ -1396,6 +1399,10 @@ class BasicNodeSnapperTest {
             }
         }
 
+        public static SolidPos[] initialFence(int x, int y, int z) {
+            return new SolidPos[] {full(x, y, z), solid(FENCE_LOWER, x, y + 1, z), solid(FENCE_UPPER, x, y + 2, z)};
+        }
+
         public static SolidPos[] noCollisionBelow(int x, int y, int z) {
             return new SolidPos[] {full(x, y, z), full(x + 1, y, z), full(x - 1, y, z), full(x, y, z + 1),
                     full(x, y, z - 1)};
@@ -1429,6 +1436,34 @@ class BasicNodeSnapperTest {
 
         public static SolidPos[] clipWalk(int x, int y, int z, Direction direction) {
             return new SolidPos[]{ full(x, y, z), full(x + direction.x, y + 1, z + direction.z)};
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void initialFenceNorth(int x, int y, int z) {
+            checkInitial(x + 0.5, y + 1, z + 0.99, x, y + 1, z, 0.6, 2.0, 2, 0.5F,
+                    y + 2, initialFence(x, y, z));
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void initialFenceEast(int x, int y, int z) {
+            checkInitial(x + 0.01, y + 1, z + 0.5, x, y + 1, z, 0.6, 2.0, 2, 0.5F,
+                    y + 2, initialFence(x, y, z));
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void initialFenceSouth(int x, int y, int z) {
+            checkInitial(x + 0.5, y + 1, z + 0.01, x, y + 1, z, 0.6, 2.0, 2, 0.5F,
+                    y + 2, initialFence(x, y, z));
+        }
+
+        @ParameterizedTest
+        @MethodSource(METHOD_PATH)
+        void initialFenceWest(int x, int y, int z) {
+            checkInitial(x + 0.99, y + 1, z + 0.5, x, y + 1, z, 0.6, 2.0, 2, 0.5F,
+                    y + 2, initialFence(x, y, z));
         }
 
         @ParameterizedTest

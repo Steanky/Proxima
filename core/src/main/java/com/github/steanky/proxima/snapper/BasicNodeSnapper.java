@@ -503,7 +503,8 @@ public class BasicNodeSnapper implements NodeSnapper {
             }
         }
 
-        boolean full = newY == oby;
+        int newBlockY = (int)Math.floor(newY);
+        boolean full = newY == newBlockY;
         if (full && !walk) {
             //full, non-flying entities won't fall at all, and we don't need to compute their offset since it's known
             return NodeSnapper.encode(newY, false, 0);
@@ -517,7 +518,7 @@ public class BasicNodeSnapper implements NodeSnapper {
 
         //for walking entities, check blocks below the target
         //for flying entities, check the current block (which is non-full) and use its offset
-        double finalY = checkFall(nobx, nmbx, nobz, nmbz, oby, x + dx, newY, z + dz);
+        double finalY = checkFall(nobx, nmbx, nobz, nmbz, newBlockY, x + dx, newY, z + dz);
         if (Double.isNaN(finalY)) {
             return FAIL;
         }
