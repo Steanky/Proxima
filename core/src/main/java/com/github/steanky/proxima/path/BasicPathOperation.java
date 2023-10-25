@@ -70,9 +70,13 @@ public class BasicPathOperation implements PathOperation {
 
         current = openSet.dequeue();
 
+        int dx = this.destinationX;
+        int dy = this.destinationY;
+        int dz = this.destinationZ;
+
         //Vec3IBiPredicate to avoid needing to create a Vec3I object
         //predicate returns true = we found our destination and have a path
-        if (successPredicate.test(current.x, current.y, current.z, destinationX, destinationY, destinationZ)) {
+        if (successPredicate.test(current.x, current.y, current.z, dx, dy, dz)) {
             //complete (may throw an exception if already completed)
             best = current;
             complete(true);
@@ -81,7 +85,7 @@ public class BasicPathOperation implements PathOperation {
 
         //reference the explore method: this is not strictly necessary, but it is cleaner, and prevents from
         //accidentally capturing a variable from step's scope
-        explorer.exploreEach(current, this::explore, graph);
+        explorer.exploreEach(current, this::explore, graph, dx, dy, dz);
         if (current.h < best.h) {
             best = current;
         }

@@ -24,17 +24,20 @@ public abstract class DirectionalExplorer implements Explorer {
     }
 
     @Override
-    public void exploreEach(@NotNull Node currentNode, @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph) {
-        if (!limiter.inBounds(currentNode)) {
+    public void exploreEach(@NotNull Node current, @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph,
+        int destinationX, int destinationY, int destinationZ) {
+        if (!limiter.inBounds(current)) {
             //prune nodes that are not in bounds according to the limiter
             return;
         }
 
-        int nx = currentNode.x;
-        int ny = currentNode.y;
-        int nz = currentNode.z;
+        int nx = current.x;
+        int ny = current.y;
+        int nz = current.z;
 
-        for (Direction direction : directions) {
+        for (int i = startingDirectionIndex(current, destinationX, destinationY, destinationZ), j = 0;
+                j < directions.length; j++, i++) {
+            Direction direction = directions[i % directions.length];
             int dx = direction.x;
             int dy = direction.y;
             int dz = direction.z;
@@ -44,14 +47,14 @@ public abstract class DirectionalExplorer implements Explorer {
             int ty = ny + dy;
             int tz = nz + dz;
 
-            Node parent = currentNode.parent;
+            Node parent = current.parent;
             if (parent != null && isParent(parent, tx, ty, tz)) {
                 //don't re-visit our parent, there's never a reason to do this
                 continue;
             }
 
             Node neighborNode = graph.get(tx, ty, tz);
-            if (neighborNode != null && currentNode.g + 1 >= neighborNode.g) {
+            if (neighborNode != null && current.g + 1 >= neighborNode.g) {
                 /*
                 ignore travel to nodes that
 
@@ -65,7 +68,7 @@ public abstract class DirectionalExplorer implements Explorer {
                 continue;
             }
 
-            handleDirection(direction, currentNode, neighborNode, handler, graph);
+            handleDirection(direction, current, neighborNode, handler, graph);
         }
     }
 
@@ -107,6 +110,8 @@ public abstract class DirectionalExplorer implements Explorer {
             }
         }
     }
+
+    protected abstract int startingDirectionIndex(@NotNull Node current, int destinationX, int destinationY, int destinationZ);
 
     protected abstract boolean isParent(@NotNull Node parent, int tx, int ty, int tz);
 

@@ -19,6 +19,11 @@ public class FlightExplorer extends DirectionalExplorer {
     }
 
     @Override
+    protected int startingDirectionIndex(@NotNull Node current, int destinationX, int destinationY, int destinationZ) {
+        return 0;
+    }
+
+    @Override
     protected boolean isParent(@NotNull Node parent, int tx, int ty, int tz) {
         return parent.x == tx && parent.y == ty && parent.z == tz;
     }

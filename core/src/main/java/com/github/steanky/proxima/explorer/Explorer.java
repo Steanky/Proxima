@@ -6,7 +6,8 @@ import com.github.steanky.vector.Vec3I2ObjectMap;
 import org.jetbrains.annotations.NotNull;
 
 public interface Explorer {
-    void exploreEach(@NotNull Node currentNode, @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph);
+    void exploreEach(@NotNull Node currentNode, @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph,
+            int destinationX, int destinationY, int destinationZ);
 
     void exploreInitial(double startX, double startY, double startZ, @NotNull NodeInitializer initializer);
 }

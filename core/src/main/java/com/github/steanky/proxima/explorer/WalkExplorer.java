@@ -13,8 +13,20 @@ public class WalkExplorer extends DirectionalExplorer {
     private static final Direction[] DIRECTIONS =
             new Direction[] {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
 
+    private static final int[] START_LOOKUP = new int[] {
+            3,
+            2,
+            0,
+            1
+    };
+
     public WalkExplorer(@NotNull NodeSnapper snapper, @NotNull PathLimiter limiter) {
         super(DIRECTIONS, limiter, snapper);
+    }
+
+    @Override
+    protected int startingDirectionIndex(@NotNull Node current, int destinationX, int destinationY, int destinationZ) {
+        return START_LOOKUP[key(destinationX - current.x, destinationZ - current.z)];
     }
 
     @Override
@@ -49,5 +61,13 @@ public class WalkExplorer extends DirectionalExplorer {
 
             handler.handle(currentNode, neighborNode, tx, height, tz, blockOffset, jumpOffset);
         }
+    }
+
+    private static int key(int dx, int dz) {
+        return (shift(dx) << 1) | shift(dz);
+    }
+
+    private static int shift(int v) {
+        return v >>> (Integer.SIZE - 1);
     }
 }
