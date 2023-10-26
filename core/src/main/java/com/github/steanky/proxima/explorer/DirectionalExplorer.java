@@ -35,9 +35,9 @@ public abstract class DirectionalExplorer implements Explorer {
         int ny = current.y;
         int nz = current.z;
 
-        for (int i = startingDirectionIndex(current, destinationX, destinationY, destinationZ), j = 0;
-                j < directions.length; j++, i++) {
-            Direction direction = directions[i % directions.length];
+        int offsetIndex = startingDirectionIndex(current, destinationX, destinationY, destinationZ);
+        for (int i = 0; i < directions.length; i++) {
+            Direction direction = directions[(i + offsetIndex) % directions.length];
             int dx = direction.x;
             int dy = direction.y;
             int dz = direction.z;
