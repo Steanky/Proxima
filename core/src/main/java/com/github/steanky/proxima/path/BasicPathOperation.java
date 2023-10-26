@@ -117,9 +117,20 @@ public class BasicPathOperation implements PathOperation {
             graph.clear();
         }
 
+        successPredicate = null;
+        explorer = null;
+        heuristic = null;
+        nodeProcessor = null;
+
+        state = State.UNINITIALIZED;
+        success = false;
+
         current = null;
         best = null;
-        state = State.UNINITIALIZED;
+
+        destinationX = 0;
+        destinationY = 0;
+        destinationZ = 0;
     }
 
     private void complete(boolean success) {

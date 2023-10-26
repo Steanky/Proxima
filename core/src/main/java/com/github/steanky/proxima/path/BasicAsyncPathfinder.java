@@ -25,8 +25,8 @@ public class BasicAsyncPathfinder implements Pathfinder {
     }
 
     @Override
-    public @NotNull Future<PathResult> pathfind(double x, double y, double z, @NotNull PathTarget destination, @NotNull PathSettings settings) {
-        Callable<PathResult> callable = () -> {
+    public @NotNull CompletableFuture<PathResult> pathfind(double x, double y, double z, @NotNull PathTarget destination, @NotNull PathSettings settings) {
+        Supplier<PathResult> supplier = () -> {
             PathOperation localOperation = null;
             try {
                 //resolving a destination might be expensive, so do it on the pathfinder thread
@@ -65,7 +65,7 @@ public class BasicAsyncPathfinder implements Pathfinder {
         if (poolSize.get() < poolCapacity) {
             try {
                 poolSize.incrementAndGet();
-                return pathExecutor.submit(callable);
+                return CompletableFuture.supplyAsync(supplier, pathExecutor);
             } catch (RejectedExecutionException ignored) {
                 //if execution is rejected, run the callable on the caller thread
                 //decrement the poolSize again because the callable wasn't actually added
@@ -77,7 +77,7 @@ public class BasicAsyncPathfinder implements Pathfinder {
             poolSize.incrementAndGet();
 
             //if the poolCapacity is exceeded, pathfind on the caller thread
-            return CompletableFuture.completedFuture(callable.call());
+            return CompletableFuture.completedFuture(supplier.get());
         } catch (Throwable e) {
             return CompletableFuture.failedFuture(e);
         }

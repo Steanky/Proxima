@@ -15,6 +15,7 @@ import com.github.steanky.proxima.space.HashSpace;
 import com.github.steanky.proxima.space.Space;
 import com.github.steanky.vector.*;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -134,7 +135,7 @@ class BasicAsyncPathfinderIntegrationTest {
     }
 
     private static PathSettings synchronizedDiagonalProcessingEnvironment() {
-        Bounds3I bounds = Bounds3I.immutable(0, 0, 0, 1000, 4, 1000);
+        Bounds3I bounds = Bounds3I.immutable(-1000, 0, -1000, 2000, 4, 2000);
 
         Space space = new ConcurrentCachingSpace() {
             @Override
@@ -267,6 +268,61 @@ class BasicAsyncPathfinderIntegrationTest {
         }
 
         pathfinder.shutdown();
+    }
+
+    @Nested
+    class Diagonals {
+        private static final List<Vec3I> EXPECTED_NE_PATH = List.of(Vec3I.immutable(-5, 1, 5),
+                Vec3I.immutable(-4, 1, 4), Vec3I.immutable(-3, 1, 3), Vec3I.immutable(-2, 1, 2),
+                Vec3I.immutable(-1, 1, 1), Vec3I.immutable(0, 1, 0));
+
+        private static final List<Vec3I> EXPECTED_NW_PATH = List.of(Vec3I.immutable(5, 1, 5),
+                Vec3I.immutable(4, 1, 4), Vec3I.immutable(3, 1, 3), Vec3I.immutable(2, 1, 2),
+                Vec3I.immutable(1, 1, 1), Vec3I.immutable(0, 1, 0));
+
+        private static final List<Vec3I> EXPECTED_SW_PATH = List.of(Vec3I.immutable(5, 1, -5),
+                Vec3I.immutable(4, 1, -4), Vec3I.immutable(3, 1, -3), Vec3I.immutable(2, 1, -2),
+                Vec3I.immutable(1, 1, -1), Vec3I.immutable(0, 1, 0));
+
+        private static final List<Vec3I> EXPECTED_SE_PATH = List.of(Vec3I.immutable(-5, 1, -5),
+                Vec3I.immutable(-4, 1, -4), Vec3I.immutable(-3, 1, -3), Vec3I.immutable(-2, 1, -2),
+                Vec3I.immutable(-1, 1, -1), Vec3I.immutable(0, 1, 0));
+
+        @Test
+        void northEast() {
+            PathSettings settings = synchronizedDiagonalProcessingEnvironment();
+            Pathfinder pathfinder = pathfinder();
+
+            PathResult result = pathfinder.pathfind(-5, 1, 5, PathTarget.coordinate(0, 1, 0), settings).join();
+            assertPathEquals(EXPECTED_NE_PATH, true, result);
+        }
+
+        @Test
+        void northWest() {
+            PathSettings settings = synchronizedDiagonalProcessingEnvironment();
+            Pathfinder pathfinder = pathfinder();
+
+            PathResult result = pathfinder.pathfind(5, 1, 5, PathTarget.coordinate(0, 1, 0), settings).join();
+            assertPathEquals(EXPECTED_NW_PATH, true, result);
+        }
+
+        @Test
+        void southWest() {
+            PathSettings settings = synchronizedDiagonalProcessingEnvironment();
+            Pathfinder pathfinder = pathfinder();
+
+            PathResult result = pathfinder.pathfind(5, 1, -5, PathTarget.coordinate(0, 1, 0), settings).join();
+            assertPathEquals(EXPECTED_SW_PATH, true, result);
+        }
+
+        @Test
+        void southEast() {
+            PathSettings settings = synchronizedDiagonalProcessingEnvironment();
+            Pathfinder pathfinder = pathfinder();
+
+            PathResult result = pathfinder.pathfind(-5, 1, -5, PathTarget.coordinate(0, 1, 0), settings).join();
+            assertPathEquals(EXPECTED_SE_PATH, true, result);
+        }
     }
 
     private void assertPathEquals(List<Vec3I> expected, boolean success, PathResult result) {
