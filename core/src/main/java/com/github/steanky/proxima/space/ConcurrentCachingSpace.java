@@ -163,24 +163,40 @@ public abstract class ConcurrentCachingSpace implements Space {
     public void updateSolid(int x, int y, int z, @Nullable Solid solid) {
         long chunkKey = Chunk.key(x, z);
 
-        //null solid means we need to remove from a chunk
-        if (solid == null) {
-            Chunk chunk = getChunk(chunkKey);
-            if (chunk != null) {
-                //returns true when we empty the chunk
-                if (chunk.remove(Chunk.relative(x, y, z, minimumY))) {
-                    long write = lock.writeLock();
-                    try {
-                        cache.remove(chunkKey);
-                    } finally {
-                        lock.unlockWrite(write);
-                    }
-                }
-            }
-        } else {
+        if (solid != null) {
             //if the chunk does not exist (is null); creates it and adds the solid
             //otherwise, adds the solid to the existing chunk
             addToExistingOrNewChunk(getChunk(chunkKey), chunkKey, Chunk.relative(x, y, z, minimumY), solid);
+            return;
+        }
+
+        //null solid means we need to remove from a chunk
+        Chunk chunk = getChunk(chunkKey);
+        if (chunk == null) {
+            return;
+        }
+
+        //returns true when we empty the chunk
+        if (!chunk.remove(Chunk.relative(x, y, z, minimumY))) {
+            return;
+        }
+
+        long chunkWrite = chunk.lock.writeLock();
+        try {
+            //another thread re-added a block to this chunk, don't remove it from the cache
+            if (chunk.map.isEmpty()) {
+                return;
+            }
+
+            long cacheWrite = lock.writeLock();
+            try {
+                cache.remove(chunkKey);
+            } finally {
+                lock.unlockWrite(cacheWrite);
+            }
+        }
+        finally {
+            chunk.lock.unlockWrite(chunkWrite);
         }
     }
 
