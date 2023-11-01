@@ -4,7 +4,9 @@ import com.github.steanky.proxima.solid.Solid;
 import com.github.steanky.vector.Vec3I;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -22,9 +24,6 @@ import java.util.concurrent.locks.StampedLock;
  * structure that allows as much concurrent access as possible.
  */
 public abstract class ConcurrentCachingSpace implements Space {
-    private static final int CHUNK_READ_ATTEMPTS = 10;
-    private static final int BLOCK_READ_ATTEMPTS = 10;
-
     private final StampedLock lock;
     private final Long2ObjectOpenHashMap<Chunk> cache;
 
@@ -40,53 +39,43 @@ public abstract class ConcurrentCachingSpace implements Space {
         this(-32);
     }
 
-    //works identically to Chunk#read(int), but for the chunk cache rather than individual blocks
-    //methods are duplicated because they effectively differ by primitive type (long vs int)
-    @SuppressWarnings("DuplicatedCode")
     private Chunk getChunk(long chunkKey) {
-        long read;
-        Chunk chunk;
-
-        boolean valid;
-        int i = 0;
-        do {
-            read = lock.tryOptimisticRead();
-            if (!lock.validate(read)) {
-                valid = false;
-                chunk = null;
-                continue;
-            }
-
+        long read = lock.tryOptimisticRead();
+        if (lock.validate(read)) {
+            Chunk chunk = null;
+            boolean exception = false;
             try {
                 chunk = cache.get(chunkKey);
-                valid = lock.validate(read);
-            } catch (Throwable ignored) {
-                chunk = null;
-                valid = false;
             }
-        } while (!valid && i++ < CHUNK_READ_ATTEMPTS);
+            catch (Throwable ignored) {
+                exception = true;
+            }
 
-        if (valid) {
-            return chunk;
+            if (!exception && lock.validate(read)) {
+                return chunk;
+            }
         }
 
         read = lock.readLock();
         try {
             return cache.get(chunkKey);
-        } finally {
+        }
+        finally {
             lock.unlockRead(read);
         }
     }
 
-    private void addToExistingOrNewChunk(Chunk chunk, long chunkKey, int blockKey, Solid solidToWrite) {
+    private void updateExistingOrNewChunk(Chunk chunk, long chunkKey, int blockKey, Solid solidToWrite, boolean force) {
+        boolean removing = solidToWrite == null;
+
         if (chunk != null) {
-            //in most cases, we can easily add the solid
-            chunk.write(blockKey, solidToWrite);
+            //write to our suggested chunk
+            //may call updateExistingOrNewChunk again, with force set to true and a null chunk, if the update fails
+            ensureUpdate(chunk, chunkKey, blockKey, solidToWrite);
             return;
         }
 
-        boolean addedSolid = false;
-        long write = lock.writeLock();
+        long cacheStamp = force ? lock.writeLock() : lock.readLock();
         try {
             //may be non-null
             //if so, don't create a new chunk, remove write lock, and add the solid to the chunk
@@ -95,23 +84,93 @@ public abstract class ConcurrentCachingSpace implements Space {
             if (otherChunk != null) {
                 //another thread added a chunk - use it
                 chunk = otherChunk;
-            } else {
-                //create a new chunk, add our solid to it, and put it in the cache
-                //we don't need to write-lock on the newly-created chunk at all this way
-                chunk = new Chunk();
-                chunk.map.put(blockKey, solidToWrite);
+            } else if (!removing) {
+                //acquire write lock as we're going to add a new chunk to the cache
+                cacheStamp = upgradeToWriteLock(lock, cacheStamp);
 
-                cache.put(chunkKey, chunk);
+                //we might have just finished waiting on another thread to add a chunk
+                otherChunk = cache.get(chunkKey);
 
-                //indicate that we already put the solid in the chunk
-                addedSolid = true;
+                if (otherChunk == null) {
+                    //create a new chunk, add our solid to it, and put it in the cache
+                    //we don't need to write-lock on the newly-created chunk at all this way
+                    chunk = new Chunk();
+                    chunk.map.put(blockKey, solidToWrite);
+
+                    cache.put(chunkKey, chunk);
+                    return;
+                }
+
+                chunk = otherChunk;
+            }
+            else { //otherChunk is null, but we are removing, don't create a chunk just to remove from it!
+                return;
+            }
+
+            if (force) {
+                //slow path: write to chunk occurs under cache write lock
+                //write only returns false when the chunk being written to has been removed
+                //the chunk is only marked removed after it is removed from the cache, done under cache write-lock
+                //hit when calling recursively if a previous attempt to remove/write to a chunk fails
+                if (removing) {
+                    if (chunk.remove(blockKey) == Chunk.RemovalState.CHUNK_REMOVED) {
+                        throw new IllegalStateException();
+                    }
+                }
+                else if(!chunk.write(blockKey, solidToWrite)) {
+                    throw new IllegalStateException();
+                }
+
+                return;
             }
         } finally {
-            lock.unlockWrite(write);
+            lock.unlock(cacheStamp);
         }
 
-        if (!addedSolid) {
-            chunk.write(blockKey, solidToWrite);
+        ensureUpdate(chunk, chunkKey, blockKey, solidToWrite);
+    }
+
+    private void ensureUpdate(Chunk chunk, long chunkKey, int blockKey, Solid solidToWrite) {
+        if (solidToWrite == null) {
+            //don't do anything else if case NEITHER
+            switch (chunk.remove(blockKey)) {
+
+                case CHUNK_REMOVED -> //re-update with force this time!
+                        updateExistingOrNewChunk(null, chunkKey, blockKey, null, true);
+                case MAP_EMPTY -> //remove from cache if we're actually empty
+                        removeFromCache(chunk, chunkKey, false);
+            }
+        }
+        else if (!chunk.write(blockKey, solidToWrite)) {
+            updateExistingOrNewChunk(null, chunkKey, blockKey, solidToWrite, true);
+        }
+    }
+
+    private void removeFromCache(Chunk chunk, long chunkKey, boolean force) {
+        //will block writes to the chunk while it is undergoing removal
+        long chunkStamp = chunk.lock.readLock();
+
+        //we have already been removed by another thread
+        //or, force is off and another thread added a block
+        if (chunk.removed || (!force && !chunk.map.isEmpty())) {
+            return;
+        }
+
+        long cacheWrite = lock.writeLock();
+        try {
+            //now, we want to exclusively lock on the chunk as we will modify a field
+            chunkStamp = upgradeToWriteLock(chunk.lock, chunkStamp);
+
+            //removals (or additions) to cache only occur when under write lock
+            if (cache.remove(chunkKey) != chunk) {
+                throw new IllegalStateException();
+            }
+
+            chunk.removed = true;
+        }
+        finally {
+            chunk.lock.unlock(chunkStamp);
+            lock.unlockWrite(cacheWrite);
         }
     }
 
@@ -128,7 +187,7 @@ public abstract class ConcurrentCachingSpace implements Space {
                 return null;
             }
 
-            addToExistingOrNewChunk(null, chunkKey, blockKey, solid);
+            updateExistingOrNewChunk(null, chunkKey, blockKey, solid, false);
             return solid;
         }
 
@@ -142,7 +201,7 @@ public abstract class ConcurrentCachingSpace implements Space {
             return null;
         }
 
-        chunk.write(blockKey, solid);
+        updateExistingOrNewChunk(chunk, chunkKey, blockKey, solid, false);
         return solid;
     }
 
@@ -161,55 +220,41 @@ public abstract class ConcurrentCachingSpace implements Space {
      * @param solid the new solid, or null to remove any cached solid (if present)
      */
     public void updateSolid(int x, int y, int z, @Nullable Solid solid) {
-        long chunkKey = Chunk.key(x, z);
+        updateExistingOrNewChunk(null, Chunk.key(x, z), Chunk.relative(x, y, z, minimumY), solid, false);
+    }
 
-        if (solid != null) {
-            //if the chunk does not exist (is null); creates it and adds the solid
-            //otherwise, adds the solid to the existing chunk
-            addToExistingOrNewChunk(getChunk(chunkKey), chunkKey, Chunk.relative(x, y, z, minimumY), solid);
-            return;
+    private static long upgradeToWriteLock(StampedLock stampedLock, long heldStamp) {
+        if (stampedLock.isWriteLocked()) {
+            return heldStamp;
         }
 
-        //null solid means we need to remove from a chunk
-        Chunk chunk = getChunk(chunkKey);
-        if (chunk == null) {
-            return;
-        }
-
-        //returns true when we empty the chunk
-        if (!chunk.remove(Chunk.relative(x, y, z, minimumY))) {
-            return;
-        }
-
-        long chunkWrite = chunk.lock.writeLock();
-        try {
-            //another thread re-added a block to this chunk, don't remove it from the cache
-            if (chunk.map.isEmpty()) {
-                return;
-            }
-
-            long cacheWrite = lock.writeLock();
-            try {
-                cache.remove(chunkKey);
-            } finally {
-                lock.unlockWrite(cacheWrite);
-            }
-        }
-        finally {
-            chunk.lock.unlockWrite(chunkWrite);
-        }
+        stampedLock.unlock(heldStamp);
+        return stampedLock.writeLock();
     }
 
     /**
      * Clears the cache, reducing it to a state similar to when it was first initialized.
      */
     public void clearCache() {
-        long write = lock.writeLock();
+        long cacheWrite = lock.writeLock();
         try {
-            cache.clear();
-            cache.trim();
+            ObjectIterator<Long2ObjectMap.Entry<Chunk>> entrySetIterator = cache.long2ObjectEntrySet().fastIterator();
+
+            while (entrySetIterator.hasNext()) {
+                Chunk chunk = entrySetIterator.next().getValue();
+
+                long chunkWrite = chunk.lock.writeLock();
+
+                try {
+                    entrySetIterator.remove();
+                    chunk.removed = true;
+                }
+                finally {
+                    chunk.lock.unlockWrite(chunkWrite);
+                }
+            }
         } finally {
-            lock.unlockWrite(write);
+            lock.unlockWrite(cacheWrite);
         }
     }
 
@@ -221,13 +266,15 @@ public abstract class ConcurrentCachingSpace implements Space {
     public void clearChunk(int x, int z) {
         long key = Chunk.keyFromChunk(x, z);
 
-        long write = lock.writeLock();
-        try {
-            cache.remove(key);
+        Chunk chunk = getChunk(key);
+
+        //removed will never be set 'false' after set to true
+        if (chunk == null || chunk.removed) {
+            return;
         }
-        finally {
-            lock.unlockWrite(write);
-        }
+
+        //force = true to remove the chunk even if it has blocks in it!
+        removeFromCache(chunk, key, true);
     }
 
     /**
@@ -249,9 +296,23 @@ public abstract class ConcurrentCachingSpace implements Space {
      */
     public abstract @Nullable Solid loadSolid(int x, int y, int z);
 
-    private record Chunk(Int2ObjectMap<Solid> map, StampedLock lock) {
+    private static final class Chunk {
+        private enum RemovalState {
+            CHUNK_REMOVED,
+            MAP_EMPTY,
+            NEITHER
+        }
+
+        private final Int2ObjectMap<Solid> map;
+        private final StampedLock lock;
+
+        //must ONLY be set under write lock of both cache and this chunk
+        //once set to true, will never be set to 'false' again
+        private volatile boolean removed;
+
         private Chunk() {
-            this(new Int2ObjectOpenHashMap<>(), new StampedLock());
+            this.map = new Int2ObjectOpenHashMap<>();
+            this.lock = new StampedLock();
         }
 
         private static long key(int x, int z) {
@@ -270,43 +331,7 @@ public abstract class ConcurrentCachingSpace implements Space {
 
         @SuppressWarnings("DuplicatedCode")
         private Solid read(int key) {
-            long read;
-            Solid solid;
-
-            boolean valid;
-            int i = 0;
-            do {
-                //often, we can grab a solid without ever needing to read-lock the map
-                //if a writer thread wants access, it will break our optimistic read, and we retry
-                //retries are limited to BLOCK_READ_ATTEMPTS, after which a proper read lock is used
-                read = lock.tryOptimisticRead();
-
-                //if we were write-locked when trying to attain the optimistic read, we will never have a valid stamp
-                if (!lock.validate(read)) {
-                    valid = false;
-                    solid = null;
-                    continue;
-                }
-
-                try {
-                    solid = map.get(key);
-                    valid = lock.validate(read);
-                } catch (Throwable ignored) {
-                    /*
-                    theoretically, a table rehash or trim could occur in the map at exactly the wrong time, which would
-                    cause get(int) to throw an exception; this means our read was definitely broken
-                     */
-                    solid = null;
-                    valid = false;
-                }
-            } while (!valid && i++ < BLOCK_READ_ATTEMPTS);
-
-            if (valid) {
-                //we were able to successfully read the solid without locking on the map
-                return solid;
-            }
-
-            read = lock.readLock();
+            long read = lock.readLock();
             try {
                 //we tried to optimistically read too many times; we need to do a full read
                 return map.get(key);
@@ -315,22 +340,37 @@ public abstract class ConcurrentCachingSpace implements Space {
             }
         }
 
-        private void write(int key, Solid solid) {
-            long write = lock.writeLock();
+        //this method returns true when the operation succeeded, false otherwise
+        //the operation can only "fail" if this chunk has been removed
+        @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+        private boolean write(int key, Solid solid) {
+            long chunkStamp = lock.writeLock();
+
             try {
+                if (this.removed) {
+                    return false;
+                }
+
                 map.put(key, solid);
             } finally {
-                lock.unlockWrite(write);
+                lock.unlockWrite(chunkStamp);
             }
+
+            return true;
         }
 
-        private boolean remove(int key) {
-            long write = lock.writeLock();
+        private RemovalState remove(int key) {
+            long chunkWrite = lock.writeLock();
+
             try {
+                if (this.removed) {
+                    return RemovalState.CHUNK_REMOVED;
+                }
+
                 map.remove(key);
-                return map.isEmpty();
+                return map.isEmpty() ? RemovalState.MAP_EMPTY : RemovalState.NEITHER;
             } finally {
-                lock.unlockWrite(write);
+                lock.unlockWrite(chunkWrite);
             }
         }
     }
