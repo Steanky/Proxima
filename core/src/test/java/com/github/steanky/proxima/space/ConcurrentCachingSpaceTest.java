@@ -148,4 +148,47 @@ class ConcurrentCachingSpaceTest {
             fail("timeout");
         }
     }
+
+    @Test
+    void writeRemoveContentionWithReads()
+    throws InterruptedException {
+        HashSpace backing = new HashSpace(Bounds3I.immutable(0, 0, 0, 2048, 2048, 2048));
+        backing.put(0, 0, 0, Solid.FULL);
+
+        ConcurrentCachingSpace space = backed(backing);
+
+        Thread writer = new Thread(() -> {
+            while (!Thread.interrupted()) {
+                space.updateSolid(0, 0, 0, Solid.FULL);
+            }
+        });
+        writer.setName("WRITER");
+        writer.start();
+
+        Thread reader = new Thread(() -> {
+            while (!Thread.interrupted()) {
+                space.solidAt(0, 0, 0);
+            }
+        });
+        reader.setName("READER");
+        reader.start();
+
+        for (int i = 0; i < 1000000; i++) {
+            ForkJoinPool.commonPool().execute(() -> {
+                space.updateSolid(0, 0, 0, null);
+            });
+
+            ForkJoinPool.commonPool().execute(space::clearCache);
+        }
+
+        if (!ForkJoinPool.commonPool().awaitQuiescence(100, TimeUnit.HOURS)) {
+            fail("timeout");
+        }
+
+        reader.interrupt();
+        reader.join();
+
+        writer.interrupt();
+        writer.join();
+    }
 }

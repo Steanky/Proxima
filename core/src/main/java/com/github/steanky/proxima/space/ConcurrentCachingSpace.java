@@ -134,7 +134,6 @@ public abstract class ConcurrentCachingSpace implements Space {
         if (solidToWrite == null) {
             //don't do anything else if case NEITHER
             switch (chunk.remove(blockKey)) {
-
                 case CHUNK_REMOVED -> //re-update with force this time!
                         updateExistingOrNewChunk(null, chunkKey, blockKey, null, true);
                 case MAP_EMPTY -> //remove from cache if we're actually empty
@@ -147,19 +146,14 @@ public abstract class ConcurrentCachingSpace implements Space {
     }
 
     private void removeFromCache(Chunk chunk, long chunkKey, boolean force) {
-        //will block writes to the chunk while it is undergoing removal
-        long chunkStamp = chunk.lock.readLock();
-
-        //we have already been removed by another thread
-        //or, force is off and another thread added a block
-        if (chunk.removed || (!force && !chunk.map.isEmpty())) {
-            return;
-        }
-
         long cacheWrite = lock.writeLock();
+
+        //will block writes to the chunk while it is undergoing removal
+        long chunkWrite = chunk.lock.writeLock();
         try {
-            //now, we want to exclusively lock on the chunk as we will modify a field
-            chunkStamp = upgradeToWriteLock(chunk.lock, chunkStamp);
+            if (chunk.removed || (!force && !chunk.map.isEmpty())) {
+                return;
+            }
 
             //removals (or additions) to cache only occur when under write lock
             if (cache.remove(chunkKey) != chunk) {
@@ -169,8 +163,8 @@ public abstract class ConcurrentCachingSpace implements Space {
             chunk.removed = true;
         }
         finally {
-            chunk.lock.unlock(chunkStamp);
             lock.unlockWrite(cacheWrite);
+            chunk.lock.unlockWrite(chunkWrite);
         }
     }
 
@@ -228,7 +222,7 @@ public abstract class ConcurrentCachingSpace implements Space {
             return heldStamp;
         }
 
-        stampedLock.unlock(heldStamp);
+        stampedLock.unlockRead(heldStamp);
         return stampedLock.writeLock();
     }
 
