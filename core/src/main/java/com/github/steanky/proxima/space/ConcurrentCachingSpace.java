@@ -66,19 +66,13 @@ public abstract class ConcurrentCachingSpace implements Space {
     private Chunk getChunk(long chunkKey) {
         long read = lock.tryOptimisticRead();
         if (lock.validate(read)) {
-            Chunk chunk = null;
-            boolean valid = false;
             try {
-                chunk = cache.get(chunkKey);
+                Chunk chunk = cache.get(chunkKey);
                 if (lock.validate(read)) {
-                    valid = true;
+                    return chunk;
                 }
             }
             catch (Throwable ignored) {}
-
-            if (valid) {
-                return chunk;
-            }
         }
 
         read = lock.readLock();
@@ -378,19 +372,13 @@ public abstract class ConcurrentCachingSpace implements Space {
         private Solid read(int key) {
             long readLock = lock.tryOptimisticRead();
             if (lock.validate(readLock)) {
-                Solid solid = null;
-                boolean valid = false;
                 try {
-                    solid = map.get(key);
+                    Solid solid = map.get(key);
                     if (lock.validate(readLock)) {
-                        valid = true;
+                        return solid;
                     }
                 }
                 catch (Throwable ignored) {}
-
-                if (valid) {
-                    return solid;
-                }
             }
 
             readLock = lock.readLock();
