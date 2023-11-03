@@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.concurrent.locks.StampedLock;
 
@@ -39,19 +40,43 @@ public abstract class ConcurrentCachingSpace implements Space {
         this(-32);
     }
 
+    @VisibleForTesting
+    boolean validCacheState() {
+        long cacheRead = lock.readLock();
+        try {
+            for (Chunk chunk : cache.values()) {
+                long chunkRead = chunk.lock.readLock();
+                try {
+                    if (chunk.removed) {
+                        return false;
+                    }
+                }
+                finally {
+                    chunk.lock.unlockRead(chunkRead);
+                }
+            }
+        }
+        finally {
+            lock.unlockRead(cacheRead);
+        }
+
+        return true;
+    }
+
     private Chunk getChunk(long chunkKey) {
         long read = lock.tryOptimisticRead();
         if (lock.validate(read)) {
             Chunk chunk = null;
-            boolean exception = false;
+            boolean valid = false;
             try {
                 chunk = cache.get(chunkKey);
+                if (lock.validate(read)) {
+                    valid = true;
+                }
             }
-            catch (Throwable ignored) {
-                exception = true;
-            }
+            catch (Throwable ignored) {}
 
-            if (!exception && lock.validate(read)) {
+            if (valid) {
                 return chunk;
             }
         }
@@ -147,33 +172,68 @@ public abstract class ConcurrentCachingSpace implements Space {
 
     private void removeFromCache(Chunk chunk, long chunkKey, boolean force) {
         long cacheWrite = lock.writeLock();
-
-        //will block writes to the chunk while it is undergoing removal
-        long chunkWrite = chunk.lock.writeLock();
         try {
-            if (chunk.removed || (!force && !chunk.map.isEmpty())) {
-                return;
-            }
+            //will block writes to the chunk while it is undergoing removal
+            long chunkWrite = chunk.lock.writeLock();
+            try {
+                //chunk was removed by another thread before we acquired the lock
+                if (chunk.removed) {
+                    //was another chunk added in the interim?
+                    //or, was this chunk fully removed?
+                    Chunk newChunk = cache.get(chunkKey);
 
-            //removals (or additions) to cache only occur when under write lock
-            if (cache.remove(chunkKey) != chunk) {
-                throw new IllegalStateException();
-            }
+                    //if another thread fully removed the chunk, just return
+                    if (newChunk == null) {
+                        return;
+                    }
 
-            chunk.removed = true;
+                    //a thread assigned a different Chunk instance
+                    if (newChunk != chunk) {
+                        //unlock old chunk, we're done with it
+                        chunk.lock.unlockWrite(chunkWrite);
+
+                        //acquire write lock on new chunk, a new one can't be assigned yet due to writelock on cache
+                        chunkWrite = newChunk.lock.writeLock();
+                        chunk = newChunk;
+                    }
+                }
+
+                if (!force && !chunk.map.isEmpty()) {
+                    return;
+                }
+
+                if (cache.remove(chunkKey) != chunk) {
+                    throw new IllegalStateException();
+                }
+
+                chunk.removed = true;
+            }
+            finally {
+                chunk.lock.unlockWrite(chunkWrite);
+            }
         }
         finally {
             lock.unlockWrite(cacheWrite);
-            chunk.lock.unlockWrite(chunkWrite);
         }
+    }
+
+    private static long upgradeToWriteLock(StampedLock stampedLock, long heldStamp) {
+        if (StampedLock.isWriteLockStamp(heldStamp)) {
+            return heldStamp;
+        }
+
+        if (StampedLock.isReadLockStamp(heldStamp)) {
+            stampedLock.unlockRead(heldStamp);
+        }
+
+        return stampedLock.writeLock();
     }
 
     @Override
     public final @Nullable Solid solidAt(int x, int y, int z) {
         long chunkKey = Chunk.key(x, z);
-        int blockKey = Chunk.relative(x, y, z, minimumY);
-
         Chunk chunk = getChunk(chunkKey);
+
         Solid solid;
         if (chunk == null) {
             solid = loadSolid(x, y, z);
@@ -181,10 +241,11 @@ public abstract class ConcurrentCachingSpace implements Space {
                 return null;
             }
 
-            updateExistingOrNewChunk(null, chunkKey, blockKey, solid, false);
+            updateExistingOrNewChunk(null, chunkKey, Chunk.relative(x, y, z, minimumY), solid, false);
             return solid;
         }
 
+        int blockKey = Chunk.relative(x, y, z, minimumY);
         solid = chunk.read(blockKey);
         if (solid != null) {
             return solid;
@@ -217,15 +278,6 @@ public abstract class ConcurrentCachingSpace implements Space {
         updateExistingOrNewChunk(null, Chunk.key(x, z), Chunk.relative(x, y, z, minimumY), solid, false);
     }
 
-    private static long upgradeToWriteLock(StampedLock stampedLock, long heldStamp) {
-        if (stampedLock.isWriteLocked()) {
-            return heldStamp;
-        }
-
-        stampedLock.unlockRead(heldStamp);
-        return stampedLock.writeLock();
-    }
-
     /**
      * Clears the cache, reducing it to a state similar to when it was first initialized.
      */
@@ -238,7 +290,6 @@ public abstract class ConcurrentCachingSpace implements Space {
                 Chunk chunk = entrySetIterator.next().getValue();
 
                 long chunkWrite = chunk.lock.writeLock();
-
                 try {
                     entrySetIterator.remove();
                     chunk.removed = true;
@@ -325,12 +376,28 @@ public abstract class ConcurrentCachingSpace implements Space {
 
         @SuppressWarnings("DuplicatedCode")
         private Solid read(int key) {
-            long read = lock.readLock();
+            long readLock = lock.tryOptimisticRead();
+            if (lock.validate(readLock)) {
+                Solid solid = null;
+                boolean valid = false;
+                try {
+                    solid = map.get(key);
+                    if (lock.validate(readLock)) {
+                        valid = true;
+                    }
+                }
+                catch (Throwable ignored) {}
+
+                if (valid) {
+                    return solid;
+                }
+            }
+
+            readLock = lock.readLock();
             try {
-                //we tried to optimistically read too many times; we need to do a full read
                 return map.get(key);
             } finally {
-                lock.unlockRead(read);
+                lock.unlockRead(readLock);
             }
         }
 

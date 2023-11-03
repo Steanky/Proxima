@@ -9,8 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ConcurrentCachingSpaceTest {
     private static ConcurrentCachingSpace backed(Space other) {
@@ -57,6 +56,7 @@ class ConcurrentCachingSpaceTest {
             //remove solid from cache
             space.updateSolid(0, 0, 0, null);
             assertEquals(Solid.EMPTY, space.solidAt(0, 0, 0));
+            assertTrue(space.validCacheState());
         }
     }
 
@@ -87,6 +87,8 @@ class ConcurrentCachingSpaceTest {
                 fail("timeout");
             }
         }
+
+        assertTrue(space.validCacheState());
     }
 
     //many concurrent writes to the same block with many concurrent readers
@@ -128,6 +130,8 @@ class ConcurrentCachingSpaceTest {
 
         writer.interrupt();
         writer.join();
+
+        assertTrue(space.validCacheState());
     }
 
     //heavily concurrent writes to different chunks
@@ -139,7 +143,7 @@ class ConcurrentCachingSpaceTest {
             int v = i << 4;
             ForkJoinPool.commonPool().execute(() -> {
                 for (int j = 0; j < 1000; j++) {
-                    space.updateSolid(v, 16, v, Solid.FULL);
+                    space.updateSolid(v, 16, v, Solid.EMPTY);
                 }
             });
         }
@@ -147,6 +151,15 @@ class ConcurrentCachingSpaceTest {
         if (!ForkJoinPool.commonPool().awaitQuiescence(100, TimeUnit.HOURS)) {
             fail("timeout");
         }
+
+        for (int i = 0; i < 1000; i++) {
+            int v = i << 4;
+            for (int j = 0; j < 1000; j++) {
+                assertEquals(Solid.EMPTY, space.solidAt(v, 16, v));
+            }
+        }
+
+        assertTrue(space.validCacheState());
     }
 
     @Test
@@ -165,6 +178,14 @@ class ConcurrentCachingSpaceTest {
         writer.setName("WRITER");
         writer.start();
 
+        Thread clear = new Thread(() -> {
+           while (!Thread.interrupted()) {
+               space.clearChunk(0, 0);
+           }
+        });
+        clear.setName("CLEAR");
+        clear.start();
+
         Thread reader = new Thread(() -> {
             while (!Thread.interrupted()) {
                 space.solidAt(0, 0, 0);
@@ -172,6 +193,14 @@ class ConcurrentCachingSpaceTest {
         });
         reader.setName("READER");
         reader.start();
+
+        Thread validator = new Thread(() -> {
+            while (!Thread.interrupted()) {
+                assertTrue(space.validCacheState());
+            }
+        });
+        validator.setName("VALIDATOR");
+        validator.start();
 
         for (int i = 0; i < 1000000; i++) {
             ForkJoinPool.commonPool().execute(() -> {
@@ -190,5 +219,13 @@ class ConcurrentCachingSpaceTest {
 
         writer.interrupt();
         writer.join();
+
+        clear.interrupt();
+        clear.join();
+
+        validator.interrupt();
+        validator.join();
+
+        assertTrue(space.validCacheState());
     }
 }
