@@ -108,7 +108,8 @@ public abstract class ConcurrentCachingSpace implements Space {
                 cacheStamp = upgradeToWriteLock(lock, cacheStamp);
 
                 //we might have just finished waiting on another thread to add a chunk
-                otherChunk = cache.get(chunkKey);
+                //if force, we were always write-locked, the chunk didn't change, its still null
+                otherChunk = force ? null : cache.get(chunkKey);
 
                 if (otherChunk == null) {
                     //create a new chunk, add our solid to it, and put it in the cache
