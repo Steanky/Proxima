@@ -59,7 +59,7 @@ public interface Heuristic {
 
         @Override
         public double scale() {
-            return 1.5;
+            return 1.4143;
         }
     };
 

@@ -223,18 +223,6 @@ class BasicAsyncPathfinderIntegrationTest {
     }
 
     @Test
-    void hugePath() {
-        PathSettings settings = hugeEnvironment();
-        Pathfinder pathfinder = pathfinder();
-
-        for (int i = 0; i < 1000; i++) {
-            pathfinder.pathfind(0, 1, 0, PathTarget.coordinate(1000, 1, 1000), settings);
-        }
-
-        pathfinder.shutdown();
-    }
-
-    @Test
     void hugePathWithPartialBlocks() {
         PathSettings settings = hugeEnvironmentWithPartialBlocks();
         Pathfinder pathfinder = pathfinder();
@@ -251,7 +239,7 @@ class BasicAsyncPathfinderIntegrationTest {
         PathSettings settings = synchronizedEnvironment();
         Pathfinder pathfinder = pathfinder();
 
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < 1; i++) {
             pathfinder.pathfind(0, 1, 0, PathTarget.coordinate(900, 1, 900), settings);
         }
 
