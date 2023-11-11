@@ -20,6 +20,7 @@ public final class Node implements Comparable<Node> {
     public float g;
 
     public Node parent;
+    public int length;
 
     int heapIndex;
 
@@ -36,6 +37,7 @@ public final class Node implements Comparable<Node> {
         this.heapIndex = -1;
 
         this.jumpOffset = jumpOffset;
+        this.length = 1;
     }
 
     public Node(int x, int y, int z, float g, float h, float blockOffset) {

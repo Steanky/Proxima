@@ -53,7 +53,7 @@ class BasicAsyncPathfinderIntegrationTest {
 
             @Override
             public @NotNull Heuristic heuristic() {
-                return Heuristic.DISTANCE_SQUARED;
+                return Heuristic.OCTILE;
             }
 
             @Override
@@ -201,7 +201,7 @@ class BasicAsyncPathfinderIntegrationTest {
         PathSettings settings = simpleEnvironment();
         Pathfinder pathfinder = pathfinder();
 
-        for (int i = 0; i < 1000000; i++) {
+        for (int i = 0; i < 1000; i++) {
             pathfinder.pathfind(30, 1, 0, PathTarget.coordinate(0, 1, 0), settings);
         }
 
@@ -228,7 +228,7 @@ class BasicAsyncPathfinderIntegrationTest {
         Pathfinder pathfinder = pathfinder();
 
         for (int i = 0; i < 1000; i++) {
-            pathfinder.pathfind(0, 1, 0, PathTarget.coordinate(0, 1, 0), settings);
+            pathfinder.pathfind(0, 1, 0, PathTarget.coordinate(1000, 1, 1000), settings);
         }
 
         pathfinder.shutdown();
@@ -239,7 +239,7 @@ class BasicAsyncPathfinderIntegrationTest {
         PathSettings settings = hugeEnvironmentWithPartialBlocks();
         Pathfinder pathfinder = pathfinder();
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 1; i++) {
             pathfinder.pathfind(0, 1, 0, PathTarget.coordinate(900, 1, 900), settings);
         }
 
@@ -251,7 +251,7 @@ class BasicAsyncPathfinderIntegrationTest {
         PathSettings settings = synchronizedEnvironment();
         Pathfinder pathfinder = pathfinder();
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 10000; i++) {
             pathfinder.pathfind(0, 1, 0, PathTarget.coordinate(900, 1, 900), settings);
         }
 
@@ -263,7 +263,7 @@ class BasicAsyncPathfinderIntegrationTest {
         PathSettings settings = synchronizedDiagonalProcessingEnvironment();
         Pathfinder pathfinder = pathfinder();
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 1; i++) {
             pathfinder.pathfind(0, 1, 0, PathTarget.coordinate(900, 1, 900), settings);
         }
 

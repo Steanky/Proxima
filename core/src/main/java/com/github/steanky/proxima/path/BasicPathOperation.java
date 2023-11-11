@@ -5,7 +5,6 @@ import com.github.steanky.proxima.explorer.Explorer;
 import com.github.steanky.proxima.node.Node;
 import com.github.steanky.proxima.node.NodeProcessor;
 import com.github.steanky.proxima.node.NodeQueue;
-import com.github.steanky.vector.Vec3I;
 import com.github.steanky.vector.Vec3I2ObjectMap;
 import com.github.steanky.vector.Vec3IBiPredicate;
 import org.jetbrains.annotations.NotNull;
@@ -143,7 +142,8 @@ public class BasicPathOperation implements PathOperation {
     }
 
     private void initialize(int x, int y, int z, float blockOffset, float jumpOffset) {
-        Node node = new Node(x, y, z, 0, heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ),
+        Node node = new Node(x, y, z, 0,
+            (float) (heuristic.scale() * heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ)),
                 blockOffset, jumpOffset);
         graph.put(x, y, z, node);
         openSet.enqueue(node);
@@ -152,14 +152,16 @@ public class BasicPathOperation implements PathOperation {
     private void explore(Node current, Node target, int x, int y, int z, float blockOffset, float jumpOffset) {
         if (target == null) {
             target = new Node(x, y, z, Float.POSITIVE_INFINITY,
-                    heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ), blockOffset, jumpOffset);
+                (float) (heuristic.scale() * heuristic.heuristic(x, y, z, destinationX, destinationY, destinationZ)),
+                    blockOffset, jumpOffset);
             graph.put(x, y, z, target);
         }
 
-        float g = current.g + (float) Vec3I.distanceSquared(current.x, current.y, current.z, x, y, z);
+        double g = current.g + heuristic.heuristic(current.x, current.y, current.z, x, y, z);
         if (g < target.g) {
             target.parent = current;
-            target.g = g;
+            target.g = (float) g;
+            target.length = current.length + 1;
             openSet.enqueueOrUpdate(target);
         }
     }

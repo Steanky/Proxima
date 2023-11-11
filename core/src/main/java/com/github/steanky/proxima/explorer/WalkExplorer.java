@@ -15,9 +15,9 @@ public class WalkExplorer extends DirectionalExplorer {
 
     private static final int[] START_LOOKUP = new int[] {
             3,
-            2,
+            1,
             0,
-            1
+            2
     };
 
     public WalkExplorer(@NotNull NodeSnapper snapper, @NotNull PathLimiter limiter) {
@@ -35,32 +35,35 @@ public class WalkExplorer extends DirectionalExplorer {
     }
 
     @Override
-    protected void handleDirection(@NotNull Direction direction, @NotNull Node currentNode, @Nullable Node neighborNode, @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph) {
+    protected void handleDirection(@NotNull Direction direction, @NotNull Node currentNode, @Nullable Node neighborNode,
+            @NotNull NodeHandler handler, @NotNull Vec3I2ObjectMap<Node> graph) {
         int nx = currentNode.x;
         int ny = currentNode.y;
         int nz = currentNode.z;
 
         long value = snapper.snap(direction, nx, ny, nz, currentNode.blockOffset);
-        if (value != NodeSnapper.FAIL) {
-            int height = NodeSnapper.blockHeight(value);
-            float blockOffset = NodeSnapper.blockOffset(value);
-            float jumpOffset = NodeSnapper.jumpOffset(value);
-
-            int tx = nx + direction.x;
-            int tz = nz + direction.z;
-
-            if (height != ny) {
-                /*
-                the actual y of the node differs from what we guessed previously. we could re-check its g-value here,
-                but the handler will do that as a matter of course, and we already snapped (the expensive operation);
-                so don't bother. we grab the neighbor node in the first place because the handler will expect us to
-                provide it if we can
-                */
-                neighborNode = graph.get(tx, height, tz);
-            }
-
-            handler.handle(currentNode, neighborNode, tx, height, tz, blockOffset, jumpOffset);
+        if (value == NodeSnapper.FAIL) {
+            return;
         }
+
+        int height = NodeSnapper.blockHeight(value);
+        float blockOffset = NodeSnapper.blockOffset(value);
+        float jumpOffset = NodeSnapper.jumpOffset(value);
+
+        int tx = nx + direction.x;
+        int tz = nz + direction.z;
+
+        if (height != ny) {
+            /*
+            the actual y of the node differs from what we guessed previously. we could re-check its g-value here,
+            but the handler will do that as a matter of course, and we already snapped (the expensive operation);
+            so don't bother. we grab the neighbor node in the first place because the handler will expect us to
+            provide it if we can
+            */
+            neighborNode = graph.get(tx, height, tz);
+        }
+
+        handler.handle(currentNode, neighborNode, tx, height, tz, blockOffset, jumpOffset);
     }
 
     private static int key(int dx, int dz) {

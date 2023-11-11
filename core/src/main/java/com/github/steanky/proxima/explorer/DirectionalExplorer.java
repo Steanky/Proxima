@@ -36,8 +36,23 @@ public abstract class DirectionalExplorer implements Explorer {
         int nz = current.z;
 
         int offsetIndex = startingDirectionIndex(current, destinationX, destinationY, destinationZ);
-        for (int i = 0; i < directions.length; i++) {
-            Direction direction = directions[(i + offsetIndex) % directions.length];
+
+        /*
+        if true, current.length is odd: we iterate forwards (clockwise around the compass N-E-S-W. if false we are even
+        and iterate backwards (W-S-E-N); starting at an index chosen based on our position relative to the destination
+        (we will explore nodes that are closer to our destination first)
+         */
+        boolean polarity = (current.length & 1) != 0;
+
+        int start = polarity ? 0 : directions.length - 1;
+        int limit = polarity ? directions.length : -1;
+        int inc = polarity ? 1 : -1;
+
+        if (polarity) offsetIndex--;
+        else offsetIndex++;
+
+        for (int i = start; i != limit; i += inc) {
+            Direction direction = directions[Math.floorMod(i + offsetIndex, directions.length)];
             int dx = direction.x;
             int dy = direction.y;
             int dz = direction.z;
@@ -111,7 +126,8 @@ public abstract class DirectionalExplorer implements Explorer {
         }
     }
 
-    protected abstract int startingDirectionIndex(@NotNull Node current, int destinationX, int destinationY, int destinationZ);
+    protected abstract int startingDirectionIndex(@NotNull Node current, int destinationX, int destinationY,
+            int destinationZ);
 
     protected abstract boolean isParent(@NotNull Node parent, int tx, int ty, int tz);
 
